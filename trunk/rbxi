@@ -675,7 +675,7 @@ update_configs()
 
 	echo $LINE
 	echo "${S}Updating backup records now...${N}"
-	sed -ir "s/last-backup-directory=.*/last-backup-directory=$BACKUP_LOCATION$BU_NU/" $SCRIPT_CONFIGS
+	sed -ir "s%last-backup-directory=.*%last-backup-directory=$BACKUP_LOCATION$BU_NU%" $SCRIPT_CONFIGS
 	sed -ir "s/last-backup-date=.*/last-backup-date=$backupDate/" $SCRIPT_CONFIGS
 }
 

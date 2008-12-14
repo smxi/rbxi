@@ -67,8 +67,12 @@ If the device is automounted, the script will check to make sure it's path is pr
 if the script uses mount/unmount option, that contains a test as well for failed mounts.
 
 -h The help menu, these options.
+-L Create symbolic link in /usr/local/bin to rbxi. You must be root to use this. It will check
+   for the link and create it if it's missing.
 -m Skip the mounting option. If present, the script will not use your preset mount/umount
 	values, and will not try to mount anything. Only use if you have a good reason to do so.
+-r Override default backup application: use rsync
+-R Override default backup application: use rdiff-backup
 -s	Runs the backup using spinning wheel progress indicators.
 	Warning: in order to do this, the script puts the actual backup jobs
 	in the background, so you can't kill them the normal way, with ctrl+c
@@ -76,7 +80,9 @@ if the script uses mount/unmount option, that contains a test as well for failed
 
 	-s is useful, besides being eye candy, for letting you know that the script is
 	actually doing something while it sits there working on your deletions or backups.
-
+-U Update script manually from svn server. It will update it to where-ever you have it installed.
+-v Show script version and last used information. Also shows last time you did a backup
+   and which backup directory was used. This should help people like me who can't remember.
 -------------------------------------------------------------------------
 BACKUP PARTITION FORMATTING:
 ---------------------------
@@ -211,11 +217,12 @@ Please note: some of these have default values already, make sure that the defau
 match your backup needs if you leave them unchanged.
 
 =========================================================================
-Set to either rdiff-backup or rsync. Can be overridden with r/R option
 BACKUP_APP='rdiff-backup
 
+Set to either rdiff-backup or rsync. Can be overridden with r/R option
 =========================================================================
 BACKUP_PARTITION='/media/usbdisk'
+
 This is the mounted location of your backup disk or partition. The default assumes
 that it is a external drive with the label of 'usbdisk'. Change to your requirements.
 Please make sure this does not end with a /, but just the actual partition mount directory
@@ -228,6 +235,7 @@ Do not use the /dev/sda1 type names, use the mounted name, like /media/sda1
 
 =========================================================================
 BACKUP_LOCATION=$BACKUP_PARTITION'/bu-'
+
 This is the actual directory name of where the backup will go. The way this script works
 is that it will alternate by default between 2 backup directories within your backup
 partition or drive.
@@ -242,7 +250,8 @@ digit, the script creates that number by itself.
 
 In the above case, for example, the script will create a directory named either bu-1 or bu-2
 depending on  what month of the year it is. Those will be located in /media/usbdisk in this
-case, assuming the default primary partition name is not changed. If you changed the above value to BACKUP_LOCATION=$BACKUP_PARTITION'/my-backups-' the script would create either
+case, assuming the default primary partition name is not changed. If you changed the above value
+to BACKUP_LOCATION=$BACKUP_PARTITION'/my-backups-' the script would create either
 /media/usbdisk/my-backups-1 or /media/usbdisk/my-backups-2
 
 =========================================================================
@@ -253,17 +262,21 @@ you want rdiff-backup to create for that particular backup.
 Important: if any one of these 4 is left blank, no backup of that component will be created.
 .........................................................................
 BU_HOME='home'
+
 This is the name of the directory that your /home partition will get backed up to inside of
 the above primary backup directories.
 .........................................................................
 BU_ROOT='root-hda1'
+
 This is the name of the directory that your / [root] partition will get backed up to inside
 of the above primary backup directories.
 .........................................................................
 BU_DATA_1=''
+
 If used, this would be a third backup directory name. Default is blank.
 .........................................................................
 BU_DATA_2=''
+
 If used, this would be a fourth backup directory name. Default is blank.
 
 =========================================================================
@@ -272,6 +285,7 @@ These are the actual paths to be used for the backups. Whatever path  you
 enter here is what will get backed up.
 .........................................................................
 USER_HOME_PARENT='/home'
+
 Only change this if you are running the backup from outside of the Operating
 system that is being backed up. For example, if /home is on /dev/sda3, then
 you'd change this to /media/sda3 if you were backing up from example a live cd.
@@ -289,6 +303,7 @@ the /home you are backing up when it's run from outside the OS.
 Normal useage: do not change
 .........................................................................
 SYSTEM_ROOT='/'
+
 If backing up from within OS, do not change. If from outside, same as above.
 
 SPECIAL NOTE: If you run the script from outside the operating system to be
@@ -303,6 +318,7 @@ and so on
 Normal useage: do not change
 .........................................................................
 USER_DATA_1=''
+
 If you are creating more than the default / and /home backups, use this. This
 must correspond to the BU_DATA_1 item above. Set to path of item you want backed
 up separately.
@@ -318,6 +334,7 @@ in the exclude file.
 If BU_DATA_1 is blank, this will not get backed up.
 .........................................................................
 USER_DATA_2=''
+
 Same as USER_DATA_2, second optional backup path.
 
 =========================================================================
@@ -326,19 +343,23 @@ These variables are simply what the script will print out to you when it runs.
 They do not affect what actually is backed up.
 .........................................................................
 USER_DATA_1_DESC=''
+
 This is a one or more word description of what is being backed up. Begin it with
 a space so it prints out nicely, like this: USER_DATA_1_DESC=' my emails'
 
 This is for BU_DATA_1 and USER_DATA_1
 .........................................................................
 USER_DATA_2_DESC=''
+
 Same as above, except for DATA_2
 .........................................................................
 ROOT_PARTITION='/dev/hda1'
+
 This just tells you which actual physical partition root is. Change to
 your own setup. This is not a path, it's just information for you.
 .........................................................................
 SLEEP_TIME='0.5'
+
 If you started the script with the -s option, a small spinning wheel will
 run as each part of the operation is carried out. This lets you know
 that something is happening, that is.
@@ -374,7 +395,7 @@ MOUNT_BU_DISK="mount -U b833d2c1-b824-4d93-a8c9-74e84226rc9c $BACKUP_DIRECTORY"
 - for standard mounting:
 MOUNT_BU_DISK="mount /dev/sdc1 $BACKUP_DIRECTORY"
 .........................................................................
-Unmounting command, should not need to be changed:
+- Unmounting command, should not need to be changed:
 UNMOUNT_BU_DISK="umount $BACKUP_DIRECTORY"
 .........................................................................
 
@@ -401,11 +422,13 @@ default script SCRIPT_PATH value, if you do, that's a bug, get in touch with
 me here: http://techpatterns.com/forums/forum-33.html
 .........................................................................
 EXCLUDE_LIST='root-excludes.txt'
+
 Only change if you want the root-excludes.txt file to be located somewhere other
 than the directory where rbxi is located. If you change the location, make
 sure to use an absolute path to where the file is located.
 .........................................................................
 EXCLUDE_HOME_LIST='home-excludes.txt'
+
 Same as above.
 .........................................................................
 USER_DATA_1_BACKUP_LOCATION=''
