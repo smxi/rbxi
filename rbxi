@@ -1,7 +1,7 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi
-####  Version: 1.9.1
+####  Version: 1.9.2
 ####  Date: 13 December 2008
 ####  Copyright (C) Harald Hope 2006-9
 ####
@@ -278,12 +278,12 @@ get_options()
 print_version_info()
 {
 	local last_modified=$( grep -im 1 'date:' $SCRIPT_PATH/$SCRIPT_NAME | gawk '{print $3,$4,$5}' )
-	local lastBackUpDirectory='Unset'
+	local lastBackupDirectory='Unset'
 	local lastBackupDate='Unset'
-	local lastBackUpDuration='Unset'
+	local lastBackupDuration='Unset'
 
 	if [ -f $SCRIPT_CONFIGS ];then
-		lastBackUpDirectory=$( grep 'last-backup-directory=' $SCRIPT_CONFIGS | cut -d '=' -f 2 )
+		lastBackupDirectory=$( grep 'last-backup-directory=' $SCRIPT_CONFIGS | cut -d '=' -f 2 )
 		lastBackupDate=$( grep 'last-backup-date=' $SCRIPT_CONFIGS | cut -d '=' -f 2 )
 		lastBackupDuration=$( grep 'last-backup-duration=' $SCRIPT_CONFIGS | cut -d '=' -f 2 )
 	fi
@@ -292,8 +292,8 @@ print_version_info()
 	echo "Script Last Modified: $last_modified"
 	echo "Script Location: $SCRIPT_PATH"
 	echo "${S}Last Backup Date: $lastBackupDate"
-	echo "${S}Last Backup Directory: $lastBackUpDirectory"
-	echo "${S}Last Backup Completion Time: $lastBackUpDuration"
+	echo "${S}Last Backup Directory: $lastBackupDirectory"
+	echo "${S}Last Backup Completion Time: $lastBackupDuration"
 	echo ${N}
 }
 
@@ -428,14 +428,14 @@ create_symbolic_link()
 set_run_backup()
 {
 	local opt='' options='' doTheBackup='' removeBackup='' repeat=''
-	local lastBackUpDirectory=$( grep 'last-backup-directory=' $SCRIPT_CONFIGS | cut -d '=' -f 2 )
+	local lastBackupDirectory=$( grep 'last-backup-directory=' $SCRIPT_CONFIGS | cut -d '=' -f 2 )
 	local lastBackupDate=$( grep 'last-backup-date=' $SCRIPT_CONFIGS | cut -d '=' -f 2 )
 	local lastBackupDuration=$( grep 'last-backup-duration=' $SCRIPT_CONFIGS | cut -d '=' -f 2 )
 
 	echo $MLINE
 	echo "${S}Last Backup Date: $lastBackupDate"
-	echo "${S}Last Backup Directory: $lastBackUpDirectory"
-	echo "${S}Last Backup Completion Time: $lastBackUpDuration"
+	echo "${S}Last Backup Directory: $lastBackupDirectory"
+	echo "${S}Last Backup Completion Time: $lastBackupDuration"
 	echo $MLINE
 	echo "${S}Backups use standard $BACKUP_APP settings, which lets you restore from any time"
 	echo "period stored in the full backup. After first full backup, the next ones will be"
