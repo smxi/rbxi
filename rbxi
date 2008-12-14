@@ -1,8 +1,8 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi
-####  Version: 1.9.2
-####  Date: 13 December 2008
+####  Version: 1.9.3
+####  Date: 14 December 2008
 ####  Copyright (C) Harald Hope 2006-9
 ####
 ####  This program is free software; you can redistribute it and/or modify it under
@@ -124,8 +124,10 @@ ENDING_2='...'
 DELETION_TEXT=''
 
 # these are for options, used in case of cron or option run backups/deletes
+B_DELETED='false'
 B_TESTING_1=''
 B_TESTING_2=''
+BACKUP_DURATION=''
 DO_BACKUP=''
 DELETE_BACKUP=''
 SPINNING_WHEEL=''
@@ -185,6 +187,10 @@ error_handler()
 			;;
 		12)
 			error_message="the svn branch download url: $2\nappears to be empty currently. Make sure there is an actual svn branch version\nactive before you try this again. Check http://code.google.com/p/inxi\nto verify the branch status."
+			;;
+		100)
+			error_message="$SCRIPT_NAME does not yet support the backup app you requested: $2\nThis support should be coming sometime soon.\nCurrently supported backup applications are: rdiff-backup."
+			unmount_backup_disk
 			;;
 		*)	error_message="Unknown error number: $1"
 			;;
@@ -278,23 +284,41 @@ get_options()
 print_version_info()
 {
 	local last_modified=$( grep -im 1 'date:' $SCRIPT_PATH/$SCRIPT_NAME | gawk '{print $3,$4,$5}' )
+
+	echo "$SCRIPT_NAME - the universal, portable, system backup script."
+	echo "Version: $SCRIPT_VERSION_NUMBER"
+	echo "Script Last Modified: $last_modified"
+	echo "Script Location: $SCRIPT_PATH${N}"
+	print_history_data
+}
+
+print_history_data()
+{
 	local lastBackupDirectory='Unset'
 	local lastBackupDate='Unset'
 	local lastBackupDuration='Unset'
+	local rdbuHistory1='Unset'
+	local rdbuHistory2='Unset'
+	local rsyncHistory1='Unset'
 
 	if [ -f $SCRIPT_CONFIGS ];then
 		lastBackupDirectory=$( grep 'last-backup-directory=' $SCRIPT_CONFIGS | cut -d '=' -f 2 )
 		lastBackupDate=$( grep 'last-backup-date=' $SCRIPT_CONFIGS | cut -d '=' -f 2 )
 		lastBackupDuration=$( grep 'last-backup-duration=' $SCRIPT_CONFIGS | cut -d '=' -f 2 )
+		rdbuHistory1=$( grep 'rdbu-backup-history-1=' $SCRIPT_CONFIGS | cut -d '=' -f 2 )
+		rdbuHistory2=$( grep 'rdbu-backup-history-2=' $SCRIPT_CONFIGS | cut -d '=' -f 2 )
+		rsyncHistory1=$( grep 'rsync-backup-history-1=' $SCRIPT_CONFIGS | cut -d '=' -f 2 )
 	fi
-	echo "$SCRIPT_NAME - the universal, portable, system backup script."
-	echo "Version: $SCRIPT_VERSION_NUMBER"
-	echo "Script Last Modified: $last_modified"
-	echo "Script Location: $SCRIPT_PATH"
-	echo "${S}Last Backup Date: $lastBackupDate"
-	echo "${S}Last Backup Directory: $lastBackupDirectory"
-	echo "${S}Last Backup Completion Time: $lastBackupDuration"
-	echo ${N}
+	echo "${S}Last Backup Date: $lastBackupDate${N}"
+	echo "${S}Last Backup Directory: $lastBackupDirectory${N}"
+	echo "${S}Last Backup Completion Time: $lastBackupDuration${N}"
+
+	if [ "$BACKUP_APP" == 'rdiff-backup' ];then
+		echo "${S}Rdiff-backup BU 1 history: $rdbuHistory1${N}"
+		echo "${S}Rdiff-backup BU 2 history: $rdbuHistory2${N}"
+	elif [ "$BACKUP_APP" == 'rsync' ];then
+		echo "${S}Rsync backup 1 history: $rsyncHistory1${N}"
+	fi
 }
 
 # args: $1 - download url, not including file name; $2 - string to print out
@@ -402,6 +426,15 @@ create_etc_configs()
 		echo 'last-backup-date=Unset' >> $SCRIPT_CONFIGS
 		echo 'last-backup-duration=Unset' >> $SCRIPT_CONFIGS
 	fi
+	if [ -z "$( grep 'rdbu-backup-history-1' $SCRIPT_CONFIGS )" ];then
+		echo 'rdbu-history-1=Unset' >> $SCRIPT_CONFIGS
+	fi
+	if [ -z "$( grep 'rdbu-backup-history-2' $SCRIPT_CONFIGS )" ];then
+		echo 'rdbu-history-2=Unset' >> $SCRIPT_CONFIGS
+	fi
+	if [ -z "$( grep 'rsync-backup-history-1' $SCRIPT_CONFIGS )" ];then
+		echo 'rsync-backup-history-1=Unset' >> $SCRIPT_CONFIGS
+	fi
 }
 
 create_symbolic_link()
@@ -428,14 +461,9 @@ create_symbolic_link()
 set_run_backup()
 {
 	local opt='' options='' doTheBackup='' removeBackup='' repeat=''
-	local lastBackupDirectory=$( grep 'last-backup-directory=' $SCRIPT_CONFIGS | cut -d '=' -f 2 )
-	local lastBackupDate=$( grep 'last-backup-date=' $SCRIPT_CONFIGS | cut -d '=' -f 2 )
-	local lastBackupDuration=$( grep 'last-backup-duration=' $SCRIPT_CONFIGS | cut -d '=' -f 2 )
 
 	echo $MLINE
-	echo "${S}Last Backup Date: $lastBackupDate"
-	echo "${S}Last Backup Directory: $lastBackupDirectory"
-	echo "${S}Last Backup Completion Time: $lastBackupDuration"
+	print_history_data
 	echo $MLINE
 	echo "${S}Backups use standard $BACKUP_APP settings, which lets you restore from any time"
 	echo "period stored in the full backup. After first full backup, the next ones will be"
@@ -599,6 +627,8 @@ delete_old_backup()
 	DELETION_TEXT=' deletion and'
 	echo
 	echo "Starting backup now${N}"
+
+	B_DELETED='true'
 }
 
 run_backups()
@@ -679,11 +709,26 @@ finish_backup()
 update_configs()
 {
 	local backupDate=$( date +"%e %B %Y - %R" )
+	local backupString="Location: $BACKUP_LOCATION$BU_NU :: Date: $backupDate :: Completion time: $BACKUP_DURATION :: Deletion Used: $B_DELETED"
 
 	echo $LINE
 	echo "${S}Updating backup records now...${N}"
 	sed -ir "s%last-backup-directory=.*%last-backup-directory=$BACKUP_LOCATION$BU_NU%" $SCRIPT_CONFIGS
 	sed -ir "s/last-backup-date=.*/last-backup-date=$backupDate/" $SCRIPT_CONFIGS
+	sed -ir "s/last-backup-duration=.*/last-backup-duration=$BACKUP_DURATION/" $SCRIPT_CONFIGS
+
+	if [ "$BACKUP_APP" == 'rdiff-backup' ];then
+		case "$BU_NU" in
+			1)
+				sed -ir "s%rdbu-backup-history-1=.*%rdbu-backup-history-1=$backupString%" $SCRIPT_CONFIGS
+				;;
+			2)
+				sed -ir "s%rdbu-backup-history-2=.*%rdbu-backup-history-2=$backupString%" $SCRIPT_CONFIGS
+				;;
+		esac
+	elif [ "$BACKUP_APP" == 'rsync' ];then
+		sed -ir "s%rsync-backup-history-1=.*%rsync-backup-history-1=$backupString%" $SCRIPT_CONFIGS
+	fi
 }
 
 # do some arithmetic on time
@@ -727,7 +772,7 @@ print_the_end_time()
 	# zero pad the data
 	minutes=$( printf %02d $minutes )
 	seconds=$( printf %02d $seconds )
-	sed -ir "s/last-backup-duration=.*/last-backup-duration=$hours:$minutes:$seconds/" $SCRIPT_CONFIGS
+	BACKUP_DURATION=$hours:$minutes:$seconds
 }
 
 unmount_backup_disk()
@@ -773,10 +818,14 @@ set_which_backup
 if [ "$DELETE_BACKUP" == 'true' ];then
 	delete_old_backup
 fi
-if [ "$DO_BACKUP" == 'true' -o "$DELETE_BACKUP" == 'true' ];then
-	run_backups
-else
-	set_run_backup
+if [ "$BACKUP_APP" == 'rdiff-backup' ];then
+	if [ "$DO_BACKUP" == 'true' -o "$DELETE_BACKUP" == 'true' ];then
+		run_backups
+	else
+		set_run_backup
+	fi
+elif [ "$BACKUP_APP" == 'rsync' ];then
+	error_handler 100 $BACKUP_APP
 fi
 
 ## extra information:
