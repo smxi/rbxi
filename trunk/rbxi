@@ -318,13 +318,11 @@ print_history_data()
 	echo "${S}Last Backup Date: $lastBackupDate${N}"
 	echo "${S}Last Backup Directory: $lastBackupDirectory${N}"
 	echo "${S}Last Backup Completion Time: $lastBackupDuration${N}"
-	echo
-	echo "${S}BACKUP HISTORY:${N}"
 	if [ "$BACKUP_APP" == 'rdiff-backup' ];then
-		echo -e "${S}Rdiff-backup BU 1: $rdbuHistory1${N}"
-		echo -e "${S}Rdiff-backup BU 2: $rdbuHistory2${N}"
+		echo -e "${S}Rdiff-backup history - BU 1: $rdbuHistory1${N}"
+		echo -e "${S}Rdiff-backup history -  BU 2: $rdbuHistory2${N}"
 	elif [ "$BACKUP_APP" == 'rsync' ];then
-		echo -e "${S}Rsync backup 1: $rsyncHistory1${N}"
+		echo -e "${S}Rsync backup history 1: $rsyncHistory1${N}"
 	fi
 }
 
