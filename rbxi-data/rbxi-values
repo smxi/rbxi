@@ -1,0 +1,80 @@
+#!/bin/bash
+
+########################################################################
+####  USER SPECIFIC VARIABLES - CHANGE AS REQUIRED - must be in rbxi-data/
+####--------------------------------------------------------------------
+
+# set to either rdiff-backup or rsync. Can be overridden with r/R option
+BACKUP_APP='rdiff-backup'
+
+#### BACKUP DIRECTORY PATHS AND INFORMATION -----------
+#    << CHANGE TO YOUR BACKUP LOCATION PATHS >>
+# Primary backup directory on parition or external drive
+# set to your backup partition path
+# REMEMBER, DO NOT BACKUP THE BACKUP DIRECTORY, BLOCK IT IN THE EXCLUDE FILE LIST
+# SAMPLE
+BACKUP_DIRECTORY='/media/backup'
+
+# Primary backup directories, minus the 1 or 2 that will be used to assign which backup
+# to run, based on month of the year in this case, change to suite your needs.
+# NOTE: the full directory name will be completed later, only put the non-numeric part,
+# like bu-, not bu-1
+# You do not need to create these primary backup directories, the script will do it.
+BACKUP_LOCATION=$BACKUP_DIRECTORY'/bu-'
+
+# specific main backup subdirectory names, eg: /media/usbdisk/bu-2/home and so on
+# NOTE: if either of these is left blank, the script will not back up that item.
+# You do not need to create the following subdirectories, rdiff-backup will create them
+# automatically using the names you give here
+BU_HOME='home'
+BU_ROOT='root-hda1'
+
+# these are optional backup subdirectories, if these are used the script will backup these
+# as well as / and /home autumatically
+# Blank '' means the script does not try to back that item up
+BU_DATA_1=''
+BU_DATA_2=''
+
+#### SYSTEM BACKUP PATH INFORMATION  ------------------
+#    << CHANGE TO YOUR SYSTEM PATHS FOR HOME AND / AND EXTRA BACKUP PATHS IF NEEDED >>
+
+# these are the actual directory paths you want to backup
+# Should not change these unless you are backing up an install from outside of it
+USER_HOME_PARENT='/home'
+SYSTEM_ROOT='/'
+
+# these two are optional extra backups, set to absolute path if you are using them
+# these correspond to BU_DATA_1 and BU_DATA_2, for example: /home/username/data
+USER_DATA_1=''
+USER_DATA_2=''
+
+#### SCRIPT OUTPUT STUFF ------------------------------
+#    << CHANGE TO YOUR PREFERRED OUTPUT TEXT FOR EXTRA DATA 1/2 BACKUPS >>
+# this is only used for backup output text, for user information
+USER_DATA_1_DESC='' # for example: USER_DATA_1_DESC=' web'
+USER_DATA_2_DESC='' # for example: USER_DATA_2_DESC=' email'
+
+# this is only for print output, it's not used in the actual backup
+# << CHANGE TO YOUR ROOT PARTITION FULL PATH >>
+ROOT_PARTITION='/dev/hda1'
+
+# this is how fast the spinning wheel moves. Anything less than 0.5 not
+# recommended due to performance problems on most machines.
+# Lower number means wheel moves faster. Slower machine, change to 1
+SLEEP_TIME='0.5'
+
+#### BACKUP DISK / PARITION mount / umount  ------------------
+#    << CHANGE TO FIT YOUR NEEDS >>
+
+# if you are not going to be mounting/unmounting your backup partition / disk,
+# then set value to blank:
+# MOUNT_BU_DISK=""
+# UNMOUNT_BU_DISK=""
+# Note: you can use anything here, </dev/sdd1>; -L <disk label>; -U <disk uuid>
+# replace <....> with your label,uuid, or /dev/...
+# Syntax for label: mount -L <disklabel> $BACKUP_DIRECTORY
+# Syntax for uuid: mount -U <uuid> $BACKUP_DIRECTORY
+# Syntax for standard: mount </dev/sdd2> $BACKUP_DIRECTORY
+# SAMPLE:
+MOUNT_BU_DISK="mount -L backup-disk-1 $BACKUP_DIRECTORY"
+UNMOUNT_BU_DISK="umount $BACKUP_DIRECTORY"
