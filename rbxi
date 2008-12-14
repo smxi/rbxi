@@ -1,7 +1,7 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi
-####  Version: 1.9.5
+####  Version: 1.9.6
 ####  Date: 14 December 2008
 ####  Copyright (C) Harald Hope 2006-9
 ####
@@ -310,19 +310,21 @@ print_history_data()
 		lastBackupDirectory=$( grep 'last-backup-directory=' $SCRIPT_CONFIGS | cut -d '=' -f 2 )
 		lastBackupDate=$( grep 'last-backup-date=' $SCRIPT_CONFIGS | cut -d '=' -f 2 )
 		lastBackupDuration=$( grep 'last-backup-duration=' $SCRIPT_CONFIGS | cut -d '=' -f 2 )
-		rdbuHistory1=$( grep 'rdbu-backup-history-1=' $SCRIPT_CONFIGS | cut -d '=' -f 2 )
-		rdbuHistory2=$( grep 'rdbu-backup-history-2=' $SCRIPT_CONFIGS | cut -d '=' -f 2 )
-		rsyncHistory1=$( grep 'rsync-backup-history-1=' $SCRIPT_CONFIGS | cut -d '=' -f 2 )
+		# add line breaks because output is too long for single line
+		rdbuHistory1="$( grep 'rdbu-backup-history-1=' $SCRIPT_CONFIGS | cut -d '=' -f 2 | tr '~' '\n' )"
+		rdbuHistory2="$( grep 'rdbu-backup-history-2=' $SCRIPT_CONFIGS | cut -d '=' -f 2 | tr '~' '\n' )"
+		rsyncHistory1="$( grep 'rsync-backup-history-1=' $SCRIPT_CONFIGS | cut -d '=' -f 2 | tr '~' '\n' )"
 	fi
 	echo "${S}Last Backup Date: $lastBackupDate${N}"
 	echo "${S}Last Backup Directory: $lastBackupDirectory${N}"
 	echo "${S}Last Backup Completion Time: $lastBackupDuration${N}"
-
+	echo
+	echo "${S}BACKUP HISTORY:${N}"
 	if [ "$BACKUP_APP" == 'rdiff-backup' ];then
-		echo "${S}Rdiff-backup BU 1 history: $rdbuHistory1${N}"
-		echo "${S}Rdiff-backup BU 2 history: $rdbuHistory2${N}"
+		echo -e "${S}Rdiff-backup BU 1: $rdbuHistory1${N}"
+		echo -e "${S}Rdiff-backup BU 2: $rdbuHistory2${N}"
 	elif [ "$BACKUP_APP" == 'rsync' ];then
-		echo "${S}Rsync backup 1 history: $rsyncHistory1${N}"
+		echo -e "${S}Rsync backup 1: $rsyncHistory1${N}"
 	fi
 }
 
@@ -723,7 +725,7 @@ finish_backup()
 update_configs()
 {
 	local backupDate=$( date +"%e %B %Y - %R" )
-	local backupString="Location: $BACKUP_LOCATION$BU_NU :: Date: $backupDate :: Completion time: $BACKUP_DURATION :: Deletion Used: $B_DELETED"
+	local backupString="Location: $BACKUP_LOCATION$BU_NU :: Date: $backupDate~Completion time: $BACKUP_DURATION :: Deletion Used: $B_DELETED"
 
 	echo $LINE
 	echo "${S}Updating backup records now...${N}"
