@@ -716,6 +716,7 @@ run_backups()
 
 finish_backup()
 {
+	# set the DURATION global here as well prior to updating configs
 	print_the_end_time
 	update_configs
 	unmount_backup_disk
@@ -725,7 +726,7 @@ finish_backup()
 update_configs()
 {
 	local backupDate=$( date +"%e %B %Y - %R" )
-	local backupString="Location: $BACKUP_LOCATION$BU_NU :: Date: $backupDate~Completion time: $BACKUP_DURATION :: Deletion Used: $B_DELETED"
+	local backupString="Location: $BACKUP_LOCATION$BU_NU :: Date: $backupDate~\t\t\tCompletion time: $BACKUP_DURATION :: Deletion Used: $B_DELETED"
 
 	echo $LINE
 	echo "${S}Updating backup records now...${N}"
