@@ -394,9 +394,9 @@ function spinning_wheel_activity_indicator()
 check_startup_stuff()
 {
 	check_root
-	if [ ! -f $SCRIPT_CONFIGS ];then
-		create_etc_configs
-	fi
+
+	create_etc_configs
+
 	if [ ! -d $BACKUP_DIRECTORY ];then
 		error_handler 9 $BACKUP_DIRECTORY
 	fi
@@ -427,10 +427,10 @@ create_etc_configs()
 		echo 'last-backup-duration=Unset' >> $SCRIPT_CONFIGS
 	fi
 	if [ -z "$( grep 'rdbu-backup-history-1' $SCRIPT_CONFIGS )" ];then
-		echo 'rdbu-history-1=Unset' >> $SCRIPT_CONFIGS
+		echo 'rdbu-backup-history-1=Unset' >> $SCRIPT_CONFIGS
 	fi
 	if [ -z "$( grep 'rdbu-backup-history-2' $SCRIPT_CONFIGS )" ];then
-		echo 'rdbu-history-2=Unset' >> $SCRIPT_CONFIGS
+		echo 'rdbu-backup-history-2=Unset' >> $SCRIPT_CONFIGS
 	fi
 	if [ -z "$( grep 'rsync-backup-history-1' $SCRIPT_CONFIGS )" ];then
 		echo 'rsync-backup-history-1=Unset' >> $SCRIPT_CONFIGS
