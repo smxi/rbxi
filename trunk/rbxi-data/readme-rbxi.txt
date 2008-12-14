@@ -384,6 +384,22 @@ STATIC VARIABLES, SHOULD NOT REQUIRE CHANGES
 These variables should not be changed unless you have some particularly good
 reason to do that.
 .........................................................................
+SCRIPT_CONFIGS='/etc/rbxi.conf'
+SCRIPT_NAME='rbxi'
+SCRIPT_VALUES='rbxi-values'
+# http://forums.macosxhints.com/archive/index.php/t-73839.html
+SCRIPT_PATH=$( dirname $( lsof -p $$ | grep 'REG' | grep -oE "/.*$(basename $0)$" ) )
+SCRIPT_DATA_FILES="$SCRIPT_PATH/rbxi-data/"
+SCRIPT_VERSION_NUMBER=$( grep -im 1 'version:' $SCRIPT_PATH/$SCRIPT_NAME | awk '{print $3}' )
+SCRIPT_DOWNLOAD='http://rbxi.googlecode.com/svn/trunk/'
+SCRIPT_DOWNLOAD_BRANCH_1='http://rbxi.googlecode.com/svn/branches/one/'
+SCRIPT_DOWNLOAD_BRANCH_2='http://rbxi.googlecode.com/svn/branches/two/'
+SCRIPT_DOWNLOAD_DEV='http://techpatterns.com/downloads/scripts/'
+
+These should not require any modification, unless you have a problem with the
+default script SCRIPT_PATH value, if you do, that's a bug, get in touch with
+me here: http://techpatterns.com/forums/forum-33.html
+.........................................................................
 EXCLUDE_LIST='root-excludes.txt'
 Only change if you want the root-excludes.txt file to be located somewhere other
 than the directory where rbxi is located. If you change the location, make
@@ -398,6 +414,8 @@ BU_NU=1
 ENDING_1='...'
 ENDING_2='...'
 DELETION_TEXT=''
+B_TESTING_1=''
+B_TESTING_2=''
 DO_BACKUP=''
 DELETE_BACKUP=''
 SPINNING_WHEEL=''
