@@ -1,0 +1,8 @@
+/tmp/*
+/proc/*
+/sys/*
+/home/*
+/media/*/*
++ /var/cache/apt/archives/partial
+/var/cache/apt/archives/partial/*
+/var/cache/apt/archives/*
