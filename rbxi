@@ -1,7 +1,7 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi
-####  Version: 1.9.4
+####  Version: 1.9.5
 ####  Date: 14 December 2008
 ####  Copyright (C) Harald Hope 2006-9
 ####
@@ -200,6 +200,8 @@ error_handler()
 	esac
 	# then print it and exit
 	echo -e "${W}Error $1: $error_message${N}"
+	# set trap to null to avoid loops etc
+	trap - INT TERM EXIT
 	exit $1
 }
 
@@ -712,8 +714,8 @@ run_backups()
 
 finish_backup()
 {
-	update_configs
 	print_the_end_time
+	update_configs
 	unmount_backup_disk
 	print_complete_message
 }
