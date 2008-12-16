@@ -112,7 +112,7 @@ SCRIPT_VERSION_NUMBER=$( grep -im 1 'version:' $SCRIPT_PATH/$SCRIPT_NAME | awk '
 SCRIPT_DOWNLOAD='http://rbxi.googlecode.com/svn/trunk/'
 SCRIPT_DOWNLOAD_BRANCH_1='http://rbxi.googlecode.com/svn/branches/one/'
 SCRIPT_DOWNLOAD_BRANCH_2='http://rbxi.googlecode.com/svn/branches/two/'
-SCRIPT_DOWNLOAD_DEV='http://techpatterns.com/downloads/scripts/'
+SCRIPT_DOWNLOAD_DEV='http://smxi.org/tests/'
 
 #### EXCLUDE LIST FILE NAMES
 # NOTE: can be a blank file, but most be located in same directory as rbxi
