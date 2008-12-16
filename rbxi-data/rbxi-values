@@ -78,6 +78,7 @@ ROOT_PARTITION='/dev/hda1'
 # recommended due to performance problems on most machines.
 # Lower number means wheel moves faster. Slower machine, change to 1
 SLEEP_TIME_SPINNER='0.5'
+# time between backup operations
 SLEEP_TIME_BACKUP='2.5'
 
 #### BACKUP DISK / PARITION mount / umount  ------------------

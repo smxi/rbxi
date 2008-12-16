@@ -13,33 +13,42 @@ are reasonably comfortable with shell scripting. If you do change something and 
 break the script, I will not give any support to you, unless it's an interesting problem.
 
 #########################################################################
-### Script Download URL: http://techpatterns.com/bu
+### Script Bzip File Download URL: http://smxi.org/rb
 ### Script Home page: http://techpatterns.com/forums/about831.html
 -------------------------------------------------------------------------
 
 #########################################################################
-### bu.tar.bz2 PACKAGE CONTENTS
+### rbxi.tar.bz2 PACKAGE CONTENTS
 -------------------------------------------------------------------------
 This bzipped package should contain the following inside the directory called bu:
 
 1. rbxi
 This is the main program file. Make sure to use chmod +x rbxi to make it executable.
 
-2. rbxi-data/home-excludes.txt
-This is a blank file. Use it to add more excludes if required to your /home backup.
-
-3. rbxi-data/root-excludes.txt
-This has the standard root excludes. Do not delete any of these except for:
+2. rbxi-data/excludes-root.txt (for rdiff-backup)
+   rbxi-data/excludes-root-rsync.txt (for rsync)
+These have the standard root excludes. Do not delete any of these except for:
 /var/cache/apt/archives/*
 And only delete that if you want to backup your deb archives.
 
-4. rbxi-data/rbxi-values
+2. # for rdiff-backup
+	rbxi-data/excludes-home.txt
+   rbxi-data/excludes-data-1.txt
+   rbxi-data/excludes-data-2.txt
+   # and for rsync
+   rbxi-data/excludes-home-rsync.txt
+   rbxi-data/excludes-data-1-rsync.txt
+   rbxi-data/excludes-data-2-rsync.txt
+
+These are blank files. Use them to add more excludes if required to your backup.
+
+3. rbxi-data/rbxi-values
 This file contains all your user variables, use this to create your values
 for your backup. This replaces the old 1.x method of having these values on
 the actual rbxi file, so you can now easily upgrade rbxi without having to
 update or change anything.
 
-5. rbxi-data/readme-rbxi.txt
+4. rbxi-data/readme-rbxi.txt
 This readme file.
 
 #########################################################################
@@ -56,10 +65,9 @@ The script can be started with 3 different options:
 -b	Runs the backup without any interactive questions. Automatically, that is.
 	-b will simply create a backup based on the current month, assign it to the
    correct primary backup directory, then execute the backup.
--d	First deletes the old backups for the currently assigned primary backup
-	directory, then runs the backup non-interactively as with -b.
-	Caution: all your previous backups from that primary backup directory will
-	be eliminated if you use this. Permanently.
+-d	First deletes the old backups, then runs the backup non-interactively as with -b.
+	Caution: all your previous backups from that backup directory will be eliminated
+	if you use this. Permanently.
 
 -b and -d are also well suited for running the backup with a cron job, automatically, that is.
 
@@ -71,8 +79,7 @@ if the script uses mount/unmount option, that contains a test as well for failed
    for the link and create it if it's missing.
 -m Skip the mounting option. If present, the script will not use your preset mount/umount
 	values, and will not try to mount anything. Only use if you have a good reason to do so.
--r Override default backup application: use rsync
--R Override default backup application: use rdiff-backup
+-o [rb|rs] Override default backup application: use rsync/rdiff-backup
 -s	Runs the backup using spinning wheel progress indicators.
 	Warning: in order to do this, the script puts the actual backup jobs
 	in the background, so you can't kill them the normal way, with ctrl+c
@@ -102,7 +109,7 @@ for long term data storage, unfortunately.
 
 -------------------------------------------------------------------------
 SCRIPT USEAGE:
-Script must be run as root, the contents of bu.tar.bz2 should all have been unzipped
+Script must be run as root, the contents of rbxi.tar.bz2 should all have been unzipped
 into the same directory. It doesn't matter where you put those files though, as long
 as you keep them together.
 
@@ -112,19 +119,7 @@ present, script exits with an error telling you this.
 
 For normal useage, when you run the script, it will check root/backup partition, then ask
 you if you want to run the standard backup, which either creates a new, or adds to an existing,
-rdiff-backup primary backup directory.
-
-The script by default works off of two primary backup directories in your backup
-drive/partition. It determines which to use based on the current month of the year.
-
-Defaults in this assignment are:
-	months 1-3: bu-2
-	months 4-6: bu-1
-	months 7-9: bu-2
-	months 10-12: bu-1
-
-You can change this to suite your tastes if you want, but this should work well
-for most people.
+backup directory.
 
 If you select the delete and backup option, the script will ask you if you are sure
 you want to do that.
@@ -167,9 +162,12 @@ that is currently mounted in /media/hda2 to:
 However, this script is designed to allow smooth, complete backups from inside
 your operating system, so you should rarely need this change. It's much easier
 after all running the backup from in the OS than having to reboot into another one.
+
 -------------------------------------------------------------------------
 EXCLUDE LIST SYNTAX
 .........................................................................
+NOTE: for rsync, you need to use ** for recursive rules, not *
+
 The main syntax you need to understand for creating an exclude list is this:
 1. /some/directory - Excludes any file or directory called: directory in /some
   and also excludes any directory or file contained in that.
@@ -217,11 +215,15 @@ Please note: some of these have default values already, make sure that the defau
 match your backup needs if you leave them unchanged.
 
 =========================================================================
-BACKUP_APP='rdiff-backup
+BACKUP_APP='rdiff-backup'
 
 Set to either rdiff-backup or rsync. Can be overridden with r/R option
 =========================================================================
-BACKUP_PARTITION='/media/usbdisk'
+BACKUP_DIRECTORY='/media/usbdisk'
+
+If you are using rsync, and want a different backup directory, set this to different,
+otherwise make it the same as above.
+BACKUP_DIRECTORY_RS='/media/usbdisk'
 
 This is the mounted location of your backup disk or partition. The default assumes
 that it is a external drive with the label of 'usbdisk'. Change to your requirements.
@@ -235,6 +237,10 @@ Do not use the /dev/sda1 type names, use the mounted name, like /media/sda1
 
 =========================================================================
 BACKUP_LOCATION=$BACKUP_PARTITION'/bu-'
+
+If you are using rsync, set this path to the actual sub directory used in the main backup
+directory.
+BACKUP_LOCATION_RS='/backup-rs'
 
 This is the actual directory name of where the backup will go. The way this script works
 is that it will alternate by default between 2 backup directories within your backup
@@ -253,6 +259,25 @@ depending on  what month of the year it is. Those will be located in /media/usbd
 case, assuming the default primary partition name is not changed. If you changed the above value
 to BACKUP_LOCATION=$BACKUP_PARTITION'/my-backups-' the script would create either
 /media/usbdisk/my-backups-1 or /media/usbdisk/my-backups-2
+
+========================================================================
+RSYNC/RDIFF-BACKUP EXTRA ARGUMENTS
+
+For remote, via ssh, include the ssh option
+ie: RSYNC_EXTRA_OPTIONS=' --rsh=ssh '
+Only set if you want custom options for either rdiff-backup or rsync,
+otherwise make null: RSYNC_EXTRA_OPTIONS=''
+
+RSYNC_EXTRA_OPTIONS=' --dry-run -v '
+RDIFF_EXTRA_OPTIONS=''
+
+# see man rdiff-backup for proper syntax for time. This is set to remove older
+# than 60 days incremental backupsThe time  interval  is  an integer followed
+# by the character s, m, h, D, W, M, or Y, indicating seconds, minutes, hours, days,
+# weeks, months, or years respectively, or a number of these concatenated.
+# For example, 32m  means  32  minutes, and  3W2D10h7s  means 3 weeks, 2 days, 10 hours, and 7 seconds.
+RDIFF_REMOVE_TIME='60D'
+
 
 =========================================================================
 BACKUP DIRECTORY PATHS AND INFORMATION
@@ -358,7 +383,9 @@ ROOT_PARTITION='/dev/hda1'
 This just tells you which actual physical partition root is. Change to
 your own setup. This is not a path, it's just information for you.
 .........................................................................
-SLEEP_TIME='0.5'
+SLEEP_TIME_SPINNER='0.5'
+Time between backup operations
+SLEEP_TIME_BACKUP='2.5'
 
 If you started the script with the -s option, a small spinning wheel will
 run as each part of the operation is carried out. This lets you know
@@ -449,28 +476,9 @@ Do not change any of these, these are simply initializing variables.
 #########################################################################
 ### FUNCTIONS - PLEASE ONLY CHANGE IF YOU CAN DO SOME BASH SCRIPTING
 =========================================================================
-set_which_backup
-............................
-This function is the key assignment function. It determines which primary
-backup directory to use. The main name is assigned in USER VARIABLES, this
-simply adds 1 or 2 to it.
 
-You can change the frequency of when you switch from say bu-1 to bu-2. The default
-is every 3 months. You can also create more primary backups, like bu-1, bu-2, bu-3 or
-bu-4 if that fits your backup needs better. If you did that, for example, in month
-1-3 of the year, your backups would go to bu-1, in months 4-6, bu-2, and so on.
-
-This is useful if your data changes a lot, and you want to be able to restore from
-some previous point at some time.
-
-The simplest is to just have one directory used, bu-1 for example, and to always
-use that for your backups. The problem with this is that over time, the backup will
-get really big as you do more and more changes to your system, and then you have to either
-delete it all, or just accept the expansion.
-
-Most users will find that having 2 rotating directories works fine.
 =========================================================================
-run_backups
+run_backup_components
 ............................
 The only thing I could see any user wanting to change here would be adding
 more primary backups. That's fairly trivial, just create the user variables for data_3, data_4
@@ -478,12 +486,6 @@ etc, then add more if that exists items like you see there.
 
 There is no need to remove anything here by default, since if the primary backup directory
 name is blank, that backup won't run.
-
-The other thing you might want to change is adding exclude-globbing-filelists to either
-DATA_! or DATA_2 backups.
-
-To do that, simply create those files, add the variable names for them where the
-root and home file lists are listed, then add this to the rdiff-backup command:
 
 
 #########################################################################
