@@ -4,7 +4,7 @@
 ####  USER SPECIFIC VARIABLES - CHANGE AS REQUIRED - must be in rbxi-data/
 ####--------------------------------------------------------------------
 
-# set to either rdiff-backup or rsync. Can be overridden with r/R option
+# set to either rdiff-backup or rsync. Can be overridden with -o [rm/rs] option
 BACKUP_APP='rdiff-backup'
 
 #### BACKUP DIRECTORY PATHS AND INFORMATION -----------
@@ -12,6 +12,7 @@ BACKUP_APP='rdiff-backup'
 # Primary backup directory on parition or external drive
 # set to your backup partition path
 # REMEMBER, DO NOT BACKUP THE BACKUP DIRECTORY, BLOCK IT IN THE EXCLUDE FILE LIST
+# Do not end the destination directory  names below with a '/'
 # SAMPLE
 BACKUP_DIRECTORY='/media/esata'
 # set rsync data separately
@@ -26,7 +27,7 @@ BACKUP_LOCATION='/backup'
 BACKUP_LOCATION_RS='/backup-rs'
 
 # for remote, via ssh, include the ssh option
-# ie: RSYNC_EXTRA_OPTIONS=' --rsh=ssh '
+# ie: RSYNC_EXTRA_OPTIONS=' --rsh=ssh ' rsync -e 'ssh -p 30000'
 # only set if it's a remote machine, otherwise make null: RSYNC_EXTRA_OPTIONS=''
 RSYNC_EXTRA_OPTIONS=' --dry-run -v '
 RDIFF_EXTRA_OPTIONS=''
@@ -56,7 +57,9 @@ BU_DATA_2=''
 
 # these are the actual directory paths you want to backup
 # Should not change these unless you are backing up an install from outside of it
-USER_HOME_PARENT='/home'
+# Note: if you leave off the ending /, rsync will create a directory of the last name in
+# the path, which you probably don't want.
+USER_HOME_PARENT='/home/'
 SYSTEM_ROOT='/'
 
 # these two are optional extra backups, set to absolute path if you are using them
@@ -72,7 +75,7 @@ USER_DATA_2_DESC='' # for example: USER_DATA_2_DESC=' email'
 
 # this is only for print output, it's not used in the actual backup
 # << CHANGE TO YOUR ROOT PARTITION FULL PATH >>
-ROOT_PARTITION='/dev/hda1'
+ROOT_DESC='/dev/hda1'
 
 # this is how fast the spinning wheel moves. Anything less than 0.5 not
 # recommended due to performance problems on most machines.
@@ -94,5 +97,19 @@ SLEEP_TIME_BACKUP='2.5'
 # Syntax for uuid: mount -U <uuid> $BACKUP_DIRECTORY
 # Syntax for standard: mount </dev/sdd2> $BACKUP_DIRECTORY
 # SAMPLE:
+# rdiff-backup mounts
 MOUNT_BU_DISK="mount -L backup-disk-1 $BACKUP_DIRECTORY"
 UNMOUNT_BU_DISK="umount $BACKUP_DIRECTORY"
+
+# rsync mounts
+MOUNT_BU_DISK_RS="mount -L backup-disk-1 $BACKUP_DIRECTORY_RS"
+UNMOUNT_BU_DISK_RS="umount $BACKUP_DIRECTORY_RS"
+
+# these are for options, used in case of cron or option run backups/deletes
+# if you want to hard set any option just set the variable to true.
+B_DELETED='false' # -d :auto delete contents each backup
+B_DO_BACKUP='false' # -b :automatic backup
+B_SKIP_MOUNT='false' # -m :do not mount backup drive, or umount it
+B_SPINNING_WHEEL='false' # -s :use spinning wheel option
+B_TESTING_1='false' # -! 1 :testing flag 1
+B_TESTING_2='false' # -! 2 :testing flag 2
