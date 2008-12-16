@@ -501,7 +501,6 @@ create_symbolic_link()
 	if [ ! -L $ulbLink -a ! -f $ulbLink -a -z "$scriptInPath" ];then
 		check_root
 		echo "${S}Creating link now...${N}"
-		echo mainPath: $mainPath
 		ln -s $SCRIPT_PATH/$SCRIPT_NAME $ulbLink
 	else
 		echo "${S}$SCRIPT_NAME is already in your system path, or a link to it already exists.${N}"
