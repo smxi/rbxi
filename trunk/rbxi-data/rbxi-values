@@ -13,14 +13,30 @@ BACKUP_APP='rdiff-backup'
 # set to your backup partition path
 # REMEMBER, DO NOT BACKUP THE BACKUP DIRECTORY, BLOCK IT IN THE EXCLUDE FILE LIST
 # SAMPLE
-BACKUP_DIRECTORY='/media/backup'
+BACKUP_DIRECTORY='/media/esata'
+# set rsync data separately
+BACKUP_DIRECTORY_RS='/media/esata'
 
 # Primary backup directories, minus the 1 or 2 that will be used to assign which backup
 # to run, based on month of the year in this case, change to suite your needs.
 # NOTE: the full directory name will be completed later, only put the non-numeric part,
 # like bu-, not bu-1
 # You do not need to create these primary backup directories, the script will do it.
-BACKUP_LOCATION=$BACKUP_DIRECTORY'/bu-'
+BACKUP_LOCATION='/backup'
+BACKUP_LOCATION_RS='/backup-rs'
+
+# for remote, via ssh, include the ssh option
+# ie: RSYNC_EXTRA_OPTIONS=' --rsh=ssh '
+# only set if it's a remote machine, otherwise make null: RSYNC_EXTRA_OPTIONS=''
+RSYNC_EXTRA_OPTIONS=' --dry-run -v '
+RDIFF_EXTRA_OPTIONS=''
+
+# see man rdiff-backup for proper syntax for time. This is set to remove older
+# than 60 days incremental backupsThe time  interval  is  an integer followed
+# by the character s, m, h, D, W, M, or Y, indicating seconds, minutes, hours, days,
+# weeks, months, or years respectively, or a number of these concatenated.
+# For example, 32m  means  32  minutes, and  3W2D10h7s  means 3 weeks, 2 days, 10 hours, and 7 seconds.
+RDIFF_REMOVE_TIME='60D'
 
 # specific main backup subdirectory names, eg: /media/usbdisk/bu-2/home and so on
 # NOTE: if either of these is left blank, the script will not back up that item.
@@ -61,7 +77,8 @@ ROOT_PARTITION='/dev/hda1'
 # this is how fast the spinning wheel moves. Anything less than 0.5 not
 # recommended due to performance problems on most machines.
 # Lower number means wheel moves faster. Slower machine, change to 1
-SLEEP_TIME='0.5'
+SLEEP_TIME_SPINNER='0.5'
+SLEEP_TIME_BACKUP='2.5'
 
 #### BACKUP DISK / PARITION mount / umount  ------------------
 #    << CHANGE TO FIT YOUR NEEDS >>
