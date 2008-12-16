@@ -1,0 +1,17 @@
+### cache ###
+- **/.mozilla/**/Cache/
+
+### lockfiles ###
++ **/lock/
+- **/lock
+- **/*.lock
++ **/parentlock/
+- **/parentlock
+- **/*.parentlock
++ **/*.sock/
+- **/*.sock
++ **/socket/
+- **/socket
+
+### User Data ###
+
