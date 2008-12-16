@@ -1,8 +1,8 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi
-####  Version: 1.9.6
-####  Date: 14 December 2008
+####  Version: 1.10.0
+####  Date: 15 December 2008
 ####  Copyright (C) Harald Hope 2006-9
 ####
 ####  This program is free software; you can redistribute it and/or modify it under
@@ -16,10 +16,10 @@
 ####  Get the full text of the GPL here: http://www.gnu.org/licenses/gpl.txt
 ####
 ####  This is an rdiff-backup/rsync script which helps automate the backup process
-####  Requires companion excludes.txt files to run, those must be in the rbxi-data
+####  Requires companion excludes-....txt files to run, those must be in the rbxi-data
 ####  directory
 ####
-####  bu.tar.bz2 package download URL: http://techpatterns.com/rbxi [contains all needed files]
+####  rbxi.tar.bz2 package download URL: http://smxi.org/rb [contains all needed files]
 ####  Script Home page: http://techpatterns.com/forums/about831.html
 ########################################################################
 
@@ -64,7 +64,9 @@ WLINE=${W}$LI${N}
 
 BACKUP_APP=''
 BACKUP_DIRECTORY=''
+BACKUP_DIRECTORY_RS=''
 BACKUP_LOCATION=''
+BACKUP_LOCATION_RS=''
 BU_HOME=''
 BU_ROOT=''
 BU_DATA_1=''
@@ -76,7 +78,10 @@ USER_DATA_2=''
 USER_DATA_1_DESC=''
 USER_DATA_2_DESC=''
 ROOT_PARTITION=''
-SLEEP_TIME=''
+RDIFF_EXTRA_OPTIONS=''
+RSYNC_EXTRA_OPTIONS=''
+SLEEP_TIME_BACKUP=''
+SLEEP_TIME_SPINNER=''
 MOUNT_BU_DISK=""
 UNMOUNT_BU_DISK=""
 
@@ -104,8 +109,14 @@ SCRIPT_DOWNLOAD_DEV='http://techpatterns.com/downloads/scripts/'
 #### EXCLUDE LIST FILE NAMES
 # NOTE: can be a blank file, but most be located in same directory as rbxi
 # if you want them in a different directory, use absolute system paths.
-EXCLUDE_LIST='root-excludes.txt'
-EXCLUDE_HOME_LIST='home-excludes.txt'
+EXCLUDE_ROOT_LIST='excludes-root.txt'
+EXCLUDE_HOME_LIST='excludes-home.txt'
+EXCLUDE_LIST_DATA_1='excludes-data-1.txt'
+EXCLUDE_LIST_DATA_2='excludes-data-2.txt'
+EXCLUDE_ROOT_LIST_RS='excludes-root-rsync.txt'
+EXCLUDE_HOME_LIST_RS='excludes-home-rsync.txt'
+EXCLUDE_LIST_DATA_1_RS='excludes-data-1-rsync.txt'
+EXCLUDE_LIST_DATA_2_RS='excludes-data-2-rsync.txt'
 
 #### INITIALIZE VARIABLES TO BE SET ELSEWHERE
 USER_HOME_BACKUP_LOCATION=''
@@ -115,27 +126,32 @@ ROOT_BACKUP_LOCATION=''
 USER_DATA_1_BACKUP_LOCATION=''
 USER_DATA_2_BACKUP_LOCATION=''
 
-# set default value
-# default to 1 just because...
-BU_NU=1
+# backup command string holders
+HOME_BACKUP_COMMAND=''
+ROOT_BACKUP_COMMAND=''
+DATA_1_BACKUP_COMMAND=''
+DATA_2_BACKUP_COMMAND=''
 
+# set default value
+DELETE_CLEAR='false'
+DELETION_TEXT=''
 ENDING_1='...'
 ENDING_2='...'
-DELETION_TEXT=''
 
 # these are for options, used in case of cron or option run backups/deletes
+B_DELETE_BACKUP=''
+B_DELETE_OLDER='false'
 B_DELETED='false'
-B_TESTING_1=''
-B_TESTING_2=''
-BACKUP_DURATION=''
-DO_BACKUP=''
-DELETE_BACKUP=''
-SPINNING_WHEEL=''
-SKIP_MOUNT=''
+B_DO_BACKUP=''
+B_SKIP_MOUNT=''
+B_SPINNING_WHEEL=''
+B_TESTING_1='false'
+B_TESTING_2='false'
 
+BACKUP_DURATION=''
 # spinning wheel pid value
 GET_PID=''
-
+RSYNC_DELETE=''
 # for timer function
 START_TIME=$( date +%s )
 
@@ -188,7 +204,10 @@ error_handler()
 		12)
 			error_message="the svn branch download url: $2\nappears to be empty currently. Make sure there is an actual svn branch version\nactive before you try this again. Check http://code.google.com/p/inxi\nto verify the branch status."
 			;;
-		20)
+		13)
+			error_message="The option argument you gave is not supported: $2"
+			;;
+		50)
 			error_message="User initiated script exit. Shutting down now."
 			;;
 		100)
@@ -200,8 +219,10 @@ error_handler()
 	esac
 	# then print it and exit
 	echo -e "${W}Error $1: $error_message${N}"
-	# set trap to null to avoid loops etc
-	trap - INT TERM EXIT
+	# set trap to null to avoid loops for final exits
+	if [ "$1" -eq 50 ];then
+		trap - INT TERM EXIT
+	fi
 	exit $1
 }
 
@@ -214,8 +235,8 @@ print_usage()
 	echo '-d Automatic backup and delete, no questions.'
 	echo "-L Create symbolic link in /usr/local/bin to $SCRIPT_NAME"
 	echo '-m Skip the mounting option.'
-	echo '-r Override default backup application: use rsync'
-	echo '-R Override default backup application: use rdiff-backup'
+	echo '-o Override default backup application."
+	echo "   Requires argument: rs for rsync; rd for rdiff-backup'
 	echo '-s Show spinning wheel indicator.'
 	echo '-U Update script manually from svn server.'
 	echo '-v Show script version and last used information.'
@@ -230,25 +251,34 @@ get_options()
 {
 	local opt=''
 
-	while getopts :bdhLmrRsUv!: opt
+	while getopts :bdhLmo:sUv!: opt
 	do
 		case $opt in
 			h)	print_usage
 				;;
-			b)	DO_BACKUP='true'
+			b)	B_DO_BACKUP='true'
 				;;
-			d)	DELETE_BACKUP='true'
+			d)	B_DELETE_BACKUP='true'
 				;;
 			L) create_symbolic_link
 				exit 0
 				;;
-			m)	SKIP_MOUNT='true'
+			m)	B_SKIP_MOUNT='true'
 				;;
-			r)	BACKUP_APP='rsync'
+			o)	if [ -n "$( egrep '^(rd|rs)$' <<< $OPTARG )" ];then
+					case $OPTARG in
+						rd)
+							BACKUP_APP='rdiff-backup'
+							;;
+						rs)
+							BACKUP_APP='rsync'
+							;;
+					esac
+				else
+					error_handler 13 "-$opt $OPTARG"
+				fi
 				;;
-			R)	BACKUP_APP='rdiff-backup'
-				;;
-			s)	SPINNING_WHEEL='true'
+			s)	B_SPINNING_WHEEL='true'
 				ENDING_1=': '
 				ENDING_2=', watch the spinning wheel: '
 				;;
@@ -297,32 +327,40 @@ print_version_info()
 	print_history_data
 }
 
+# args: $1 - main/v
 print_history_data()
 {
 	local lastBackupDirectory='Unset'
 	local lastBackupDate='Unset'
 	local lastBackupDuration='Unset'
-	local rdbuHistory1='Unset'
-	local rdbuHistory2='Unset'
-	local rsyncHistory1='Unset'
+	local lastBackupApp='Unset'
+	local rdbuHistory='Unset'
+	local rsyncHistory='Unset'
 
 	if [ -f $SCRIPT_CONFIGS ];then
 		lastBackupDirectory=$( grep 'last-backup-directory=' $SCRIPT_CONFIGS | cut -d '=' -f 2 )
 		lastBackupDate=$( grep 'last-backup-date=' $SCRIPT_CONFIGS | cut -d '=' -f 2 )
 		lastBackupDuration=$( grep 'last-backup-duration=' $SCRIPT_CONFIGS | cut -d '=' -f 2 )
+		lastBackupApp=$( grep 'last-backup-app=' $SCRIPT_CONFIGS | cut -d '=' -f 2 )
 		# add line breaks because output is too long for single line
-		rdbuHistory1="$( grep 'rdbu-backup-history-1=' $SCRIPT_CONFIGS | cut -d '=' -f 2 | tr '~' '\n' )"
-		rdbuHistory2="$( grep 'rdbu-backup-history-2=' $SCRIPT_CONFIGS | cut -d '=' -f 2 | tr '~' '\n' )"
-		rsyncHistory1="$( grep 'rsync-backup-history-1=' $SCRIPT_CONFIGS | cut -d '=' -f 2 | tr '~' '\n' )"
+		rdbuHistory="$( grep 'rdbu-backup-history=' $SCRIPT_CONFIGS | cut -d '=' -f 2 | tr '~' '\n' )"
+		rsyncHistory="$( grep 'rsync-backup-history=' $SCRIPT_CONFIGS | cut -d '=' -f 2 | tr '~' '\n' )"
 	fi
 	echo "${S}Last Backup Date: $lastBackupDate${N}"
 	echo "${S}Last Backup Directory: $lastBackupDirectory${N}"
-	echo "${S}Last Backup Completion Time: $lastBackupDuration${N}"
-	if [ "$BACKUP_APP" == 'rdiff-backup' ];then
-		echo -e "${S}Rdiff-backup history - BU 1: $rdbuHistory1${N}"
-		echo -e "${S}Rdiff-backup history - BU 2: $rdbuHistory2${N}"
-	elif [ "$BACKUP_APP" == 'rsync' ];then
-		echo -e "${S}Rsync backup history 1: $rsyncHistory1${N}"
+	echo "${S}Last Backup Program: $lastBackupApp${N}"
+	if [ "$1" == 'main' ];then
+		case "$BACKUP_APP" in
+			rdiff-backup)
+				echo -e "${S}Rdiff-backup history: $rdbuHistory${N}"
+				;;
+			rsync)
+				echo -e "${S}Rsync backup history: $rsyncHistory${N}"
+				;;
+		esac
+	else
+		echo -e "${S}Rdiff-backup history: $rdbuHistory${N}"
+		echo -e "${S}Rsync backup history: $rsyncHistory${N}"
 	fi
 }
 
@@ -360,7 +398,7 @@ script_self_updater()
 }
 
 # creates the spinning wheel if script starts with -s option, and shows completion
-function spinning_wheel_activity_indicator()
+spinning_wheel_activity_indicator()
 {
 	local completionText=''
 
@@ -375,16 +413,16 @@ function spinning_wheel_activity_indicator()
 	# while kill -0 $GET_PID
 	while [ -e /proc/$GET_PID ]
 	do
-		sleep $SLEEP_TIME
+		sleep $SLEEP_TIME_SPINNER
 		echo -n '|'
 		echo -ne "\b"
-		sleep $SLEEP_TIME
+		sleep $SLEEP_TIME_SPINNER
 		echo -n '/'
 		echo -ne "\b"
-		sleep $SLEEP_TIME
+		sleep $SLEEP_TIME_SPINNER
 		echo -n '-'
 		echo -ne "\b"
-		sleep $SLEEP_TIME
+		sleep $SLEEP_TIME_SPINNER
 		echo -n "\\"
 		echo -ne "\b"
 	done
@@ -398,7 +436,9 @@ trap_handler()
  	case "$1" in
  		umount)
  			unmount_backup_disk
- 			error_handler 20
+ 			echo "${S}Waiting a few seconds to let disk umount...${N}"
+ 			sleep 3 # give the disk time to demount...
+ 			error_handler 50
  			;;
  	esac
 }
@@ -410,7 +450,6 @@ trap_handler()
 check_startup_stuff()
 {
 	check_root
-
 	create_etc_configs
 
 	if [ ! -d $BACKUP_DIRECTORY ];then
@@ -442,23 +481,21 @@ create_etc_configs()
 		echo 'last-backup-date=Unset' >> $SCRIPT_CONFIGS
 		echo 'last-backup-duration=Unset' >> $SCRIPT_CONFIGS
 	fi
-	if [ -z "$( grep 'rdbu-backup-history-1' $SCRIPT_CONFIGS )" ];then
-		echo 'rdbu-backup-history-1=Unset' >> $SCRIPT_CONFIGS
+	if [ -z "$( grep 'rdbu-backup-history=' $SCRIPT_CONFIGS )" ];then
+		echo 'rdbu-backup-history=Unset' >> $SCRIPT_CONFIGS
 	fi
-	if [ -z "$( grep 'rdbu-backup-history-2' $SCRIPT_CONFIGS )" ];then
-		echo 'rdbu-backup-history-2=Unset' >> $SCRIPT_CONFIGS
+	if [ -z "$( grep 'rsync-backup-history=' $SCRIPT_CONFIGS )" ];then
+		echo 'rsync-backup-history=Unset' >> $SCRIPT_CONFIGS
 	fi
-	if [ -z "$( grep 'rsync-backup-history-1' $SCRIPT_CONFIGS )" ];then
-		echo 'rsync-backup-history-1=Unset' >> $SCRIPT_CONFIGS
+	if [ -z "$( grep 'last-backup-app=' $SCRIPT_CONFIGS )" ];then
+		echo 'last-backup-app=Unset' >> $SCRIPT_CONFIGS
 	fi
 }
 
 create_symbolic_link()
 {
-	cd /usr/local/bin
 	local ulbLink="/usr/local/bin/$SCRIPT_NAME"
 	local scriptInPath=$( which $SCRIPT_NAME | grep -v "./$SCRIPT_NAME" )
-
 
 	if [ ! -L $ulbLink -a ! -f $ulbLink -a -z "$scriptInPath" ];then
 		check_root
@@ -474,26 +511,130 @@ create_symbolic_link()
 #### primary backup tools
 #### -------------------------------------------------------------------
 
-set_run_backup()
+# load proper values for locations and command strings
+set_primary_backup_data()
+{
+	case "$BACKUP_APP" in
+		rsync)
+			# update global file names
+			BACKUP_LOCATION=$BACKUP_DIRECTORY_RS$BACKUP_LOCATION_RS
+			EXCLUDE_ROOT_LIST=$EXCLUDE_ROOT_LIST_RS
+			EXCLUDE_HOME_LIST=$EXCLUDE_HOME_LIST_RS
+			EXCLUDE_LIST_DATA_1=$EXCLUDE_LIST_DATA_1_RS
+			EXCLUDE_LIST_DATA_2=$EXCLUDE_LIST_DATA_2_RS
+			;;
+		rdiff-backup)
+			BACKUP_LOCATION=$BACKUP_DIRECTORY$BACKUP_LOCATION
+			;;
+	esac
+}
+
+# create backup directory then set backup directory names
+set_backup_directory_data()
+{
+	local month=$( date +%m )
+
+	echo $LINE
+	echo "${S}Working backup location: ${C}$BACKUP_LOCATION${N}"
+
+	# make sure it exists
+	if [ ! -d "$BACKUP_LOCATION" ];then
+		mkdir $BACKUP_LOCATION
+	fi
+
+	# assemble the backup paths
+	if [ "$BU_HOME" != '' ];then
+		USER_HOME_BACKUP_LOCATION=$BACKUP_LOCATION/$BU_HOME
+	fi
+	if [ "$BU_ROOT" != '' ];then
+		ROOT_BACKUP_LOCATION=$BACKUP_LOCATION/$BU_ROOT
+	fi
+	if [ "$BU_DATA_1" != '' ];then
+		USER_DATA_1_BACKUP_LOCATION=$BACKUP_LOCATION/$BU_DATA_1
+	fi
+	if [ "$BU_DATA_2" != '' ];then
+		USER_DATA_2_BACKUP_LOCATION=$BACKUP_LOCATION/$BU_DATA_2
+	fi
+}
+
+set_backup_commands()
+{
+	case "$BACKUP_APP" in
+		rsync)
+			# set commands
+			HOME_BACKUP_COMMAND="rsync -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_HOME_LIST $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $USER_HOME_PARENT $USER_HOME_BACKUP_LOCATION"
+			ROOT_BACKUP_COMMAND="rsync -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_ROOT_LIST $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $SYSTEM_ROOT $ROOT_BACKUP_LOCATION"
+			DATA_1_BACKUP_COMMAND="rsync -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_LIST_DATA_1 $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $USER_DATA_1 $USER_DATA_1_BACKUP_LOCATION"
+			DATA_2_BACKUP_COMMAND="rsync -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_LIST_DATA_2 $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $USER_DATA_2 $USER_DATA_2_BACKUP_LOCATION"
+			# set text
+			DELETE_CLEAR='Backing up'
+			;;
+		rdiff-backup)
+			# set commands
+			# http://www.mail-archive.com/rdiff-backup-users@nongnu.org/msg01212.html
+			# --exclude-sockets to get rid of that dumb socket error
+			if [ "$B_DELETE_OLDER" != 'true' ];then
+				# set commands
+				HOME_BACKUP_COMMAND="rdiff-backup --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_HOME_LIST $USER_HOME_PARENT $USER_HOME_BACKUP_LOCATION"
+				ROOT_BACKUP_COMMAND="rdiff-backup --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_ROOT_LIST $SYSTEM_ROOT $ROOT_BACKUP_LOCATION"
+				DATA_1_BACKUP_COMMAND="rdiff-backup --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_LIST_DATA_1 $USER_DATA_1 $USER_DATA_1_BACKUP_LOCATION"
+				DATA_2_BACKUP_COMMAND="rdiff-backup --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_LIST_DATA_2 $USER_DATA_2 $USER_DATA_2_BACKUP_LOCATION"
+				# set text
+				DELETE_CLEAR='Backing up'
+			else
+				# set commands
+				HOME_BACKUP_COMMAND="rdiff-backup --remove-older-than $RDIFF_REMOVE_TIME $USER_HOME_BACKUP_LOCATION"
+				ROOT_BACKUP_COMMAND="rdiff-backup --remove-older-than $RDIFF_REMOVE_TIME $ROOT_BACKUP_LOCATION"
+				DATA_1_BACKUP_COMMAND="rdiff-backup --remove-older-than $RDIFF_REMOVE_TIME $USER_DATA_1_BACKUP_LOCATION"
+				DATA_2_BACKUP_COMMAND="rdiff-backup --remove-older-than $RDIFF_REMOVE_TIME $USER_DATA_2_BACKUP_LOCATION"
+				# set text
+				DELETE_CLEAR="Removing all increments older than $RDIFF_REMOVE_TIME from"
+			fi
+			;;
+	esac
+}
+
+run_backup_question()
 {
 	local opt='' options='' doTheBackup='' removeBackup='' repeat=''
+	local removeDeleteOpt=''
 
 	echo $MLINE
-	print_history_data
+	print_history_data 'main'
 	echo $MLINE
-	echo "${S}Backups use standard $BACKUP_APP settings, which lets you restore from any time"
-	echo "period stored in the full backup. After first full backup, the next ones will be"
-	echo "incremental backups, which run much faster since they only backup changed files."
+	case "$BACKUP_APP" in
+		rdiff-backup)
+			echo "${S}Backups use standard $BACKUP_APP settings, which lets you restore from any time"
+			echo "period stored in the full backup. After first full backup, the next ones will be"
+			echo "incremental backups, which run much faster since they only backup changed files."
+			;;
+		rsync)
+			echo "${S}This will backup your system to the backup directories you have already set up"
+			echo "for your $BACKUP_APP backup."
+			;;
+	esac
 	echo $LINE
 	echo "${S}Please select one of the following numbers to assign the correct backup option."
 	echo "1 - backs up as usual with $BACKUP_APP. Does not remove old backups."
-	echo "2 - backs up but first deletes old backups. This is final, so once you agree to"
+	case "$BACKUP_APP" in
+		rdiff-backup)
+			echo "2 - remove-older - Removes all backup increments older than your time setting: $RDIFF_REMOVE_TIME"
+			echo "    After the cleanup, runs a new standard backup."
+			removeDeleteOpt='remove-older'
+			;;
+		rsync)
+			echo "2 - delete-obsolete - Removes all backed up up files that have been deleted from"
+			echo "    your current install."
+			removeDeleteOpt='delete-obsolete'
+			;;
+	esac
+	echo "3 - backs up but first deletes old backups. This is final, so once you agree to"
 	echo "    remove, no restore of older material will be possible. This will delete the"
 	echo "    backup that corresponds to the currently active primary backup directory."
 	echo
-	echo "3 - Quit, don't do the backup after all."
+	echo "4 - Quit, don't do the backup after all."
 	echo $LINE
-	options='backup-normal backup-and-remove-old quit'
+	options="backup-normal $removeDeleteOpt backup-and-remove-old quit"
 	select opt in $options
 	do
 		case $opt in
@@ -502,6 +643,17 @@ set_run_backup()
 				;;
 			backup-and-remove-old)
 				removeBackup='true'
+				doTheBackup='true'
+				;;
+			remove-older)
+				# first get rid of all older files and increments
+				B_DELETE_OLDER='true'
+				run_backup_components
+				B_DELETE_OLDER='false'
+				doTheBackup='true'
+				;;
+			delete-obsolete)
+				RSYNC_DELETE=' --delete --delete-excluded '
 				doTheBackup='true'
 				;;
 			quit)
@@ -518,58 +670,13 @@ set_run_backup()
 	done
 
 	if [ "$repeat" == 'true' ];then
-		set_run_backup
+		run_backup_question
 	fi
 	if [ "$removeBackup" == 'true' ];then
 		remove_backups
 	fi
 	if [ "$doTheBackup" == 'true' ];then
-		run_backups
-	fi
-}
-
-# here we assign automatically which of the two backup directories to use
-# note, doesn't matter which you do, could be one every 6 months, whatever
-# the main trick is that you will know which directory to look in for which
-# time period
-set_which_backup()
-{
-	local month=$( date +%m )
-
-	# please note, change to taste, could be swapped monthly, every 6 months, how you prefer.
-	# however, this way, if you opt to delete your old data very 6 months, that is a very
-	# solid backup policy. Obviously, this could use more directory names, 1,2,3,4, if you
-	# wanted even more range of backups, for example, a 2 year cycle or whatever.
-	if [ $month -le 3 ];then
-		BU_NU=2
-	elif [ $month -le 6 ];then
-		BU_NU=1
-	elif [ $month -le 9 ];then
-		BU_NU=2
-	elif [ $month -le 12 ];then
-		BU_NU=1
-	fi
-
-	echo $LINE
-	echo "${S}Your backup for month ${C}$month${S} will go to this backup location: "${C}$BACKUP_LOCATION$BU_NU${N}
-
-	# make sure it exists
-	if [ ! -d "$BACKUP_LOCATION$BU_NU" ];then
-		mkdir $BACKUP_LOCATION$BU_NU
-	fi
-
-	# NOTE: $BU_NU will have the value 1 or 2 in this case
-	if [ "$BU_HOME" != '' ];then
-		USER_HOME_BACKUP_LOCATION=$BACKUP_LOCATION$BU_NU/$BU_HOME
-	fi
-	if [ "$BU_ROOT" != '' ];then
-		ROOT_BACKUP_LOCATION=$BACKUP_LOCATION$BU_NU/$BU_ROOT
-	fi
-	if [ "$BU_DATA_1" != '' ];then
-		USER_DATA_1_BACKUP_LOCATION=$BACKUP_LOCATION$BU_NU/$BU_DATA_1
-	fi
-	if [ "$BU_DATA_2" != '' ];then
-		USER_DATA_2_BACKUP_LOCATION=$BACKUP_LOCATION$BU_NU/$BU_DATA_2
+		run_backup_components
 	fi
 }
 
@@ -617,7 +724,7 @@ remove_backups()
 
 delete_old_backup()
 {
-	local removedDirectories=$( ls $BACKUP_LOCATION$BU_NU )  directory=''
+	local removedDirectories=$( ls $BACKUP_LOCATION )  directory=''
 	GET_PID=''
 
 	echo $LINE
@@ -626,16 +733,16 @@ delete_old_backup()
 	do
 		echo -n "${C}$directory${S} "
 	done
-	echo -n "in ${C}$BACKUP_LOCATION$BU_NU${N}"
+	echo -n "in ${C}$BACKUP_LOCATION${N}"
 	echo
 	echo -n "${S}This could take a while, be patient$ENDING_2${N}"
-	if [ "$SPINNING_WHEEL" == 'true' ];then
-		rm -fr $BACKUP_LOCATION$BU_NU/* &
+	if [ "$B_SPINNING_WHEEL" == 'true' ];then
+		rm -fr $BACKUP_LOCATION/* &
 		GET_PID="$!"
 		spinning_wheel_activity_indicator delete
 		wait
 	else
-		rm -fr $BACKUP_LOCATION$BU_NU/*
+		rm -fr $BACKUP_LOCATION/*
 		echo "${S}Backup directories removed."
 	fi
 	DELETION_TEXT=' deletion and'
@@ -645,71 +752,86 @@ delete_old_backup()
 	B_DELETED='true'
 }
 
-run_backups()
+run_backup_components()
 {
+	# set rdiff-backup/rsync commands. Must be here because delete data might be
+	# set for rsync
+	set_backup_commands
+
 	# If you don't need excludes in /home, then just delete the exclude stuff, --exclude...
 	echo $LINE
+
+	if [ "$BACKUP_APP" == 'rsync' -a "$B_TESTING_1" != 'true' ];then
+		error_handler 100 $BACKUP_APP
+	fi
 
 	#backup home directory
 	# backup optional user data 1
 	if [ "$BU_HOME" != '' ];then
-		echo -n "${S}Backing up ${C}home${S} directory$ENDING_1${N}"
-		if [ "$SPINNING_WHEEL" == 'true' ];then
+		echo -n "${S}$DELETE_CLEAR ${C}home${S} directory$ENDING_1${N}"
+		if [ "$B_SPINNING_WHEEL" == 'true' ];then
 			GET_PID=''
-			rdiff-backup --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_HOME_LIST $USER_HOME_PARENT $USER_HOME_BACKUP_LOCATION &
+			eval $HOME_BACKUP_COMMAND &
 			GET_PID="$!"
 			spinning_wheel_activity_indicator backup home
 		else
-			rdiff-backup --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_HOME_LIST $USER_HOME_PARENT $USER_HOME_BACKUP_LOCATION
+			eval $HOME_BACKUP_COMMAND
 			echo
 		fi
+		sleep $SLEEP_TIME_BACKUP
 	fi
 
 	# backup optional user data 1
 	if [ "$BU_DATA_1" != '' ];then
-		echo -n "${S}Backing up${C}$USER_DATA_1_DESC${S} directory$ENDING_1${N}"
-		if [ "$SPINNING_WHEEL" == 'true' ];then
+		echo -n "${S}$DELETE_CLEAR${C}$USER_DATA_1_DESC${S} directory$ENDING_1${N}"
+		if [ "$B_SPINNING_WHEEL" == 'true' ];then
 			GET_PID=''
-			rdiff-backup $USER_DATA_1 $USER_DATA_1_BACKUP_LOCATION &
+			eval $DATA_1_BACKUP_COMMAND &
 			GET_PID="$!"
 			spinning_wheel_activity_indicator backup $USER_DATA_1_DESC
 		else
-			rdiff-backup $USER_DATA_1 $USER_DATA_1_BACKUP_LOCATION
+			eval $DATA_1_BACKUP_COMMAND
 			echo
 		fi
+		sleep $SLEEP_TIME_BACKUP
 	fi
 
 	# backup optional user data 2
 	if [ "$BU_DATA_2" != '' ];then
-		echo -n "${S}Backing up${C}$USER_DATA_2_DESC${S} directory$ENDING_1${N}"
-		if [ "$SPINNING_WHEEL" == 'true' ];then
+		echo -n "${S}$DELETE_CLEAR${C}$USER_DATA_2_DESC${S} directory$ENDING_1${N}"
+		if [ "$B_SPINNING_WHEEL" == 'true' ];then
 			GET_PID=''
-			rdiff-backup $USER_DATA_2 $USER_DATA_2_BACKUP_LOCATION &
+			eval $DATA_2_BACKUP_COMMAND &
 			GET_PID="$!"
 			spinning_wheel_activity_indicator backup $USER_DATA_2_DESC
 		else
-			rdiff-backup $USER_DATA_2 $USER_DATA_2_BACKUP_LOCATION
+			eval $DATA_2_BACKUP_COMMAND
 			echo
 		fi
+		sleep $SLEEP_TIME_BACKUP
 	fi
 
 	# backup system root directory
-	# http://www.mail-archive.com/rdiff-backup-users@nongnu.org/msg01212.html
-	# --exclude-sockets to get rid of that dumb socket error
 	# backup optional user data 1
 	if [ "$BU_ROOT" != '' ];then
-		echo -n "${S}Backing up ${C}root${S} directory ${C}$ROOT_PARTITION${S}$ENDING_1${N}"
-		if [ "$SPINNING_WHEEL" == 'true' ];then
+		echo -n "${S}$DELETE_CLEAR ${C}root${S} directory ${C}$ROOT_PARTITION${S}$ENDING_1${N}"
+		if [ "$B_SPINNING_WHEEL" == 'true' ];then
 			GET_PID=''
-			rdiff-backup --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_LIST $SYSTEM_ROOT $ROOT_BACKUP_LOCATION &
+			eval $ROOT_BACKUP_COMMAND &
 			GET_PID="$!"
 			spinning_wheel_activity_indicator backup $ROOT_PARTITION
 		else
-			rdiff-backup --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_LIST $SYSTEM_ROOT $ROOT_BACKUP_LOCATION
+			eval $ROOT_BACKUP_COMMAND
 			echo
 		fi
 	fi
-	finish_backup
+	if [ "$B_DELETE_OLDER" != 'true' ];then
+		finish_backup
+	else
+		echo $LINE
+		echo "Ok, finished cleaning up older backup increments, running main backup now...${N}"
+		sleep $SLEEP_TIME_BACKUP
+	fi
 }
 
 finish_backup()
@@ -724,26 +846,23 @@ finish_backup()
 update_configs()
 {
 	local backupDate=$( date +"%e %B %Y - %R" )
-	local backupString="Location: $BACKUP_LOCATION$BU_NU :: Date: $backupDate~\t\t\tCompletion time: $BACKUP_DURATION :: Deletion Used: $B_DELETED"
+	local backupString="Location: $BACKUP_LOCATION :: Date: $backupDate~\t\t\tCompletion time: $BACKUP_DURATION :: Deletion Used: $B_DELETED"
 
 	echo $LINE
 	echo "${S}Updating backup records now...${N}"
-	sed -ir "s%last-backup-directory=.*%last-backup-directory=$BACKUP_LOCATION$BU_NU%" $SCRIPT_CONFIGS
+	sed -ir "s%last-backup-directory=.*%last-backup-directory=$BACKUP_LOCATION%" $SCRIPT_CONFIGS
 	sed -ir "s/last-backup-date=.*/last-backup-date=$backupDate/" $SCRIPT_CONFIGS
 	sed -ir "s/last-backup-duration=.*/last-backup-duration=$BACKUP_DURATION/" $SCRIPT_CONFIGS
+	sed -ir "s/last-backup-app=.*/last-backup-app=$BACKUP_APP/" $SCRIPT_CONFIGS
 
-	if [ "$BACKUP_APP" == 'rdiff-backup' ];then
-		case "$BU_NU" in
-			1)
-				sed -ir "s%rdbu-backup-history-1=.*%rdbu-backup-history-1=$backupString%" $SCRIPT_CONFIGS
-				;;
-			2)
-				sed -ir "s%rdbu-backup-history-2=.*%rdbu-backup-history-2=$backupString%" $SCRIPT_CONFIGS
-				;;
-		esac
-	elif [ "$BACKUP_APP" == 'rsync' ];then
-		sed -ir "s%rsync-backup-history-1=.*%rsync-backup-history-1=$backupString%" $SCRIPT_CONFIGS
-	fi
+	case "$BACKUP_APP" in
+		rdiff-backup)
+			sed -ir "s%rdbu-backup-history=.*%rdbu-backup-history=$backupString%" $SCRIPT_CONFIGS
+			;;
+		rsync)
+			sed -ir "s%rsync-backup-history=.*%rsync-backup-history=$backupString%" $SCRIPT_CONFIGS
+			;;
+	esac
 }
 
 # do some arithmetic on time
@@ -792,7 +911,7 @@ print_the_end_time()
 
 unmount_backup_disk()
 {
-	if [ "$MOUNT_BU_DISK" != '' -a "$SKIP_MOUNT" != 'true' ];then
+	if [ "$MOUNT_BU_DISK" != '' -a "$B_SKIP_MOUNT" != 'true' ];then
 		echo
 		echo -n "${S}Unmounting your backup partition $BACKUP_DIRECTORY now...${N}"
 		eval $UNMOUNT_BU_DISK || error_handler 3 "$?"
@@ -803,7 +922,7 @@ unmount_backup_disk()
 
 mount_backup_disk()
 {
-	if [ "$MOUNT_BU_DISK" != '' -a "$SKIP_MOUNT" != 'true'  ];then
+	if [ "$MOUNT_BU_DISK" != '' -a "$B_SKIP_MOUNT" != 'true'  ];then
 		echo
 		echo -n "${S}Mounting your backup drive/partition to $BACKUP_DIRECTORY now...${N}"
 		eval $MOUNT_BU_DISK || error_handler 2 "$?"
@@ -831,21 +950,22 @@ set_path
 # then, if you use this, mount your backup drive
 mount_backup_disk
 
+# set rsync/rdiff-backup variables
+set_primary_backup_data
 # initialize the backup directory values, based on month of year
-set_which_backup
+set_backup_directory_data
 
 # for option run deletion
-if [ "$DELETE_BACKUP" == 'true' ];then
+if [ "$B_DELETE_BACKUP" == 'true' ];then
 	delete_old_backup
 fi
-if [ "$BACKUP_APP" == 'rdiff-backup' ];then
-	if [ "$DO_BACKUP" == 'true' -o "$DELETE_BACKUP" == 'true' ];then
-		run_backups
-	else
-		set_run_backup
-	fi
-elif [ "$BACKUP_APP" == 'rsync' ];then
-	error_handler 100 $BACKUP_APP
+
+# skip the intro question and do it automatically
+if [ "$B_DO_BACKUP" == 'true' -o "$B_DELETE_BACKUP" == 'true' ];then
+	run_backup_components
+# otherwise ask what options to use
+else
+	run_backup_question
 fi
 
 ## extra information:
