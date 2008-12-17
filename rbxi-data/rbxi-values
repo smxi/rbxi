@@ -18,10 +18,7 @@ BACKUP_DIRECTORY='/media/esata'
 # set rsync data separately
 BACKUP_DIRECTORY_RS='/media/esata'
 
-# Primary backup directories, minus the 1 or 2 that will be used to assign which backup
-# to run, based on month of the year in this case, change to suite your needs.
-# NOTE: the full directory name will be completed later, only put the non-numeric part,
-# like bu-, not bu-1
+# Primary backup directories, these will be located inside of the BACKUP_DIRECTORY
 # You do not need to create these primary backup directories, the script will do it.
 BACKUP_LOCATION='/backup'
 BACKUP_LOCATION_RS='/backup-rs'
