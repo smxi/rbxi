@@ -1,13 +1,12 @@
-- **/.mozilla/**/Cache/
+- **/.mozilla/**/Cache/*
 
-+ **/lock/
++ **/lock/*
 - **/lock
 - **/*.lock
-+ **/parentlock/
++ **/parentlock/*
 - **/parentlock
 - **/*.parentlock
-+ **/lock/
-+ **/*.sock/
++ **/*.sock/*
 - **/*.sock
-+ **/socket/
++ **/socket/*
 - **/socket
