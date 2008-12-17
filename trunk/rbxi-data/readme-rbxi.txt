@@ -1,8 +1,11 @@
 #########################################################################
 ####### README DIRECTIONS FOR rbxi RDIFF-BACKUP/RSYNC SCRIPT ############
 #########################################################################
+####  Name: rbxi-readme.txt
+####  Version: 1.0.0
+#########################################################################
 
-This script is designed to only require a single setup, one time.
+rbxi script is designed to only require a single setup, one time.
 Any updates to the script should only be new features, which if your system is the
 way you want, you should not need. But feel free to check the script homepage
 now and then to see if a new feature might be implemented that would be useful
@@ -65,6 +68,7 @@ The script can be started with 3 different options:
 -b	Runs the backup without any interactive questions. Automatically, that is.
 	-b will simply create a backup based on the current month, assign it to the
    correct primary backup directory, then execute the backup.
+-c Automatic backup, clean older files, for non-interactive. Cleans and runs normal backup.
 -d	First deletes the old backups, then runs the backup non-interactively as with -b.
 	Caution: all your previous backups from that backup directory will be eliminated
 	if you use this. Permanently.
@@ -424,7 +428,13 @@ MOUNT_BU_DISK="mount /dev/sdc1 $BACKUP_DIRECTORY"
 .........................................................................
 - Unmounting command, should not need to be changed:
 UNMOUNT_BU_DISK="umount $BACKUP_DIRECTORY"
-.........................................................................
+
+=========================================================================
+COMPLETE THE LAST STEP!!
+And last but not least, set this to 'true' once you are done updating all the variables here.
+Failure to do this will make rbxi exit without running, since you can't run it without having
+completed the user variables in the file: rbxi-data/rbxi-values
+B_VARIABLES_SET='false'
 
 =========================================================================
 STATIC VARIABLES, SHOULD NOT REQUIRE CHANGES

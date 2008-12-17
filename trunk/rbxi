@@ -92,6 +92,7 @@ B_SKIP_MOUNT=''
 B_SPINNING_WHEEL=''
 B_TESTING_1=''
 B_TESTING_2=''
+B_VARIABLES_SET=''
 
 ########################################################################
 ####  STATIC VARIABLES, SHOULD NOT REQUIRE CHANGES
@@ -215,6 +216,9 @@ error_handler()
 			;;
 		15)
 			error_message="You cannot use both -c and -d, only one or the other. Either you are clearing, or deleting."
+			;;
+		16)
+			error_message="B_VARIABLES_SET='false' in the file rbxi-data/$SCRIPT_VALUES must be set to 'true' before you can run $SCRIPT_NAME\nYou must configure that file first, then when you're done, you can the script."
 			;;
 		50)
 			error_message="User initiated script exit. Shutting down now."
@@ -470,6 +474,10 @@ check_startup_stuff()
 	if [ "$B_CLEAN_OLDER" == 'true' -a "$B_DELETE_BACKUP" == 'true' ];then
 		error_handler 15
 	fi
+	if [ "$B_VARIABLES_SET" != 'true' ];then
+		error_handler 16
+	fi
+
 }
 
 check_root()
@@ -1032,4 +1040,5 @@ fi
 #SpecialFileError var/run/xdmctl/dmctl-:0/socket Socket error: AF_UNIX path too long
 
 exit 0
+
 ###**EOF**###

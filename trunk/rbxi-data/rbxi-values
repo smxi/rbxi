@@ -10,7 +10,7 @@
 ####--------------------------------------------------------------------
 
 # set to either rdiff-backup or rsync. Can be overridden with -o [rm/rs] option
-BACKUP_APP='rdiff-backup'
+BACKUP_APP='rsync'
 
 #### BACKUP DIRECTORY PATHS AND INFORMATION -----------
 #    << CHANGE TO YOUR BACKUP LOCATION PATHS >>
@@ -123,3 +123,9 @@ B_SKIP_MOUNT='false' # -m :do not mount backup drive, or umount it
 B_SPINNING_WHEEL='false' # -s :use spinning wheel option
 B_TESTING_1='false' # -! 1 :testing flag 1
 B_TESTING_2='false' # -! 2 :testing flag 2
+
+# and last but not least, set this to 'true' once you are done. Failure to do this will make
+# rbxi exit with errors, since you can't run it without having completed these user variables
+B_VARIABLES_SET='false'
+
+###**EOF**###
