@@ -646,14 +646,14 @@ run_backup_question()
 	echo
 	echo "4 - Quit, don't do the backup after all."
 	echo $LINE
-	options="backup-normal $removeDeleteOpt backup-and-remove-old quit"
+	options="backup-normal $removeDeleteOpt backup-and-delete-old quit"
 	select opt in $options
 	do
 		case $opt in
 			backup-normal)
 				doTheBackup='true'
 				;;
-			backup-and-remove-old)
+			backup-and-delete-old)
 				removeBackup='true'
 				doTheBackup='true'
 				;;
