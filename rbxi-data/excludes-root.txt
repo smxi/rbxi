@@ -1,31 +1,31 @@
-- /tmp/
-- /var/tmp/
-- /tmpfs/
+- /tmp/*
+- /var/tmp/*
+- /tmpfs/*
 
-- /proc/
-- /sys/
-- /cdrom*/
+- /proc/*
+- /sys/*
+- /cdrom*/*
 
-- **/.mozilla/**/Cache/
+- **/.mozilla/**/Cache/*
 + /var/cache/apt/archives/*/
 + /var/cache/apt/archives/*/**
-- /var/cache/apt/archives/
+- /var/cache/apt/archives/*
 + xover-cache/
 - **/xover-cache/
 
-+ **/lock/
++ **/lock/*
 - **/lock
 - **/*.lock
-+ **/parentlock/
++ **/parentlock/*
 - **/parentlock
 - **/*.parentlock
-+ **/*.sock/
++ **/*.sock/*
 - **/*.sock
-+ **/socket/
++ **/socket/*
 - **/socket
 
-/home/*/
-/media/*/
-/mnt/*/
+/home/*/*
+/media/*/*
+/mnt/*/*
 
 
