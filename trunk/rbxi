@@ -1,8 +1,8 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi
-####  Version: 1.11.1
-####  Date: 16 December 2008
+####  Version: 1.12.0
+####  Date: 17 December 2008
 ####  Copyright (C) Harald Hope 2006-9
 ####
 ####  This program is free software; you can redistribute it and/or modify it under
@@ -147,8 +147,8 @@ ENDING_2='...'
 START_TIME=$( date +%s )
 
 # internal script booleans
+B_CLEAN_OLDER='false'
 B_DELETE_BACKUP='false'
-B_DELETE_OLDER='false'
 
 # initialize globals to be set later
 BACKUP_CLEAR=''
@@ -213,6 +213,9 @@ error_handler()
 		14)
 			error_message="You do not have the required backup application installed. Missing: $2"
 			;;
+		15)
+			error_message="You cannot use both -c and -d, only one or the other. Either you are clearing, or deleting."
+			;;
 		50)
 			error_message="User initiated script exit. Shutting down now."
 			;;
@@ -233,8 +236,9 @@ print_usage()
 	if [ "$1" == 'err' ];then
 		echo 'You entered an invalid option. Please use one of the following only:'
 	fi
-	echo '-b Automatic backup, no questions.'
-	echo '-d Automatic backup and delete, no questions.'
+	echo '-b Automatic backup, non interactive.'
+	echo '-c Automatic backup, clean older files, for non-interactive (runs -b also).'
+	echo '-d Automatic backup and delete, non interactive.'
 	echo "-L Create symbolic link in /usr/local/bin to $SCRIPT_NAME"
 	echo '-m Skip the mounting option.'
 	echo '-o Override default backup application."
@@ -253,14 +257,18 @@ get_options()
 {
 	local opt=''
 
-	while getopts :bdhLmo:sUv!: opt
+	while getopts :bcdhLmo:sUv!: opt
 	do
 		case $opt in
 			h)	print_usage
 				;;
 			b)	B_DO_BACKUP='true'
 				;;
+			c)	B_CLEAN_OLDER='true'
+				B_DO_BACKUP='true'
+				;;
 			d)	B_DELETE_BACKUP='true'
+				B_DO_BACKUP='true'
 				;;
 			L) create_symbolic_link
 				exit 0
@@ -459,6 +467,9 @@ check_startup_stuff()
 		error_handler 9 $BACKUP_DIRECTORY
 	fi
 	check_bu_app_installed
+	if [ "$B_CLEAN_OLDER" == 'true' -a "$B_DELETE_BACKUP" == 'true' ];then
+		error_handler 15
+	fi
 }
 
 check_root()
@@ -573,6 +584,9 @@ set_backup_commands()
 {
 	case "$BACKUP_APP" in
 		rsync)
+			if [ "$B_CLEAN_OLDER" != 'true' ];then
+				RSYNC_DELETE=' --delete --delete-excluded '
+			fi
 			# set commands
 			HOME_BACKUP_COMMAND="rsync -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_HOME $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $USER_HOME_PARENT $USER_HOME_BACKUP"
 			ROOT_BACKUP_COMMAND="rsync -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_ROOT $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $SYSTEM_ROOT $ROOT_BACKUP"
@@ -585,7 +599,7 @@ set_backup_commands()
 			# set commands
 			# http://www.mail-archive.com/rdiff-backup-users@nongnu.org/msg01212.html
 			# --exclude-sockets to get rid of that dumb socket error
-			if [ "$B_DELETE_OLDER" != 'true' ];then
+			if [ "$B_CLEAN_OLDER" != 'true' ];then
 				# set commands
 				HOME_BACKUP_COMMAND="rdiff-backup --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_HOME $RDIFF_EXTRA_OPTIONS $USER_HOME_PARENT $USER_HOME_BACKUP"
 				ROOT_BACKUP_COMMAND="rdiff-backup --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_ROOT $RDIFF_EXTRA_OPTIONS $SYSTEM_ROOT $ROOT_BACKUP"
@@ -630,14 +644,14 @@ run_backup_question()
 	echo "1 - backs up as usual with $BACKUP_APP. Does not remove old backups."
 	case "$BACKUP_APP" in
 		rdiff-backup)
-			echo "2 - remove-older - Removes all backup increments older than your time setting: $RDIFF_REMOVE_TIME"
+			echo "2 - clean-older - Removes all backup increments older than your time setting: $RDIFF_REMOVE_TIME"
 			echo "    After the cleanup, runs a new standard backup."
-			removeDeleteOpt='remove-older'
+			removeDeleteOpt='clean-older'
 			;;
 		rsync)
-			echo "2 - delete-obsolete - Removes all backed up up files that have been deleted from"
+			echo "2 - clean-obsolete - Removes all backed up up files that have been deleted from"
 			echo "    your current install."
-			removeDeleteOpt='delete-obsolete'
+			removeDeleteOpt='clean-obsolete'
 			;;
 	esac
 	echo "3 - backs up but first deletes old backups. This is final, so once you agree to"
@@ -657,15 +671,15 @@ run_backup_question()
 				removeBackup='true'
 				doTheBackup='true'
 				;;
-			remove-older)
+			clean-older)
 				# first get rid of all older files and increments
-				B_DELETE_OLDER='true'
+				B_CLEAN_OLDER='true'
 				run_backup_components
-				B_DELETE_OLDER='false'
+				B_CLEAN_OLDER='false'
 				doTheBackup='true'
 				;;
-			delete-obsolete)
-				RSYNC_DELETE=' --delete --delete-excluded '
+			clean-obsolete)
+				B_CLEAN_OLDER='true'
 				doTheBackup='true'
 				;;
 			quit)
@@ -758,6 +772,7 @@ delete_old_backup()
 		echo "${S}Backup directories removed."
 	fi
 	DELETION_TEXT=' deletion and'
+	sleep $SLEEP_TIME_BACKUP
 	echo
 	echo "Starting backup now${N}"
 
@@ -776,10 +791,10 @@ run_backup_components()
 # 	if [ "$BACKUP_APP" == 'rsync' -a "$B_TESTING_1" != 'true' ];then
 # 		error_handler 100 $BACKUP_APP
 # 	fi
-	if [ "$B_TESTING_1" != 'true' ];then
 
 	#backup home directory
 	# backup optional user data 1
+# 	if [ "$B_TESTING_1" != 'true' ];then ### debugger
 	if [ "$BU_HOME" != '' ];then
 		echo -n "${S}$BACKUP_CLEAR ${C}home${S} directory$ENDING_1${N}"
 		if [ "$B_SPINNING_WHEEL" == 'true' ];then
@@ -823,8 +838,8 @@ run_backup_components()
 		fi
 		sleep $SLEEP_TIME_BACKUP
 	fi
+# 	fi # test end ### debugger
 
-	fi # test end
 	# backup system root directory
 	# backup optional user data 1
 	if [ "$BU_ROOT" != '' ];then
@@ -839,7 +854,8 @@ run_backup_components()
 			echo
 		fi
 	fi
-	if [ "$B_DELETE_OLDER" != 'true' ];then
+
+	if [ "$B_CLEAN_OLDER" != 'true' ];then
 		finish_backup
 	else
 		echo $LINE
@@ -985,13 +1001,20 @@ mount_backup_disk
 # initialize the backup directory values
 set_backup_directory_data
 
-# for option run deletion
+# for option run deletion/run clean. You can only run one of these, not both.
 if [ "$B_DELETE_BACKUP" == 'true' ];then
 	delete_old_backup
+	B_DO_BACKUP='true'
+# this is for rdiff only, we need to run first the cleanup job, then
+# next send it to the main backup.
+elif [ "$B_CLEAN_OLDER" == 'true' -a "$BACKUP_TYPE" == 'rdiff-backup' ];then
+	run_backup_components
+	# must reset so we don't run the rdiff-cleanup stuff again
+	B_CLEAN_OLDER='false'
+	B_DO_BACKUP='true'
 fi
-
 # skip the intro question and do it automatically
-if [ "$B_DO_BACKUP" == 'true' -o "$B_DELETE_BACKUP" == 'true' ];then
+if [ "$B_DO_BACKUP" == 'true' ];then
 	run_backup_components
 # otherwise ask what options to use
 else
