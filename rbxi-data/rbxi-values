@@ -27,7 +27,7 @@ BACKUP_LOCATION_RS='/backup-rs'
 # ie: RSYNC_EXTRA_OPTIONS=' --rsh=ssh ' rsync -e 'ssh -p 30000'
 # only set if it's a remote machine, otherwise make null: RSYNC_EXTRA_OPTIONS=''
 RSYNC_EXTRA_OPTIONS=' --dry-run -v '
-RDIFF_EXTRA_OPTIONS=''
+RDIFF_EXTRA_OPTIONS=' --terminal-verbosity 6 '
 
 # see man rdiff-backup for proper syntax for time. This is set to remove older
 # than 60 days incremental backupsThe time  interval  is  an integer followed
