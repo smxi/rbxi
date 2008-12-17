@@ -1,7 +1,7 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi
-####  Version: 1.11.0
+####  Version: 1.11.1
 ####  Date: 16 December 2008
 ####  Copyright (C) Harald Hope 2006-9
 ####
@@ -209,6 +209,9 @@ error_handler()
 			;;
 		13)
 			error_message="The option argument you gave is not supported: $2"
+			;;
+		14)
+			error_message="You do not have the required backup application installed. Missing: $2"
 			;;
 		50)
 			error_message="User initiated script exit. Shutting down now."
@@ -452,10 +455,10 @@ check_startup_stuff()
 {
 	check_root
 	create_etc_configs
-
 	if [ ! -d $BACKUP_DIRECTORY ];then
 		error_handler 9 $BACKUP_DIRECTORY
 	fi
+	check_bu_app_installed
 }
 
 check_root()
@@ -471,6 +474,13 @@ set_path()
 
 	if [ "$( pwd )" != "$ExDir" -a "$ExDir" != '.' ];then
 		cd $ExDir
+	fi
+}
+
+check_bu_app_installed()
+{
+	if [ -z "$( which $BACKUP_APP )" ];then
+		error_handler 14 $BACKUP_APP
 	fi
 }
 
