@@ -8,10 +8,10 @@
 
 - **/.mozilla/**/Cache/*
 + /var/cache/apt/archives/*/
-+ /var/cache/apt/archives/*/**
++ /var/cache/apt/archives/*/*
 - /var/cache/apt/archives/*
-+ xover-cache/
-- **/xover-cache/
++ **/xover-cache/
+- **/xover-cache/*
 
 + **/lock/*
 - **/lock

@@ -1,4 +1,9 @@
 #!/bin/bash
+########################################################################
+####  Script Name: rbxi-values
+####  Version: 1.0.0
+####  Date: 17 December 2008
+########################################################################
 
 ########################################################################
 ####  USER SPECIFIC VARIABLES - CHANGE AS REQUIRED - must be in rbxi-data/
@@ -26,8 +31,10 @@ BACKUP_LOCATION_RS='/backup-rs'
 # for remote, via ssh, include the ssh option
 # ie: RSYNC_EXTRA_OPTIONS=' --rsh=ssh ' rsync -e 'ssh -p 30000'
 # only set if it's a remote machine, otherwise make null: RSYNC_EXTRA_OPTIONS=''
+# --dry-run is good to do firs tests for your backup, -v sets to verbose
 RSYNC_EXTRA_OPTIONS=' --dry-run -v '
-RDIFF_EXTRA_OPTIONS=' --terminal-verbosity 6 '
+# -terminal-verbosity 5 gives sane output
+RDIFF_EXTRA_OPTIONS=' --terminal-verbosity 5 '
 
 # see man rdiff-backup for proper syntax for time. This is set to remove older
 # than 60 days incremental backupsThe time  interval  is  an integer followed
@@ -108,6 +115,8 @@ UNMOUNT_BU_DISK_RS="umount $BACKUP_DIRECTORY_RS"
 
 # these are for options, used in case of cron or option run backups/deletes
 # if you want to hard set any option just set the variable to true.
+# trigger rdiff/rsync cleeanup, either older than x, or remove deleted files
+B_CLEAN_OLDER='false'
 B_DELETED='false' # -d :auto delete contents each backup
 B_DO_BACKUP='false' # -b :automatic backup
 B_SKIP_MOUNT='false' # -m :do not mount backup drive, or umount it
