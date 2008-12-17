@@ -96,6 +96,10 @@ SLEEP_TIME_BACKUP='2.5'
 # Syntax for label: mount -L <disklabel> $BACKUP_DIRECTORY
 # Syntax for uuid: mount -U <uuid> $BACKUP_DIRECTORY
 # Syntax for standard: mount </dev/sdd2> $BACKUP_DIRECTORY
+#
+# If you are using NFS mounted directories, the host nfs server must have these permissions set
+# in /etc/exports: rw,async,,no_root_squash or write permissions will fail in rsync
+#
 # SAMPLE:
 # rdiff-backup mounts
 MOUNT_BU_DISK="mount -L backup-disk-1 $BACKUP_DIRECTORY"
