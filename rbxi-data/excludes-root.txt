@@ -9,19 +9,14 @@
 - **/.mozilla/**/Cache/*
 + /var/cache/apt/archives/*/
 + /var/cache/apt/archives/*/*
-- /var/cache/apt/archives/*
-+ **/xover-cache/
+- /var/cache/apt/archives/
 - **/xover-cache/*
 
-+ **/lock/*
 - **/lock
 - **/*.lock
-+ **/parentlock/*
 - **/parentlock
 - **/*.parentlock
-+ **/*.sock/*
 - **/*.sock
-+ **/socket/*
 - **/socket
 
 /home/*/*
