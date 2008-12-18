@@ -8,6 +8,7 @@
 
 - **/.mozilla/**/Cache/*
 + /var/cache/apt/archives/*/
++ /var/cache/apt/archives/partial
 + /var/cache/apt/archives/*/*
 - /var/cache/apt/archives/
 - **/xover-cache/*
