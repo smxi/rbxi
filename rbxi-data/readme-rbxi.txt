@@ -494,12 +494,13 @@ number, the faster the wheel spins.
 
 =========================================================================
 BACKUP DISK / PARTITION mount / umount
-Note that MOUNT/UNMOUNT 1-10 are triggered by the -M option
+Note that MOUNT/UNMOUNT 1-10 are triggered by the -M option, and that
+$BACKUP_DIRECTORY will be set dynamically from rdiff/rsync BACKUP_DIRECTORY set in rbxi
+based on the values you used in the config file.
 
 If you want the script to automatically mount/umount your backup drive / partition,
 use this. If you don't want this, just leave the variables with a blank value.
 .........................................................................
-for rdiff-backup
 MOUNT_BU_DISK='mount -L backup-disk-1 $BACKUP_DIRECTORY'
 UNMOUNT_BU_DISK='umount $BACKUP_DIRECTORY'
 MOUNT_BU_DISK_1=''
