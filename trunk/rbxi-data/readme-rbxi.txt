@@ -2,7 +2,7 @@
 ####### README DIRECTIONS FOR rbxi RDIFF-BACKUP/RSYNC SCRIPT ############
 #########################################################################
 ####  Name: rbxi-readme.txt
-####  Version: 2.0.5
+####  Version: 2.0.6
 #########################################################################
 
 rbxi script is designed to only require a single setup, one time.
@@ -487,8 +487,8 @@ This just tells you which actual physical partition root is. Change to
 your own setup. This is not a path, it's just information for you.
 .........................................................................
 SLEEP_TIME_SPINNER='0.5'
-Time between backup operations
-SLEEP_TIME_BACKUP='2.5'
+Time between backup operations, make integer, number of seconds
+SLEEP_TIME_BACKUP='3'
 
 If you started the script with the -s option, a small spinning wheel will
 run as each part of the operation is carried out. This lets you know
