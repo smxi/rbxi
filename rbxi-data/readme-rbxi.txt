@@ -512,6 +512,13 @@ For cron jobs, put the full system path to mount/umount in the command.
 MOUNT_BU_DISK='/usr/bin/mount -L backup-disk-1 $BACKUP_DIRECTORY'
 UNMOUNT_BU_DISK='/usr/bin/umount $BACKUP_DIRECTORY'
 Use'which mount' OR 'which umount' (no quotes) to find the true path.
+
+EXCEPTION: if you want to use a custom DIRECTORY from above, do it like this:
+MOUNT_BU_DISK="mount -L backup-disk-1 $BACKUP_DIRECTORY_3"
+UNMOUNT_BU_DISK="umount $BACKUP_DIRECTORY_3"
+This will then use the directory you list. This requires double quotes, "", not single, ''.
+Of course you can also just hard code in the entire thing if you want, but it's easier to
+avoid errors if you just type it in time I find.
 .........................................................................
 MOUNT_BU_DISK='mount -L backup-disk-1 $BACKUP_DIRECTORY'
 UNMOUNT_BU_DISK='umount $BACKUP_DIRECTORY'
