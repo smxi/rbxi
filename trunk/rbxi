@@ -1,7 +1,7 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi
-####  Version: 2.0.2
+####  Version: 2.0.4
 ####  Date: 18 December 2008
 ####  Copyright (C) Harald Hope 2006-9
 ####
@@ -505,7 +505,7 @@ print_history_data()
 ## print out version information for -v
 print_version_info()
 {
-	local last_modified=$( grep -im 1 'date:' $SCRIPT_PATH/$SCRIPT_NAME | gawk '{print $3,$4,$5}' )
+	local last_modified=$( grep -im 1 'date:' $SCRIPT_PATH/$SCRIPT_NAME | awk '{print $3,$4,$5}' )
 
 	echo "$SCRIPT_NAME - the universal, portable, system backup script."
 	echo "Version: $SCRIPT_VERSION_NUMBER"
@@ -763,18 +763,18 @@ set_backup_commands()
 				RSYNC_DELETE=' --delete --delete-excluded '
 			fi
 			# set commands
-			HOME_BU_COMMAND="rsync -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_HOME $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $HOME_PATH $HOME_BACKUP"
-			ROOT_BU_COMMAND="rsync -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_ROOT $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $ROOT_PATH $ROOT_BACKUP"
-			DATA_1_BU_COMMAND="rsync -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_1 $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $DATA_1_PATH $DATA_1_BACKUP"
-			DATA_2_BU_COMMAND="rsync -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_2 $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $DATA_2_PATH $DATA_2_BACKUP"
-			DATA_3_BU_COMMAND="rsync -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_3 $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $DATA_3_PATH $DATA_3_BACKUP"
-			DATA_4_BU_COMMAND="rsync -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_4 $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $DATA_4_PATH $DATA_4_BACKUP"
-			DATA_5_BU_COMMAND="rsync -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_5 $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $DATA_5_PATH $DATA_5_BACKUP"
-			DATA_6_BU_COMMAND="rsync -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_6 $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $DATA_6_PATH $DATA_6_BACKUP"
-			DATA_7_BU_COMMAND="rsync -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_7 $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $DATA_7_PATH $DATA_7_BACKUP"
-			DATA_8_BU_COMMAND="rsync -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_8 $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $DATA_8_PATH $DATA_8_BACKUP"
-			DATA_9_BU_COMMAND="rsync -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_9 $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $DATA_9_PATH $DATA_9_BACKUP"
-			DATA_10_BU_COMMAND="rsync -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_10 $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $DATA_10_PATH $DATA_10_BACKUP"
+			HOME_BU_COMMAND="$RSYNC_PATH -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_HOME $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $HOME_PATH $HOME_BACKUP"
+			ROOT_BU_COMMAND="$RSYNC_PATH -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_ROOT $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $ROOT_PATH $ROOT_BACKUP"
+			DATA_1_BU_COMMAND="$RSYNC_PATH -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_1 $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $DATA_1_PATH $DATA_1_BACKUP"
+			DATA_2_BU_COMMAND="$RSYNC_PATH -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_2 $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $DATA_2_PATH $DATA_2_BACKUP"
+			DATA_3_BU_COMMAND="$RSYNC_PATH -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_3 $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $DATA_3_PATH $DATA_3_BACKUP"
+			DATA_4_BU_COMMAND="$RSYNC_PATH -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_4 $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $DATA_4_PATH $DATA_4_BACKUP"
+			DATA_5_BU_COMMAND="$RSYNC_PATH -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_5 $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $DATA_5_PATH $DATA_5_BACKUP"
+			DATA_6_BU_COMMAND="$RSYNC_PATH -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_6 $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $DATA_6_PATH $DATA_6_BACKUP"
+			DATA_7_BU_COMMAND="$RSYNC_PATH -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_7 $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $DATA_7_PATH $DATA_7_BACKUP"
+			DATA_8_BU_COMMAND="$RSYNC_PATH -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_8 $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $DATA_8_PATH $DATA_8_BACKUP"
+			DATA_9_BU_COMMAND="$RSYNC_PATH -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_9 $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $DATA_9_PATH $DATA_9_BACKUP"
+			DATA_10_BU_COMMAND="$RSYNC_PATH -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_10 $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $DATA_10_PATH $DATA_10_BACKUP"
 
 			# set text
 			BACKUP_CLEAR='Backing up'
@@ -787,35 +787,35 @@ set_backup_commands()
 			# --exclude-sockets to get rid of that dumb socket error
 			if [ "$B_CLEAN_OLDER" != 'true' ];then
 				# set commands
-				HOME_BU_COMMAND="rdiff-backup --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_HOME $RDIFF_EXTRA_OPTIONS $HOME_PATH $HOME_BACKUP"
-				ROOT_BU_COMMAND="rdiff-backup --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_ROOT $RDIFF_EXTRA_OPTIONS $ROOT_PATH $ROOT_BACKUP"
-				DATA_1_BU_COMMAND="rdiff-backup --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_1 $RDIFF_EXTRA_OPTIONS $DATA_1_PATH $DATA_1_BACKUP"
-				DATA_2_BU_COMMAND="rdiff-backup --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_2 $RDIFF_EXTRA_OPTIONS $DATA_2_PATH $DATA_2_BACKUP"
-				DATA_3_BU_COMMAND="rdiff-backup --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_3 $RDIFF_EXTRA_OPTIONS $DATA_3_PATH $DATA_3_BACKUP"
-				DATA_4_BU_COMMAND="rdiff-backup --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_4 $RDIFF_EXTRA_OPTIONS $DATA_4_PATH $DATA_4_BACKUP"
-				DATA_5_BU_COMMAND="rdiff-backup --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_5 $RDIFF_EXTRA_OPTIONS $DATA_5_PATH $DATA_5_BACKUP"
-				DATA_6_BU_COMMAND="rdiff-backup --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_6 $RDIFF_EXTRA_OPTIONS $DATA_6_PATH $DATA_6_BACKUP"
-				DATA_7_BU_COMMAND="rdiff-backup --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_7 $RDIFF_EXTRA_OPTIONS $DATA_7_PATH $DATA_7_BACKUP"
-				DATA_8_BU_COMMAND="rdiff-backup --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_8 $RDIFF_EXTRA_OPTIONS $DATA_8_PATH $DATA_8_BACKUP"
-				DATA_9_BU_COMMAND="rdiff-backup --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_9 $RDIFF_EXTRA_OPTIONS $DATA_9_PATH $DATA_9_BACKUP"
-				DATA_10_BU_COMMAND="rdiff-backup --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_10 $RDIFF_EXTRA_OPTIONS $DATA_10_PATH $DATA_10_BACKUP"
+				HOME_BU_COMMAND="$RDIFF_PATH --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_HOME $RDIFF_EXTRA_OPTIONS $HOME_PATH $HOME_BACKUP"
+				ROOT_BU_COMMAND="$RDIFF_PATH --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_ROOT $RDIFF_EXTRA_OPTIONS $ROOT_PATH $ROOT_BACKUP"
+				DATA_1_BU_COMMAND="$RDIFF_PATH --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_1 $RDIFF_EXTRA_OPTIONS $DATA_1_PATH $DATA_1_BACKUP"
+				DATA_2_BU_COMMAND="$RDIFF_PATH --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_2 $RDIFF_EXTRA_OPTIONS $DATA_2_PATH $DATA_2_BACKUP"
+				DATA_3_BU_COMMAND="$RDIFF_PATH --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_3 $RDIFF_EXTRA_OPTIONS $DATA_3_PATH $DATA_3_BACKUP"
+				DATA_4_BU_COMMAND="$RDIFF_PATH --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_4 $RDIFF_EXTRA_OPTIONS $DATA_4_PATH $DATA_4_BACKUP"
+				DATA_5_BU_COMMAND="$RDIFF_PATH --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_5 $RDIFF_EXTRA_OPTIONS $DATA_5_PATH $DATA_5_BACKUP"
+				DATA_6_BU_COMMAND="$RDIFF_PATH --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_6 $RDIFF_EXTRA_OPTIONS $DATA_6_PATH $DATA_6_BACKUP"
+				DATA_7_BU_COMMAND="$RDIFF_PATH --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_7 $RDIFF_EXTRA_OPTIONS $DATA_7_PATH $DATA_7_BACKUP"
+				DATA_8_BU_COMMAND="$RDIFF_PATH --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_8 $RDIFF_EXTRA_OPTIONS $DATA_8_PATH $DATA_8_BACKUP"
+				DATA_9_BU_COMMAND="$RDIFF_PATH --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_9 $RDIFF_EXTRA_OPTIONS $DATA_9_PATH $DATA_9_BACKUP"
+				DATA_10_BU_COMMAND="$RDIFF_PATH --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_10 $RDIFF_EXTRA_OPTIONS $DATA_10_PATH $DATA_10_BACKUP"
 
 				# set text
 				BACKUP_CLEAR='Backing up'
 			else
 				# set commands
-				HOME_BU_COMMAND="rdiff-backup --force --remove-older-than $RDIFF_REMOVE_TIME $HOME_BACKUP"
-				ROOT_BU_COMMAND="rdiff-backup --force --remove-older-than $RDIFF_REMOVE_TIME $ROOT_BACKUP"
-				DATA_1_BU_COMMAND="rdiff-backup --force --remove-older-than $RDIFF_REMOVE_TIME $DATA_1_BACKUP"
-				DATA_2_BU_COMMAND="rdiff-backup --force --remove-older-than $RDIFF_REMOVE_TIME $DATA_2_BACKUP"
-				DATA_3_BU_COMMAND="rdiff-backup --force --remove-older-than $RDIFF_REMOVE_TIME $DATA_3_BACKUP"
-				DATA_4_BU_COMMAND="rdiff-backup --force --remove-older-than $RDIFF_REMOVE_TIME $DATA_4_BACKUP"
-				DATA_5_BU_COMMAND="rdiff-backup --force --remove-older-than $RDIFF_REMOVE_TIME $DATA_5_BACKUP"
-				DATA_6_BU_COMMAND="rdiff-backup --force --remove-older-than $RDIFF_REMOVE_TIME $DATA_6_BACKUP"
-				DATA_7_BU_COMMAND="rdiff-backup --force --remove-older-than $RDIFF_REMOVE_TIME $DATA_7_BACKUP"
-				DATA_8_BU_COMMAND="rdiff-backup --force --remove-older-than $RDIFF_REMOVE_TIME $DATA_8_BACKUP"
-				DATA_9_BU_COMMAND="rdiff-backup --force --remove-older-than $RDIFF_REMOVE_TIME $DATA_9_BACKUP"
-				DATA_10_BU_COMMAND="rdiff-backup --force --remove-older-than $RDIFF_REMOVE_TIME $DATA_10_BACKUP"
+				HOME_BU_COMMAND="$RDIFF_PATH --force --remove-older-than $RDIFF_REMOVE_TIME $HOME_BACKUP"
+				ROOT_BU_COMMAND="$RDIFF_PATH --force --remove-older-than $RDIFF_REMOVE_TIME $ROOT_BACKUP"
+				DATA_1_BU_COMMAND="$RDIFF_PATH --force --remove-older-than $RDIFF_REMOVE_TIME $DATA_1_BACKUP"
+				DATA_2_BU_COMMAND="$RDIFF_PATH --force --remove-older-than $RDIFF_REMOVE_TIME $DATA_2_BACKUP"
+				DATA_3_BU_COMMAND="$RDIFF_PATH --force --remove-older-than $RDIFF_REMOVE_TIME $DATA_3_BACKUP"
+				DATA_4_BU_COMMAND="$RDIFF_PATH --force --remove-older-than $RDIFF_REMOVE_TIME $DATA_4_BACKUP"
+				DATA_5_BU_COMMAND="$RDIFF_PATH --force --remove-older-than $RDIFF_REMOVE_TIME $DATA_5_BACKUP"
+				DATA_6_BU_COMMAND="$RDIFF_PATH --force --remove-older-than $RDIFF_REMOVE_TIME $DATA_6_BACKUP"
+				DATA_7_BU_COMMAND="$RDIFF_PATH --force --remove-older-than $RDIFF_REMOVE_TIME $DATA_7_BACKUP"
+				DATA_8_BU_COMMAND="$RDIFF_PATH --force --remove-older-than $RDIFF_REMOVE_TIME $DATA_8_BACKUP"
+				DATA_9_BU_COMMAND="$RDIFF_PATH --force --remove-older-than $RDIFF_REMOVE_TIME $DATA_9_BACKUP"
+				DATA_10_BU_COMMAND="$RDIFF_PATH --force --remove-older-than $RDIFF_REMOVE_TIME $DATA_10_BACKUP"
 
 				# set text
 				BACKUP_CLEAR="Removing all increments older than $RDIFF_REMOVE_TIME from"
@@ -972,6 +972,16 @@ set_add_data()
 	case $1 in
 		d)
 			B_SKIP_DATA_FULL='false'
+			B_SKIP_DATA_1='false'
+			B_SKIP_DATA_2='false'
+			B_SKIP_DATA_3='false'
+			B_SKIP_DATA_4='false'
+			B_SKIP_DATA_5='false'
+			B_SKIP_DATA_6='false'
+			B_SKIP_DATA_7='false'
+			B_SKIP_DATA_8='false'
+			B_SKIP_DATA_9='false'
+			B_SKIP_DATA_10='false'
 			;;
 		h)
 			B_SKIP_HOME='false'
@@ -1514,7 +1524,7 @@ finish_backup()
 update_configs()
 {
 	local backupDate=$( date +"%e %B %Y - %R" )
-	local backupString="Location: $BACKUP_LOCATION :: Date: $backupDate~Completion time: $BACKUP_DURATION :: Deletion Used: $DELETE_STATUS :: Job Nu: $BACKUP_JOB_NU"
+	local backupString="Location: $BACKUP_LOCATION :: Date: $backupDate~Completion time: $BACKUP_DURATION :: Deletion Used: $DELETE_STATUS :: Job No: $BACKUP_JOB_NU"
 
 	echo $LINE
 	echo "${S}Updating backup records now...${N}"
