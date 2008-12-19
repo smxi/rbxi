@@ -190,7 +190,8 @@ SLEEP_TIME_BACKUP='3'
 # MOUNT_BU_DISK="mount -L backup-disk-1 $BACKUP_DIRECTORY_3"
 # UNMOUNT_BU_DISK="umount $BACKUP_DIRECTORY_3"
 # this will then use the directory you list. This requires double quotes, "", not single, ''
-# of course you can also just hard code in the entire thing if you want, it doesn't matter
+# of course you can also just hard code in the entire thing if you want, but it's easier to
+# avoid errors if you just type it in time I find.
 MOUNT_BU_DISK='mount -L backup-disk-1 $BACKUP_DIRECTORY'
 UNMOUNT_BU_DISK='umount $BACKUP_DIRECTORY'
 MOUNT_BU_DISK_1=''
