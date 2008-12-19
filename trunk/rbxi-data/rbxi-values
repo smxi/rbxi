@@ -1,29 +1,47 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi-values
-####  Version: 2.0.6
-####  Date: 18 December 2008
+####  Version: 2.1.0
+####  Date: 19 December 2008
 ########################################################################
 
 ########################################################################
-####  USER SPECIFIC VARIABLES - CHANGE AS REQUIRED - must be in rbxi-data/
-####--------------------------------------------------------------------
-
-# set to either rdiff-backup or rsync. Can be overridden with -o [rm/rs] option
+#### RSYNC/RDIFF-BACKUP DATA ###########################################
+########################################################################
+# set to either rdiff-backup or rsync. Can be overridden with -o [rm/rs] optionn
 BACKUP_APP='rsync'
+
 # change these to the true system paths if you are going to run this as a cron job
 # like so: RDIFF_PATH='/usr/bin/rdiff-backup'
 # Use'which rdiff-backup' OR 'which rsync' (no quotes) to find the true path.
 RDIFF_PATH='rdiff-backup'
 RSYNC_PATH='rsync'
 
-#### BACKUP DIRECTORY PATHS AND INFORMATION -----------
+# for remote, via ssh, include the ssh option
+# ie: RSYNC_EXTRA_OPTIONS=' --rsh=ssh'
+# RSYNC_EXTRA_OPTIONS=' --dry-run -v ' # for verbose, testing only, no actual backup
+# only set if it's a remote machine, otherwise make null: RSYNC_EXTRA_OPTIONS=''
+RSYNC_EXTRA_OPTIONS='  -v --stats '
+RDIFF_EXTRA_OPTIONS=' --terminal-verbosity 5 '
+
+# see man rdiff-backup for proper syntax for time. This is set to remove older
+# than 60 days incremental backupsThe time  interval  is  an integer followed
+# by the character s, m, h, D, W, M, or Y, indicating seconds, minutes, hours, days,
+# weeks, months, or years respectively, or a number of these concatenated.
+# For example, 32m  means  32  minutes; 3W2D10h7s  means 3 weeks, 2 days, 10 hours, and 7 seconds.
+RDIFF_REMOVE_TIME='60D'
+
+########################################################################
+#### BACKUP DIRECTORY PATHS AND INFORMATION ############################
+########################################################################
 #    << CHANGE TO YOUR BACKUP LOCATION PATHS >>
-# Primary backup directory on parition or external drive
+#
+# Primary backup directory on partition or external drive
 # set to your backup partition path
 # REMEMBER, DO NOT BACKUP THE BACKUP DIRECTORY, BLOCK IT IN THE EXCLUDE FILE LIST
-# Do not end the destination directory  names below with a '/'
-# SAMPLE
+# DO NOT END the destination directory names below with a '/'
+# DO START them with a '/'
+# primary rdiff-backup directory (sample)
 BACKUP_DIRECTORY='/media/esata'
 BACKUP_DIRECTORY_1=''
 BACKUP_DIRECTORY_2=''
@@ -37,6 +55,7 @@ BACKUP_DIRECTORY_9=''
 BACKUP_DIRECTORY_10=''
 
 # set rsync backup directory separately
+# primary rdiff-backup directory (sample):
 BACKUP_DIRECTORY_RS='/media/esata'
 BACKUP_DIRECTORY_1_RS=''
 BACKUP_DIRECTORY_2_RS=''
@@ -49,8 +68,11 @@ BACKUP_DIRECTORY_8_RS=''
 BACKUP_DIRECTORY_9_RS=''
 BACKUP_DIRECTORY_10_RS=''
 
-# Primary backup directories, these will be located inside of the BACKUP_DIRECTORY
+# Primary backup job directories, these will be located inside of the BACKUP_DIRECTORY
 # You do not need to create these primary backup directories, the script will do it.
+# DO NOT END the destination directory names below with a '/'
+# DO START them with a /
+# rdiff-backup sub directory name (sample):):
 BACKUP_SUB_DIR='/backup'
 BACKUP_SUB_DIR_1=''
 BACKUP_SUB_DIR_2=''
@@ -63,7 +85,7 @@ BACKUP_SUB_DIR_8=''
 BACKUP_SUB_DIR_9=''
 BACKUP_SUB_DIR_10=''
 
-# rsync sub directory name
+# rsync sub directory name (sample):
 BACKUP_SUB_DIR_RS='/backup-rs'
 BACKUP_SUB_DIR_1_RS=''
 BACKUP_SUB_DIR_2_RS=''
@@ -76,23 +98,14 @@ BACKUP_SUB_DIR_8_RS=''
 BACKUP_SUB_DIR_9_RS=''
 BACKUP_SUB_DIR_10_RS=''
 
-# for remote, via ssh, include the ssh option
-# ie: RSYNC_EXTRA_OPTIONS=' --rsh=ssh ' rsync -e 'ssh -p 30000'
-# only set if it's a remote machine, otherwise make null: RSYNC_EXTRA_OPTIONS=''
-# --dry-run is good to do firs tests for your backup, -v sets to verbose
-RSYNC_EXTRA_OPTIONS=' --dry-run -v '
-# -terminal-verbosity 5 gives sane output
-RDIFF_EXTRA_OPTIONS=' --terminal-verbosity 5 '
-
-# see man rdiff-backup for proper syntax for time. This is set to remove older
-# than 60 days incremental backupsThe time  interval  is  an integer followed
-# by the character s, m, h, D, W, M, or Y, indicating seconds, minutes, hours, days,
-# weeks, months, or years respectively, or a number of these concatenated.
-# For example, 32m  means  32  minutes, and  3W2D10h7s  means 3 weeks, 2 days, 10 hours, and 7 seconds.
-RDIFF_REMOVE_TIME='60D'
+########################################################################
+#### SCRIPT BACKUP DESTINATION SUB DIRECTORIES #########################
+########################################################################
+# << CHANGE TO MEET YOUR NEEDS >>
 
 # specific main backup subdirectory names, eg: /media/usbdisk/bu-2/home and so on
-# NOTE: if either of these is left blank, the script will not back up that item.
+# NOTE: if either of these is left blank, the script will not back up that item unless
+# you override it with a -C (clone) option, which also sets these to blank anyway, except home.
 # You do not need to create the following subdirectories, rdiff-backup will create them
 # automatically using the names you give here
 HOME_DIR='home'
@@ -113,10 +126,34 @@ DATA_8_DIR=''
 DATA_9_DIR=''
 DATA_10_DIR=''
 
-#### SYSTEM BACKUP PATH INFORMATION  ------------------
-#    << CHANGE TO YOUR SYSTEM PATHS FOR HOME AND / AND EXTRA BACKUP PATHS IF NEEDED >>
+########################################################################
+#### SCRIPT BACKUP DIRECTORY OUTPUT DESCRIPTIONS #######################
+########################################################################
+# << CHANGE TO YOUR PREFERRED OUTPUT TEXT FOR EXTRA DATA 1/2 BACKUPS >>
+#
+# these should match with the XXX_DIR above, and just define what output
+# the script shows as it's backing up each directory.
+DATA_1_DESC='' # for example: DATA_1_DESC='web'
+DATA_2_DESC='' # for example: DATA_2_DESC='email'
+DATA_3_DESC=''
+DATA_4_DESC=''
+DATA_5_DESC=''
+DATA_6_DESC=''
+DATA_7_DESC=''
+DATA_8_DESC=''
+DATA_9_DESC=''
+DATA_10_DESC=''
 
-# these are the actual directory paths you want to backup
+# this is only for print output, it's not used in the actual backup
+# << CHANGE TO YOUR ROOT PARTITION FULL PATH >>
+ROOT_DESC='/dev/hda1'
+
+########################################################################
+#### SYSTEM BACKUP PATH INFORMATION  ###################################
+########################################################################
+# << CHANGE TO YOUR SYSTEM PATHS FOR HOME / + EXTRA BACKUP PATHS IF NEEDED >>
+
+# These are the actual directory paths you want to backup, the SOURCE directories.
 # Should not change these unless you are backing up an install from outside of it
 # Note: if you leave off the ending /, rsync will create a directory of the last name in
 # the path, which you probably don't want.
@@ -137,33 +174,10 @@ DATA_8_PATH=''
 DATA_9_PATH=''
 DATA_10_PATH=''
 
-#### SCRIPT OUTPUT STUFF ------------------------------
-#    << CHANGE TO YOUR PREFERRED OUTPUT TEXT FOR EXTRA DATA 1/2 BACKUPS >>
-# this is only used for backup output text, for user information
-DATA_1_DESC='' # for example: DATA_1_DESC=' web'
-DATA_2_DESC='' # for example: DATA_2_DESC=' email'
-DATA_3_DESC=''
-DATA_4_DESC=''
-DATA_5_DESC=''
-DATA_6_DESC=''
-DATA_7_DESC=''
-DATA_8_DESC=''
-DATA_9_DESC=''
-DATA_10_DESC=''
-
-# this is only for print output, it's not used in the actual backup
-# << CHANGE TO YOUR ROOT PARTITION FULL PATH >>
-ROOT_DESC='/dev/hda1'
-
-# this is how fast the spinning wheel moves. Anything less than 0.5 not
-# recommended due to performance problems on most machines.
-# Lower number means wheel moves faster. Slower machine, change to 1
-SLEEP_TIME_SPINNER='0.5'
-# time between backup operations, make integer
-SLEEP_TIME_BACKUP='3'
-
-#### BACKUP DISK / PARITION mount / umount  ------------------
-#    << CHANGE TO FIT YOUR NEEDS >>
+########################################################################
+#### PARTITION MOUNT/UMOUNT ############################################
+########################################################################
+# << CHANGE TO FIT YOUR NEEDS >>
 #
 # Note that MOUNT/UNMOUNT 1-10 are triggered by the -M option
 #
@@ -192,8 +206,14 @@ SLEEP_TIME_BACKUP='3'
 # this will then use the directory you list. This requires double quotes, "", not single, ''
 # of course you can also just hard code in the entire thing if you want, but it's easier to
 # avoid errors if you just type it in time I find.
+#
+# If you are just needing to change the BACKUP_DIRECTORY, just use -B <bu directory number>
+# instead and rbxi will change that automatically for you, but if you need to put actually
+# different mount/umount information, then use an alternate MOUNT/UNMOUNT number
+## DEFAULT MOUNT
 MOUNT_BU_DISK='mount -L backup-disk-1 $BACKUP_DIRECTORY'
 UNMOUNT_BU_DISK='umount $BACKUP_DIRECTORY'
+## OPTIONAL MOUNT SET
 MOUNT_BU_DISK_1=''
 UNMOUNT_BU_DISK_1=''
 MOUNT_BU_DISK_2=''
@@ -215,6 +235,9 @@ UNMOUNT_BU_DISK_9=''
 MOUNT_BU_DISK_10=''
 UNMOUNT_BU_DISK_10=''
 
+########################################################################
+#### JOB PRESETS #######################################################
+########################################################################
 # set with whatever arguments you want to start script with, script will restart with those
 # options automatically, then run whatever job you set. Jobs consist of sets of rbxi options:
 # sample: BACKUP_JOB_1=' -M 3 -S rh ' - this would use mount/umount 3, and skip home/root backup
@@ -233,16 +256,15 @@ BACKUP_JOB_8=''
 BACKUP_JOB_9=''
 BACKUP_JOB_10=''
 
+########################################################################
+#### CLEAN / DELETE / BACKUP / SKIP ####################################
+########################################################################
 # these are for options, used in case of cron or option run backups/deletes
 # if you want to hard set any option just set the variable to true.
 # trigger rdiff/rsync cleeanup, either older than x, or remove deleted files
 B_CLEAN_OLDER='false' # -c :clean old backup files, then do backup
 B_DELETE_BACKUP='false' # -d :delete old backup, then do backup
 B_DO_BACKUP='false' # -b :automatic backup
-
-# Specialized clone option, only use if you understand this script
-B_CLONE_HOME='false'
-B_CLONE_ROOT='false'
 
 # skip home/root/data can be overridden by -A <r|h|number> when you are creating
 # a separate job (-J <number>).
@@ -260,12 +282,27 @@ B_SKIP_DATA_10='false' # -S 10
 B_SKIP_HOME='false' # -S h
 B_SKIP_ROOT='false' # -S r
 
-# miscellaneous script option booleans
+########################################################################
+#### MISCELLANEOUS SCRIPT OPTIONS ######################################
+########################################################################
+# miscellaneous script booleans
 B_SKIP_MOUNT='false' # -m :do not mount backup drive, or umount it
 B_SPINNING_WHEEL='false' # -s :use spinning wheel option
 B_TESTING_1='false' # -! 1 :testing flag 1
 B_TESTING_2='false' # -! 2 :testing flag 2
 
+# this is how fast the spinning wheel moves. Anything less than 0.5 not
+# recommended due to performance problems on most machines.
+# Lower number means wheel moves faster. Slower machine, change to 1
+SLEEP_TIME_SPINNER='0.5'
+# time between backup operations, make integer
+SLEEP_TIME_BACKUP='3'
+# time forced exit allows for disk write syncs before umount occurs
+SLEEP_TIME_UMOUNT='5'
+
+########################################################################
+#### FINAL STEP - DO NOT SKIP! #########################################
+########################################################################
 # and last but not least, set this to 'true' once you are done. Failure to do this will make
 # rbxi exit with errors, since you can't run it without having completed these user variables
 B_VARIABLES_SET='false'

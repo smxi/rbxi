@@ -1,0 +1,2 @@
+- **/.Trash-*
+- **/lost+found

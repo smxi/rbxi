@@ -7,5 +7,9 @@
 + **/socket/
 - **/socket
 
+### trash ###
+- **/.Trash-*
+- **/lost+found
+
 ### User Data ###
 

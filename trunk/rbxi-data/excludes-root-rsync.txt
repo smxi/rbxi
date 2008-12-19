@@ -17,6 +17,10 @@
 + xover-cache/
 - **/xover-cache/*
 
+### trash ###
+- **/.Trash-*
+- **/lost+found
+
 ### sockets ###
 + **/*.sock/
 - **/*.sock
@@ -27,4 +31,3 @@
 /home/*/**
 /media/*/**
 /mnt/*/**
-
