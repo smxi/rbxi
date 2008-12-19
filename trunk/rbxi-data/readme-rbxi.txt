@@ -2,7 +2,7 @@
 ####### README DIRECTIONS FOR rbxi RDIFF-BACKUP/RSYNC SCRIPT ############
 #########################################################################
 ####  Name: rbxi-readme.txt
-####  Version: 2.0.0
+####  Version: 2.0.1
 #########################################################################
 
 rbxi script is designed to only require a single setup, one time.
@@ -497,11 +497,11 @@ BACKUP DISK / PARTITION mount / umount
 Note that MOUNT/UNMOUNT 1-10 are triggered by the -M option
 
 If you want the script to automatically mount/umount your backup drive / partition,
-use this. If you don't want this, just leave the variables with a blank value, like this:
+use this. If you don't want this, just leave the variables with a blank value.
 .........................................................................
 for rdiff-backup
-MOUNT_BU_DISK=''
-UNMOUNT_BU_DISK=''
+MOUNT_BU_DISK='mount -L backup-disk-1 $BACKUP_DIRECTORY'
+UNMOUNT_BU_DISK='umount $BACKUP_DIRECTORY'
 MOUNT_BU_DISK_1=''
 UNMOUNT_BU_DISK_1=''
 MOUNT_BU_DISK_2=''
@@ -522,30 +522,6 @@ MOUNT_BU_DISK_9=''
 UNMOUNT_BU_DISK_9=''
 MOUNT_BU_DISK_10=''
 UNMOUNT_BU_DISK_10=''
-
-rsync mounts
-MOUNT_BU_DISK_RS="mount -L backup-disk-1 $BACKUP_DIRECTORY_RS"
-UNMOUNT_BU_DISK_RS="umount $BACKUP_DIRECTORY_RS"
-MOUNT_BU_DISK_1_RS=''
-UNMOUNT_BU_DISK_1_RS=''
-MOUNT_BU_DISK_RS_2=''
-UNMOUNT_BU_DISK_RS_2=''
-MOUNT_BU_DISK_RS_3=''
-UNMOUNT_BU_DISK_RS_3=''
-MOUNT_BU_DISK_RS_4=''
-UNMOUNT_BU_DISK_RS_4=''
-MOUNT_BU_DISK_RS_5=''
-UNMOUNT_BU_DISK_RS_5=''
-MOUNT_BU_DISK_6_RS=''
-UNMOUNT_BU_DISK_6_RS=''
-MOUNT_BU_DISK_7_RS=''
-UNMOUNT_BU_DISK_7_RS=''
-MOUNT_BU_DISK_8_RS=''
-UNMOUNT_BU_DISK_8_RS=''
-MOUNT_BU_DISK_9_RS=''
-UNMOUNT_BU_DISK_9_RS=''
-MOUNT_BU_DISK_10_RS=''
-UNMOUNT_BU_DISK_10_RS=''
 
 .........................................................................
 Otherwise, set the full command for mount/umount like these samples. I recommend using
