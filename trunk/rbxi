@@ -1,7 +1,7 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi
-####  Version: 2.0.4
+####  Version: 2.0.5
 ####  Date: 18 December 2008
 ####  Copyright (C) Harald Hope 2006-9
 ####
@@ -633,7 +633,21 @@ check_script_path()
 
 check_bu_app_installed()
 {
-	if [ -z "$( which $BACKUP_APP )" ];then
+	local pathExists='' appToCheck=''
+	# this must set error to /dev/null to avoid false positive in some cases
+	local appWhich="$( which $BACKUP_APP )"
+
+	# more handling is required for cron jobs, which might not show which output
+	case $BACKUP_APP in
+		rdiff-backup)
+			appToCheck=$RDIFF_PATH
+			;;
+		rsync)
+			appToCheck=$RSYNC_PATH
+			;;
+	esac
+	# checking the actual paths here, not relying on unreliable which output
+	if [ ! -x "$appWhich" -a ! -x $appToCheck ];then
 		error_handler 14 $BACKUP_APP
 	fi
 }
