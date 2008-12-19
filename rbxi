@@ -57,82 +57,9 @@ WLINE=${W}$LI${N}
 ####  USER SPECIFIC VARIABLES - REQUIRES rbxi-data/rbxi-values file
 ####--------------------------------------------------------------------
 
-### See the file rbxi-data/rbxi-values for more complete instructions on now to
-### set these variables. That file will be the actual data used, not this part
-### which just initializes the variables. Script cannot run without the user data
-### values file rbxi-data/rbxi-values
-
-BACKUP_APP=''
-BACKUP_DIRECTORY=''
-BACKUP_DIRECTORY_RS=''
-BACKUP_LOCATION=''
-BACKUP_LOCATION_RS=''
-HOME_DIR=''
-ROOT_DIR=''
-DATA_1_DIR=''
-DATA_2_DIR=''
-DATA_3_DIR=''
-DATA_4_DIR=''
-DATA_5_DIR=''
-DATA_6_DIR=''
-DATA_7_DIR=''
-DATA_8_DIR=''
-DATA_9_DIR=''
-DATA_10_DIR=''
-HOME_PATH=''
-ROOT_PATH=''
-DATA_1_PATH=''
-DATA_2_PATH=''
-DATA_3_PATH=''
-DATA_4_PATH=''
-DATA_5_PATH=''
-DATA_6_PATH=''
-DATA_7_PATH=''
-DATA_8_PATH=''
-DATA_9_PATH=''
-DATA_10_PATH=''
-DATA_1_DESC=''
-DATA_2_DESC=''
-DATA_3_DESC=''
-DATA_4_DESC=''
-DATA_5_DESC=''
-DATA_6_DESC=''
-DATA_7_DESC=''
-DATA_8_DESC=''
-DATA_9_DESC=''
-DATA_10_DESC=''
-ROOT_DESC=''
-RDIFF_EXTRA_OPTIONS=''
-RSYNC_EXTRA_OPTIONS=''
-SLEEP_TIME_BACKUP=''
-SLEEP_TIME_SPINNER=''
-MOUNT_BU_DISK=""
-UNMOUNT_BU_DISK=""
-
-# these are for options, used in case of cron or option run backups/deletes
-B_CLEAN_OLDER=''
-B_CLONE_HOME=''
-B_CLONE_ROOT=''
-B_DELETE_BACKUP=''
-B_DO_BACKUP=''
-B_SKIP_DATA_FULL=''
-B_SKIP_DATA_1=''
-B_SKIP_DATA_2=''
-B_SKIP_DATA_3=''
-B_SKIP_DATA_4=''
-B_SKIP_DATA_5=''
-B_SKIP_DATA_6=''
-B_SKIP_DATA_7=''
-B_SKIP_DATA_8=''
-B_SKIP_DATA_9=''
-B_SKIP_DATA_10=''
-B_SKIP_HOME=''
-B_SKIP_MOUNT=''
-B_SKIP_ROOT=''
-B_SPINNING_WHEEL=''
-B_TESTING_1=''
-B_TESTING_2=''
-B_VARIABLES_SET=''
+### See the file rbxi-data/rbxi-values for variable lists and how to
+### set them. That file will be the actual data used.
+### rbxi cannot run without the user data values file: rbxi-data/rbxi-values
 
 ########################################################################
 ####  STATIC VARIABLES, SHOULD NOT REQUIRE CHANGES
