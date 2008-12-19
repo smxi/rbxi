@@ -13,8 +13,9 @@
 - /var/cache/apt/archives/
 - **/xover-cache/*
 
+- **/.Trash-*
+- **/lost+found
+
 - /home/*/*
 - /media/*/*
 - /mnt/*/*
-
-

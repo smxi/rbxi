@@ -1,8 +1,8 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi
-####  Version: 2.0.6
-####  Date: 18 December 2008
+####  Version: 2.1.0
+####  Date: 19 December 2008
 ####  Copyright (C) Harald Hope 2006-9
 ####
 ####  This program is free software; you can redistribute it and/or modify it under
@@ -146,12 +146,27 @@ ENDING_2='...'
 # for timer function
 START_TIME=$( date +%s )
 
+# initialize internal booleans
+B_CLONE_HOME='false'
+B_CLONE_ROOT='false'
+B_CLONE_DATA_1='false'
+B_CLONE_DATA_2='false'
+B_CLONE_DATA_3='false'
+B_CLONE_DATA_4='false'
+B_CLONE_DATA_5='false'
+B_CLONE_DATA_6='false'
+B_CLONE_DATA_7='false'
+B_CLONE_DATA_8='false'
+B_CLONE_DATA_9='false'
+B_CLONE_DATA_10='false'
+B_DELETE_STATUS='false'
+B_IS_CLONE='false'
 # initialize globals to be set later
 BACKUP_CLEAR=''
 BACKUP_DURATION=''
 # only for logging/history purposes
-BACKUP_JOB_NU='default'
-DELETE_STATUS='false'
+BACKUP_JOB_NU='none'
+CLONE_SOURCE_DIR=''
 DELETION_TEXT=''
 # spinning wheel pid value
 GET_PID=''
@@ -178,13 +193,14 @@ print_usage()
 	if [ "$1" == 'err' ];then
 		echo 'You entered an invalid option. Please use one of the following only:'
 	fi
-	echo '-A Add backup component. Overrides user set B_SKIP_DATA.. (d|h|hr|1|2|3|4|5|6|7|8|9|10)'
+	echo '-A Add backup component. Overrides user set B_SKIP_DATA.. (d|h|hr|r|1-10)'
 	echo '   d - add all DATA; h - add HOME; r - add ROOT; add DATA 1-10'
 	echo '-b Automatic backup, non interactive.'
 	echo '-B Change default backup directory (1-10).'
-	echo '-c Automatic backup, clean older files, for non-interactive (runs -b also).'
-	echo '-C Clone root/home. Skips all data backups. Moves files directly to mounted location."
-	echo "   Sets the main mount subdirectory to ''. Takes parameters: (r|h) Clone root/home.'
+	echo '-c Automatic backup, clean older files, then runs non-interactive backup.'
+	echo '-C (rsync only) Clone root/home. Skips all data backups. Moves files directly to mounted location'
+	echo '   Sets the main mount subdirectory to '', then transfers files directly into that directory.'
+	echo '   Takes parameters: (h|r|1-10). Clone root, home, or a data direcory.'
 	echo '-d Automatic backup and delete, non interactive.'
 	echo '-D Change default backup sub directory (1-10).'
 	echo '-J Start preset backup job (1-10). Cannot be used with any other option.'
@@ -194,25 +210,32 @@ print_usage()
 	echo '-o Override default backup application."
 	echo "   Requires argument: rs for rsync; rd for rdiff-backup'
 	echo '-s Show spinning wheel indicator.'
-	echo '-S Skip backup component (d|h|hr|1|2|3|4|5|6|7|8|9|10)'
+	echo '-S Skip backup component (d|h|hr|1-10)'
 	echo '   d - skip all DATA; h - skip HOME; r - skip ROOT; skip DATA 1-10'
 	echo '-U Update script manually from svn server.'
 	echo '-v Show script version and last used information.'
 	echo '-h This help menu'
 	echo
-	echo "In general, avoid using A, D, M, S unless you are creating a backup job -J"
+	echo 'In general, avoid using A, D, M, S unless you are creating a backup job -J, or if you want'
+	echo 'temporarily skip (-S) or add (-A) a specific directory.'
 	echo
-	echo "-S and -A can be used repeatedly, like so: -S 2 -S 5 -S 9"
-	echo "Remember, -A should only be used to override SKIP... that has been set in rbxi-values."
+	echo '-S and -A can be used repeatedly, like so: -S 2 -S 5 -S 9'
+	echo 'Remember, -A should only be used to override SKIP... that has been set in rbxi-values.'
+	echo '-C overrides -A which overrides -S. -C will only clone the specific directory you set,'
+	echo 'directly to the destination directory, and switches off all other backup directories.'
+	echo '-C overrides -D, or default backup subdirectory, and sets it to null.'
+	echo '-D overrides default main mount backup directory, and uses that for -M'
 	exit 0
 }
 
 ### this is not in a function because these variables need to be set on startup
 # only use b or d, not both together. If you use both your old backups will be deleted.
 # args: $1 - $@ - all args
+# -A and -S can iterate repeatedly
 get_options()
 {
 	local opt='' setDirectory='' setSubDir='' setMount=''
+	local setFullAdds='' setFullSkips='' setCloneData=''
 
 	while getopts :A:bB:cC:dD:hj:J:LmM:o:sS:Uv!: opt
 	do
@@ -220,7 +243,7 @@ get_options()
 			h)	print_usage
 				;;
 			A)	if [ -n "$( egrep '^(d|h|r|rh|hr|[1-9]|10)$' <<< $OPTARG )" ];then
-					set_add_data $OPTARG
+					setFullAdds="$setFullAdds $OPTARG"
 				else
 					error_handler 13 "-$opt $OPTARG"
 				fi
@@ -235,26 +258,9 @@ get_options()
 				;;
 			c)	B_CLEAN_OLDER='true'
 				;;
-			C)	if [ -n "$( egrep '^(r|h|rh|hr)$' <<< $OPTARG )" ];then
-					B_SKIP_DATA_FULL='true'
-					BACKUP_LOCATION=''
-					BACKUP_LOCATION_RS=''
-					case $OPTARG in
-						h)
-							B_CLONE_HOME='true'
-							HOME_DIR='home'
-							;;
-						r)
-							B_CLONE_ROOT='true'
-							ROOT_DIR=''
-							;;
-						rh|hr)
-							B_CLONE_HOME='true'
-							B_CLONE_ROOT='true'
-							HOME_PATH='home'
-							ROOT_PATH=''
-							;;
-					esac
+			C)	if [ -n "$( egrep '^(r|h|[1-9]|10)$' <<< $OPTARG )" ];then
+					setCloneData=$OPTARG
+					B_IS_CLONE='true'
 				else
 					error_handler 13 "-$opt $OPTARG"
 				fi
@@ -272,7 +278,7 @@ get_options()
 				fi
 				;;
 			J)	if [ -n "$( egrep '^([1-9]|10)$' <<< $OPTARG )" ];then
-					set_print_backup_job "$OPTARG" 'set'
+					set_or_print_backup_job "$OPTARG" 'set'
 				else
 					error_handler 13 "-$opt $OPTARG"
 				fi
@@ -306,7 +312,7 @@ get_options()
 				ENDING_2=', watch the spinning wheel: '
 				;;
 			S)	if [ -n "$( egrep '^(d|h|r|rh|hr|[1-9]|10)$' <<< $OPTARG )" ];then
-					set_skip_data $OPTARG
+					setFullSkips="$setFullSkips $OPTARG"
 				else
 					error_handler 13 "-$opt $OPTARG"
 				fi
@@ -344,11 +350,23 @@ get_options()
 	done
 	# note, because mount will use the first value, I have to set this here, to
 	# ensure the proper order. Or you can just set the stuff manually in your rbxi-values file
+	# Clone -C overrides Adds -A override skips -S. -A and -S can handle multiple iterations.
+	# -C overrides -D, backup subdirectory, and sets it to null
+	# -D overrides default main backup directory for -M
 	if [ -n "$setDirectory" ];then
 		set_backup_directory "$setDirectory"
 	fi
 	if [ -n "$setSubDir" ];then
 		set_backup_sub_directory "$setSubDir"
+	fi
+	if [ -n "$setFullSkips" ];then
+		set_skip_data "$setFullSkips"
+	fi
+	if [ -n "$setFullAdds" ];then
+		set_add_data "$setFullAdds"
+	fi
+	if [ -n "$setCloneData" ];then
+		set_clone_data "$setCloneData"
 	fi
 	if [ -n "$setMount" ];then
 		set_mount_data "$setMount"
@@ -410,8 +428,14 @@ error_handler()
 		18)
 			error_message="The backup directory you selected ($2) is empty.\nYou cannot backup to, or mount, a blank directory."
 			;;
+		19)
+			error_message="Your backup program $BACKUP_APP does not support the -C clone option."
+			;;
+		20)
+			error_message="The backup source directory: $2 does not exist. Unable to continue."
+			;;
 		50)
-			error_message="User initiated script exit. Shutting down now."
+			error_message="User initiated script termination. Exiting $SCRIPT_NAME now."
 			;;
 		100)
 			error_message="$SCRIPT_NAME does not yet support the backup app you requested: $2\nThis support should be coming sometime soon.\nCurrently supported backup applications are: rdiff-backup."
@@ -583,10 +607,22 @@ spinning_wheel_activity_indicator()
 # args: $1 umount/
 trap_handler()
 {
+	local i=''
+
  	case "$1" in
  		umount)
- 			echo "${S}Waiting a few seconds to let disk writes sync before exiting...${N}"
- 			sleep 5 # give the disk time sync its writes before umount...
+ 			echo
+ 			echo "${S}You are leaving $SCRIPT_NAME with the backup partition still mounted!"
+ 			echo "Waiting a few seconds to let disk writes sync before exiting...${N}"
+ 			# give the disk time sync its writes before umount...
+ 			# set in rbxi-values if you need to increase or decrease the time for premature
+ 			# or forced script exit for umount operation to work successfully.
+ 			for (( i=0; i < $SLEEP_TIME_UMOUNT; i++ ))
+ 			do
+ 				echo -n "${S}...tick${N}"
+ 				sleep $i
+ 			done
+ 			echo "${S}...done!${N}"
  			umount_backup_disk
  			# set trap to null to avoid loops for final exits
 			trap - INT TERM EXIT
@@ -620,6 +656,9 @@ check_startup_stuff()
 	if [ "$B_VARIABLES_SET" != 'true' ];then
 		error_handler 16
 	fi
+	if [ "$B_IS_CLONE" == 'true' -a "$BACKUP_APP" != 'rsync' ];then
+		error_handler 19
+	fi
 }
 
 check_script_path()
@@ -652,6 +691,14 @@ check_bu_app_installed()
 	fi
 }
 
+# args: $1 - directory full path to check
+check_backup_source_directory()
+{
+	if [ ! -d "$1" ];then
+		error_handler 20 "$1"
+	fi
+}
+
 create_etc_configs()
 {
 	if [ ! -f $SCRIPT_CONFIGS ];then
@@ -675,7 +722,7 @@ create_etc_configs()
 }
 
 #### -------------------------------------------------------------------
-#### set data functions
+#### set data functions - primary, directory, backup commands, mount
 #### -------------------------------------------------------------------
 
 # load proper values for locations and command strings
@@ -688,8 +735,15 @@ set_primary_backup_data()
 			if [ -z "$BACKUP_DIRECTORY_RS" ];then
 				error_handler 18 'BACKUP_DIRECTORY_RS'
 			fi
+			# then remove this data, since we only use the primary directories
+			if [ "$B_IS_CLONE" == 'true' ];then
+				BACKUP_SUB_DIR_RS=''
+			fi
+
 			# note: these values were set in set_backup_directory
 			# and set_backup_sub_directory if -B or -D were used
+			# note: this is required for mounts
+			BACKUP_DIRECTORY=$BACKUP_DIRECTORY_RS
 			BACKUP_LOCATION=$BACKUP_DIRECTORY_RS$BACKUP_SUB_DIR_RS
 			EXCLUDE_ROOT=$EXCLUDE_ROOT_RS
 			EXCLUDE_HOME=$EXCLUDE_HOME_RS
@@ -730,50 +784,38 @@ set_backup_directory_data()
 		mkdir $BACKUP_LOCATION
 	fi
 
-	# assemble the backup paths, first two can be null if it's a clone
-	if [ "$HOME_DIR" != '' -o "$B_CLONE_HOME" == 'true' ];then
-		HOME_BACKUP=$BACKUP_LOCATION/$HOME_DIR
+	# assemble the backup paths, if they are clones sub directory can be null
+	HOME_BACKUP=$( set_backup_directory_path "$BACKUP_LOCATION" "$HOME_DIR" )
+	ROOT_BACKUP=$( set_backup_directory_path "$BACKUP_LOCATION" "$ROOT_DIR" )
+	DATA_1_BACKUP=$( set_backup_directory_path "$BACKUP_LOCATION" "$DATA_1_DIR" )
+	DATA_2_BACKUP=$( set_backup_directory_path "$BACKUP_LOCATION" "$DATA_2_DIR" )
+	DATA_3_BACKUP=$( set_backup_directory_path "$BACKUP_LOCATION" "$DATA_3_DIR" )
+	DATA_4_BACKUP=$( set_backup_directory_path "$BACKUP_LOCATION" "$DATA_4_DIR" )
+	DATA_5_BACKUP=$( set_backup_directory_path "$BACKUP_LOCATION" "$DATA_5_DIR" )
+	DATA_6_BACKUP=$( set_backup_directory_path "$BACKUP_LOCATION" "$DATA_6_DIR" )
+	DATA_7_BACKUP=$( set_backup_directory_path "$BACKUP_LOCATION" "$DATA_7_DIR" )
+	DATA_8_BACKUP=$( set_backup_directory_path "$BACKUP_LOCATION" "$DATA_8_DIR" )
+	DATA_9_BACKUP=$( set_backup_directory_path "$BACKUP_LOCATION" "$DATA_9_DIR" )
+	DATA_10_BACKUP=$( set_backup_directory_path "$BACKUP_LOCATION" "$DATA_10_DIR" )
+}
+
+# This makes sure that ending slashes do not occur in backup directory paths.
+# args: $1 - $BACKUP_LOCATION; $2 - backup subdirectory. If null, use just use $1
+set_backup_directory_path()
+{
+	local backupPath=$1
+
+	if [ -n "$2" ];then
+		backupPath="$backupPath/$2"
 	fi
-	if [ "$ROOT_DIR" != '' -o "$B_CLONE_ROOT" == 'true' ];then
-		ROOT_BACKUP=$BACKUP_LOCATION/$ROOT_DIR
-	fi
-	if [ "$DATA_1_DIR" != '' ];then
-		DATA_1_BACKUP=$BACKUP_LOCATION/$DATA_1_DIR
-	fi
-	if [ "$DATA_2_DIR" != '' ];then
-		DATA_2_BACKUP=$BACKUP_LOCATION/$DATA_2_DIR
-	fi
-	if [ "$DATA_3_DIR" != '' ];then
-		DATA_3_BACKUP=$BACKUP_LOCATION/$DATA_3_DIR
-	fi
-	if [ "$DATA_4_DIR" != '' ];then
-		DATA_4_BACKUP=$BACKUP_LOCATION/$DATA_4_DIR
-	fi
-	if [ "$DATA_5_DIR" != '' ];then
-		DATA_5_BACKUP=$BACKUP_LOCATION/$DATA_5_DIR
-	fi
-	if [ "$DATA_6_DIR" != '' ];then
-		DATA_6_BACKUP=$BACKUP_LOCATION/$DATA_6_DIR
-	fi
-	if [ "$DATA_7_DIR" != '' ];then
-		DATA_7_BACKUP=$BACKUP_LOCATION/$DATA_7_DIR
-	fi
-	if [ "$DATA_8_DIR" != '' ];then
-		DATA_8_BACKUP=$BACKUP_LOCATION/$DATA_8_DIR
-	fi
-	if [ "$DATA_9_DIR" != '' ];then
-		DATA_9_BACKUP=$BACKUP_LOCATION/$DATA_9_DIR
-	fi
-	if [ "$DATA_10_DIR" != '' ];then
-		DATA_10_BACKUP=$BACKUP_LOCATION/$DATA_10_DIR
-	fi
+	echo $backupPath
 }
 
 set_backup_commands()
 {
 	case "$BACKUP_APP" in
 		rsync)
-			if [ "$B_CLEAN_OLDER" != 'true' ];then
+			if [ "$B_CLEAN_OLDER" == 'true' ];then
 				RSYNC_DELETE=' --delete --delete-excluded '
 			fi
 			# set commands
@@ -980,130 +1022,8 @@ set_mount_data()
 	esac
 }
 
-# args: $1 - item to add, this can be called repeatedly
-set_add_data()
-{
-	case $1 in
-		d)
-			B_SKIP_DATA_FULL='false'
-			B_SKIP_DATA_1='false'
-			B_SKIP_DATA_2='false'
-			B_SKIP_DATA_3='false'
-			B_SKIP_DATA_4='false'
-			B_SKIP_DATA_5='false'
-			B_SKIP_DATA_6='false'
-			B_SKIP_DATA_7='false'
-			B_SKIP_DATA_8='false'
-			B_SKIP_DATA_9='false'
-			B_SKIP_DATA_10='false'
-			;;
-		h)
-			B_SKIP_HOME='false'
-			;;
-		r)
-			B_SKIP_ROOT='false'
-			;;
-		rh|hr)
-			B_SKIP_HOME='false'
-			B_SKIP_ROOT='false'
-			;;
-		# note that B_SKIP_DATA_FULL='false' is required
-		# to override the block off switch for DATA
-		1)
-			B_SKIP_DATA_1='false'
-			B_SKIP_DATA_FULL='false'
-			;;
-		2)
-			B_SKIP_DATA_2='false'
-			B_SKIP_DATA_FULL='false'
-			;;
-		3)
-			B_SKIP_DATA_3='false'
-			B_SKIP_DATA_FULL='false'
-			;;
-		4)
-			B_SKIP_DATA_4='false'
-			B_SKIP_DATA_FULL='false'
-			;;
-		5)
-			B_SKIP_DATA_5='false'
-			B_SKIP_DATA_FULL='false'
-			;;
-		6)
-			B_SKIP_DATA_6='false'
-			B_SKIP_DATA_FULL='false'
-			;;
-		7)
-			B_SKIP_DATA_7='false'
-			B_SKIP_DATA_FULL='false'
-			;;
-		8)
-			B_SKIP_DATA_8='false'
-			B_SKIP_DATA_FULL='false'
-			;;
-		9)
-			B_SKIP_DATA_9='false'
-			B_SKIP_DATA_FULL='false'
-			;;
-		10)
-			B_SKIP_DATA_10='false'
-			B_SKIP_DATA_FULL='false'
-			;;
-	esac
-}
-
-# args: $1 - item to skip, this can be called repeatedly
-set_skip_data()
-{
-	case $1 in
-		d)
-			B_SKIP_DATA_FULL='true'
-			;;
-		h)
-			B_SKIP_HOME='true'
-			;;
-		r)
-			B_SKIP_ROOT='true'
-			;;
-		rh|hr)
-			B_SKIP_HOME='true'
-			B_SKIP_ROOT='true'
-			;;
-		1)
-			B_SKIP_DATA_1='true'
-			;;
-		2)
-			B_SKIP_DATA_2='true'
-			;;
-		3)
-			B_SKIP_DATA_3='true'
-			;;
-		4)
-			B_SKIP_DATA_4='true'
-			;;
-		5)
-			B_SKIP_DATA_5='true'
-			;;
-		6)
-			B_SKIP_DATA_6='true'
-			;;
-		7)
-			B_SKIP_DATA_7='true'
-			;;
-		8)
-			B_SKIP_DATA_8='true'
-			;;
-		9)
-			B_SKIP_DATA_9='true'
-			;;
-		10)
-			B_SKIP_DATA_10='true'
-			;;
-	esac
-}
-
 # args: $1 - backup job number; $2 - set/print
-set_print_backup_job()
+set_or_print_backup_job()
 {
 	local backupJob=''
 
@@ -1156,55 +1076,320 @@ set_print_backup_job()
 }
 
 #### -------------------------------------------------------------------
+#### set add, skip, clone data
+#### -------------------------------------------------------------------
+
+# remember, -A overrides -S if they are the same SKIP item.
+# args: $1 - items to add, loops through all.
+set_add_data()
+{
+	local addItem=''
+
+	for addItem in $1
+	do
+		case $addItem in
+			d)
+				B_SKIP_DATA_FULL='false'
+				B_SKIP_DATA_1='false'
+				B_SKIP_DATA_2='false'
+				B_SKIP_DATA_3='false'
+				B_SKIP_DATA_4='false'
+				B_SKIP_DATA_5='false'
+				B_SKIP_DATA_6='false'
+				B_SKIP_DATA_7='false'
+				B_SKIP_DATA_8='false'
+				B_SKIP_DATA_9='false'
+				B_SKIP_DATA_10='false'
+				;;
+			h)
+				B_SKIP_HOME='false'
+				;;
+			r)
+				B_SKIP_ROOT='false'
+				;;
+			rh|hr)
+				B_SKIP_HOME='false'
+				B_SKIP_ROOT='false'
+				;;
+			# note that B_SKIP_DATA_FULL='false' is required
+			# to override the block off switch for DATA
+			1)
+				B_SKIP_DATA_1='false'
+				B_SKIP_DATA_FULL='false'
+				;;
+			2)
+				B_SKIP_DATA_2='false'
+				B_SKIP_DATA_FULL='false'
+				;;
+			3)
+				B_SKIP_DATA_3='false'
+				B_SKIP_DATA_FULL='false'
+				;;
+			4)
+				B_SKIP_DATA_4='false'
+				B_SKIP_DATA_FULL='false'
+				;;
+			5)
+				B_SKIP_DATA_5='false'
+				B_SKIP_DATA_FULL='false'
+				;;
+			6)
+				B_SKIP_DATA_6='false'
+				B_SKIP_DATA_FULL='false'
+				;;
+			7)
+				B_SKIP_DATA_7='false'
+				B_SKIP_DATA_FULL='false'
+				;;
+			8)
+				B_SKIP_DATA_8='false'
+				B_SKIP_DATA_FULL='false'
+				;;
+			9)
+				B_SKIP_DATA_9='false'
+				B_SKIP_DATA_FULL='false'
+				;;
+			10)
+				B_SKIP_DATA_10='false'
+				B_SKIP_DATA_FULL='false'
+				;;
+		esac
+	done
+}
+
+# args: $1 - directory/ies to be cloned
+set_clone_data()
+{
+	case $1 in
+		h)
+			B_CLONE_HOME='true'
+			HOME_DIR='home'
+			B_SKIP_DATA_FULL='true'
+			B_SKIP_ROOT='true'
+			CLONE_SOURCE_DIR=$HOME_PATH
+			;;
+		r)
+			B_CLONE_ROOT='true'
+			ROOT_DIR=''
+			B_SKIP_DATA_FULL='true'
+			B_SKIP_HOME='true'
+			CLONE_SOURCE_DIR=$ROOT_PATH
+			;;
+		1)
+			set_clone_skip_data
+			B_CLONE_DATA_1='true'
+			DATA_1_DIR=''
+			CLONE_SOURCE_DIR=$DATA_1_PATH
+			;;
+		2)
+			set_clone_skip_data
+			B_CLONE_DATA_2='true'
+			DATA_2_DIR=''
+			CLONE_SOURCE_DIR=$DATA_2_PATH
+			;;
+		3)
+			set_clone_skip_data
+			B_CLONE_DATA_3='true'
+			DATA_3_DIR=''
+			CLONE_SOURCE_DIR=$DATA_3_PATH
+			;;
+		4)
+			set_clone_skip_data
+			B_CLONE_DATA_4='true'
+			DATA_4_DIR=''
+			CLONE_SOURCE_DIR=$DATA_4_PATH
+			;;
+		5)
+			set_clone_skip_data
+			B_CLONE_DATA_5='true'
+			DATA_5_DIR=''
+			CLONE_SOURCE_DIR=$DATA_5_PATH
+			;;
+		6)
+			set_clone_skip_data
+			B_CLONE_DATA_6='true'
+			DATA_6_DIR=''
+			CLONE_SOURCE_DIR=$DATA_6_PATH
+			;;
+		7)
+			set_clone_skip_data
+			B_CLONE_DATA_7='true'
+			DATA_7_DIR=''
+			CLONE_SOURCE_DIR=$DATA_7_PATH
+			;;
+		8)
+			set_clone_skip_data
+			B_CLONE_DATA_8='true'
+			DATA_8_DIR=''
+			CLONE_SOURCE_DIR=$DATA_8_PATH
+			;;
+		9)
+			set_clone_skip_data
+			B_CLONE_DATA_9='true'
+			DATA_9_DIR=''
+			CLONE_SOURCE_DIR=$DATA_9_PATH
+			;;
+		10)
+			set_clone_skip_data
+			B_CLONE_DATA_10='true'
+			DATA_10_DIR=''
+			CLONE_SOURCE_DIR=$DATA_10_PATH
+			;;
+	esac
+	# make sure no user error occured
+	check_backup_source_directory "$CLONE_SOURCE_DIR"
+}
+
+# set all data to false except for
+# explicitly set clone item and FULL
+set_clone_skip_data()
+{
+	B_SKIP_DATA_FULL='false'
+	B_SKIP_DATA_1='true'
+	B_SKIP_DATA_2='true'
+	B_SKIP_DATA_3='true'
+	B_SKIP_DATA_4='true'
+	B_SKIP_DATA_5='true'
+	B_SKIP_DATA_6='true'
+	B_SKIP_DATA_7='true'
+	B_SKIP_DATA_8='true'
+	B_SKIP_DATA_9='true'
+	B_SKIP_DATA_10='true'
+	B_SKIP_HOME='true'
+	B_SKIP_ROOT='true'
+}
+
+# remember, -A overrides -S if they are the same SKIP item.
+# args: $1 - items to skip, loops through all.
+set_skip_data()
+{
+	local skipItem=''
+
+	for skipItem in
+	do
+		case $skipItem in
+			d)
+				B_SKIP_DATA_FULL='true'
+				;;
+			h)
+				B_SKIP_HOME='true'
+				;;
+			r)
+				B_SKIP_ROOT='true'
+				;;
+			rh|hr)
+				B_SKIP_HOME='true'
+				B_SKIP_ROOT='true'
+				;;
+			1)
+				B_SKIP_DATA_1='true'
+				;;
+			2)
+				B_SKIP_DATA_2='true'
+				;;
+			3)
+				B_SKIP_DATA_3='true'
+				;;
+			4)
+				B_SKIP_DATA_4='true'
+				;;
+			5)
+				B_SKIP_DATA_5='true'
+				;;
+			6)
+				B_SKIP_DATA_6='true'
+				;;
+			7)
+				B_SKIP_DATA_7='true'
+				;;
+			8)
+				B_SKIP_DATA_8='true'
+				;;
+			9)
+				B_SKIP_DATA_9='true'
+				;;
+			10)
+				B_SKIP_DATA_10='true'
+				;;
+		esac
+	done
+}
+
+#### -------------------------------------------------------------------
 #### primary backup tools
 #### -------------------------------------------------------------------
 
 run_backup_question()
 {
 	local opt='' options='' doTheBackup='' removeBackup='' repeat=''
-	local removeDeleteOpt=''
+	local removeDeleteOpt='' nullCloneSource='' cloneSource=''
 
 	echo $MLINE
 	print_history_data 'main'
 	echo $MLINE
-	if [ "$BACKUP_JOB_NU" != 'default' ];then
+	if [ "$BACKUP_JOB_NU" != 'none' ];then
 		echo "${S}You are currently about to run backup job number: ${C}$BACKUP_JOB_NU"
-		set_print_backup_job "$BACKUP_JOB_NU" 'print'
+		set_or_print_backup_job "$BACKUP_JOB_NU" 'print'
 		echo $LINE
 	fi
-	case "$BACKUP_APP" in
-		rdiff-backup)
-			echo "${S}Backups use standard $BACKUP_APP settings, which lets you restore from any time"
-			echo "period stored in the full backup. After first full backup, the next ones will be"
-			echo "incremental backups, which run much faster since they only backup changed files."
-			;;
-		rsync)
-			echo "${S}This will backup your system to the backup directories you have already set up"
-			echo "for your $BACKUP_APP backup."
-			;;
-	esac
+	if [ "$B_IS_CLONE" == 'true' ];then
+
+		if [ -z "$CLONE_SOURCE_DIR" ];then
+			nullCloneSource='echo -e "${S}Your Clone Source Directory is ${W}empty${S}.${S} Unless you are cloning ${C}root${S}, this is\nprobably a mistake. Make sure this is correct before you proceed please.\n"'
+			cloneSource='empty'
+		else
+			cloneSource=$CLONE_SOURCE_DIR
+		fi
+
+		echo "${W}You are about to run a direct Clone job (-C) using these directories:${S}"
+		echo "Source Directory: ${C}$cloneSource${S} :: Destination Directory: ${C}$BACKUP_DIRECTORY"
+		echo
+		eval "$nullCloneSource"
+		echo "${S}Cloning will sync all destination files with your source directory files, and remove"
+		echo "any obsolete files from the destination directory. ${W}BE CAREFUL WITH THIS!!!"
+		echo $LINE
+
+		echo "${C}1 - run-clone-job${S} - Clones the above Source Data to Destination directory."
+		echo
+		echo "${C}2 - quit${S} - Don't do the Clone after all, exit script."
+
+		options="run-clone-job quit"
+	else
+		case "$BACKUP_APP" in
+			rdiff-backup)
+				echo "${S}Backups use standard $BACKUP_APP settings, which lets you restore from any time"
+				echo "period stored in the full backup. After first full backup, the next ones will be"
+				echo "incremental backups, which run much faster since they only backup changed files."
+				;;
+			rsync)
+				echo "${S}This will backup your system to the backup directories you have already set up"
+				echo "for your $BACKUP_APP backup."
+				;;
+		esac
+		echo $LINE
+		echo "${S}Please select one of the following numbers to assign the correct backup option."
+		echo "${C}1 - backup-normal${S} - Backs up as usual with $BACKUP_APP. Does not remove old backups."
+		case "$BACKUP_APP" in
+			rdiff-backup)
+				echo "${C}2 - clean-older${S} - Removes all backup increments older than your time setting: $RDIFF_REMOVE_TIME"
+				echo "    After the cleanup, runs a new standard backup."
+				removeDeleteOpt='clean-older'
+				;;
+			rsync)
+				echo "${C}2 - clean-obsolete${S} - Removes all backed up up files that have been deleted from"
+				echo "    your current install."
+				removeDeleteOpt='clean-obsolete'
+				;;
+		esac
+		echo "${C}3 - backup-and-delete-old${S} - Backs up but first deletes old backups. This is final, "
+		echo "    so once you agree to remove, no restore of older material will be possible. This will"
+		echo "    delete the backup that corresponds to the currently active primary backup directory."
+		echo
+		echo "${C}4 - quit${S} - Don't do the backup after all, exit script."
+
+		options="backup-normal $removeDeleteOpt backup-and-delete-old quit"
+	fi
 	echo $LINE
-	echo "${S}Please select one of the following numbers to assign the correct backup option."
-	echo "1 - backs up as usual with $BACKUP_APP. Does not remove old backups."
-	case "$BACKUP_APP" in
-		rdiff-backup)
-			echo "2 - clean-older - Removes all backup increments older than your time setting: $RDIFF_REMOVE_TIME"
-			echo "    After the cleanup, runs a new standard backup."
-			removeDeleteOpt='clean-older'
-			;;
-		rsync)
-			echo "2 - clean-obsolete - Removes all backed up up files that have been deleted from"
-			echo "    your current install."
-			removeDeleteOpt='clean-obsolete'
-			;;
-	esac
-	echo "3 - backs up but first deletes old backups. This is final, so once you agree to"
-	echo "    remove, no restore of older material will be possible. This will delete the"
-	echo "    backup that corresponds to the currently active primary backup directory."
-	echo
-	echo "4 - Quit, don't do the backup after all."
-	echo $LINE
-	options="backup-normal $removeDeleteOpt backup-and-delete-old quit"
 	select opt in $options
 	do
 		case $opt in
@@ -1223,6 +1408,10 @@ run_backup_question()
 				doTheBackup='true'
 				;;
 			clean-obsolete)
+				B_CLEAN_OLDER='true'
+				doTheBackup='true'
+				;;
+			run-clone-job)
 				B_CLEAN_OLDER='true'
 				doTheBackup='true'
 				;;
@@ -1347,7 +1536,7 @@ delete_old_backup()
 	echo
 	echo "${S}Starting backup now...${N}"
 	sleep $SLEEP_TIME_BACKUP
-	DELETE_STATUS='true'
+	B_DELETE_STATUS='true'
 }
 
 run_backup_components()
@@ -1360,7 +1549,7 @@ run_backup_components()
 	echo $LINE
 
 	#backup home directory
-	if [ "$HOME_DIR" != '' -a "$B_SKIP_HOME" != 'true' ] || [ "$B_CLONE_HOME" == 'true' ];then
+	if [ "$B_CLONE_HOME" == 'true' ] || [ "$HOME_DIR" != '' -a "$B_SKIP_HOME" != 'true' ];then
 		echo -n "${S}$BACKUP_CLEAR ${C}home${S} directory$ENDING_1${N}"
 		if [ "$B_SPINNING_WHEEL" == 'true' ];then
 			GET_PID=''
@@ -1375,7 +1564,7 @@ run_backup_components()
 	fi
 
 	# backup system root directory
-	if [ "$ROOT_DIR" != '' -a "$B_SKIP_ROOT" != 'true'  ] || [ "$B_CLONE_ROOT" == 'true' ];then
+	if [ "$B_CLONE_ROOT" == 'true' ] || [ "$ROOT_DIR" != '' -a "$B_SKIP_ROOT" != 'true'  ];then
 		echo -n "${S}$BACKUP_CLEAR ${C}root${S} directory ${C}$ROOT_DESC${S}$ENDING_1${N}"
 		if [ "$B_SPINNING_WHEEL" == 'true' ];then
 			GET_PID=''
@@ -1390,8 +1579,8 @@ run_backup_components()
 
 	if [ "$B_SKIP_DATA_FULL" != 'true' ];then
 		# backup optional user data 1
-		if [ "$DATA_1_DIR" != '' -a "$B_SKIP_DATA_1" != 'true' ];then
-			echo -n "${S}$BACKUP_CLEAR${C}$DATA_1_DESC${S} directory$ENDING_1${N}"
+		if [ "$B_CLONE_DATA_1" == 'true' ] || [ "$DATA_1_DIR" != '' -a "$B_SKIP_DATA_1" != 'true' ];then
+			echo -n "${S}$BACKUP_CLEAR ${C}$DATA_1_DESC${S} directory$ENDING_1${N}"
 			if [ "$B_SPINNING_WHEEL" == 'true' ];then
 				GET_PID=''
 				eval $DATA_1_BU_COMMAND &
@@ -1405,8 +1594,8 @@ run_backup_components()
 		fi
 
 		# backup optional user data 2
-		if [ "$DATA_2_DIR" != '' -a "$B_SKIP_DATA_2" != 'true' ];then
-			echo -n "${S}$BACKUP_CLEAR${C}$DATA_2_DESC${S} directory$ENDING_1${N}"
+		if [ "$B_CLONE_DATA_2" == 'true' ] || [ "$DATA_2_DIR" != '' -a "$B_SKIP_DATA_2" != 'true' ];then
+			echo -n "${S}$BACKUP_CLEAR ${C}$DATA_2_DESC${S} directory$ENDING_1${N}"
 			if [ "$B_SPINNING_WHEEL" == 'true' ];then
 				GET_PID=''
 				eval $DATA_2_BU_COMMAND &
@@ -1420,8 +1609,8 @@ run_backup_components()
 		fi
 
 		# backup optional user data 3
-		if [ "$DATA_3_DIR" != '' -a "$B_SKIP_DATA_3" != 'true' ];then
-			echo -n "${S}$BACKUP_CLEAR${C}$DATA_3_DESC${S} directory$ENDING_1${N}"
+		if [ "$B_CLONE_DATA_3" == 'true' ] || [ "$DATA_3_DIR" != '' -a "$B_SKIP_DATA_3" != 'true' ];then
+			echo -n "${S}$BACKUP_CLEAR ${C}$DATA_3_DESC${S} directory$ENDING_1${N}"
 			if [ "$B_SPINNING_WHEEL" == 'true' ];then
 				GET_PID=''
 				eval $DATA_3_BU_COMMAND &
@@ -1435,8 +1624,8 @@ run_backup_components()
 		fi
 
 		# backup optional user data 4
-		if [ "$DATA_4_DIR" != '' -a "$B_SKIP_DATA_4" != 'true' ];then
-			echo -n "${S}$BACKUP_CLEAR${C}$DATA_4_DESC${S} directory$ENDING_1${N}"
+		if [ "$B_CLONE_DATA_4" == 'true' ] || [ "$DATA_4_DIR" != '' -a "$B_SKIP_DATA_4" != 'true' ];then
+			echo -n "${S}$BACKUP_CLEAR ${C}$DATA_4_DESC${S} directory$ENDING_1${N}"
 			if [ "$B_SPINNING_WHEEL" == 'true' ];then
 				GET_PID=''
 				eval $DATA_4_BU_COMMAND &
@@ -1450,8 +1639,8 @@ run_backup_components()
 		fi
 
 		# backup optional user data 5
-		if [ "$DATA_5_DIR" != '' -a "$B_SKIP_DATA_5" != 'true' ];then
-			echo -n "${S}$BACKUP_CLEAR${C}$DATA_5_DESC${S} directory$ENDING_1${N}"
+		if [ "$B_CLONE_DATA_5" == 'true' ] || [ "$DATA_5_DIR" != '' -a "$B_SKIP_DATA_5" != 'true' ];then
+			echo -n "${S}$BACKUP_CLEAR ${C}$DATA_5_DESC${S} directory$ENDING_1${N}"
 			if [ "$B_SPINNING_WHEEL" == 'true' ];then
 				GET_PID=''
 				eval $DATA_5_BU_COMMAND &
@@ -1465,8 +1654,8 @@ run_backup_components()
 		fi
 
 		# backup optional user data 2
-		if [ "$DATA_6_DIR" != '' -a "$B_SKIP_DATA_6" != 'true' ];then
-			echo -n "${S}$BACKUP_CLEAR${C}$DATA_6_DESC${S} directory$ENDING_1${N}"
+		if [ "$B_CLONE_DATA_6" == 'true' ] || [ "$DATA_6_DIR" != '' -a "$B_SKIP_DATA_6" != 'true' ];then
+			echo -n "${S}$BACKUP_CLEAR ${C}$DATA_6_DESC${S} directory$ENDING_1${N}"
 			if [ "$B_SPINNING_WHEEL" == 'true' ];then
 				GET_PID=''
 				eval $DATA_6_BU_COMMAND &
@@ -1480,8 +1669,8 @@ run_backup_components()
 		fi
 
 		# backup optional user data 7
-		if [ "$DATA_7_DIR" != '' -a "$B_SKIP_DATA_7" != 'true' ];then
-			echo -n "${S}$BACKUP_CLEAR${C}$DATA_7_DESC${S} directory$ENDING_1${N}"
+		if [ "$B_CLONE_DATA_7" == 'true' ] || [ "$DATA_7_DIR" != '' -a "$B_SKIP_DATA_7" != 'true' ];then
+			echo -n "${S}$BACKUP_CLEAR ${C}$DATA_7_DESC${S} directory$ENDING_1${N}"
 			if [ "$B_SPINNING_WHEEL" == 'true' ];then
 				GET_PID=''
 				eval $DATA_7_BU_COMMAND &
@@ -1495,8 +1684,8 @@ run_backup_components()
 		fi
 
 		# backup optional user data 8
-		if [ "$DATA_8_DIR" != '' -a "$B_SKIP_DATA_8" != 'true' ];then
-			echo -n "${S}$BACKUP_CLEAR${C}$DATA_8_DESC${S} directory$ENDING_1${N}"
+		if [ "$B_CLONE_DATA_8" == 'true' ] || [ "$DATA_8_DIR" != '' -a "$B_SKIP_DATA_8" != 'true' ];then
+			echo -n "${S}$BACKUP_CLEAR ${C}$DATA_8_DESC${S} directory$ENDING_1${N}"
 			if [ "$B_SPINNING_WHEEL" == 'true' ];then
 				GET_PID=''
 				eval $DATA_8_BU_COMMAND &
@@ -1510,8 +1699,8 @@ run_backup_components()
 		fi
 
 		# backup optional user data 9
-		if [ "$DATA_9_DIR" != '' -a "$B_SKIP_DATA_9" != 'true' ];then
-			echo -n "${S}$BACKUP_CLEAR${C}$DATA_9_DESC${S} directory$ENDING_1${N}"
+		if [ "$B_CLONE_DATA_9" == 'true' ] || [ "$DATA_9_DIR" != '' -a "$B_SKIP_DATA_9" != 'true' ];then
+			echo -n "${S}$BACKUP_CLEAR ${C}$DATA_9_DESC${S} directory$ENDING_1${N}"
 			if [ "$B_SPINNING_WHEEL" == 'true' ];then
 				GET_PID=''
 				eval $DATA_9_BU_COMMAND &
@@ -1524,9 +1713,9 @@ run_backup_components()
 			sleep $SLEEP_TIME_BACKUP
 		fi
 
-		# backup optional user data 2
-		if [ "$DATA_10_DIR" != '' -a "$B_SKIP_DATA_10" != 'true' ];then
-			echo -n "${S}$BACKUP_CLEAR${C}$DATA_10_DESC${S} directory$ENDING_1${N}"
+		# backup optional user data 10
+		if [ "$B_CLONE_DATA_10" == 'true' ] || [ "$DATA_10_DIR" != '' -a "$B_SKIP_DATA_10" != 'true' ];then
+			echo -n "${S}$BACKUP_CLEAR ${C}$DATA_10_DESC${S} directory$ENDING_1${N}"
 			if [ "$B_SPINNING_WHEEL" == 'true' ];then
 				GET_PID=''
 				eval $DATA_10_BU_COMMAND &
@@ -1565,7 +1754,11 @@ finish_backup()
 update_configs()
 {
 	local backupDate=$( date +"%e %B %Y - %R" )
-	local backupString="Location: $BACKUP_LOCATION :: Date: $backupDate~Completion time: $BACKUP_DURATION :: Deletion Used: $DELETE_STATUS :: Job No: $BACKUP_JOB_NU"
+	local cloneJob=''
+	if [ "$B_IS_CLONE" == 'true' -a -n "$CLONE_SOURCE_DIR" ];then
+		cloneJob=" :: Cloned: $CLONE_SOURCE_DIR"
+	fi
+	local backupString="Location: $BACKUP_LOCATION :: Date: $backupDate~Run Time: $BACKUP_DURATION :: Deletion: $B_DELETE_STATUS :: Job No: $BACKUP_JOB_NU$cloneJob"
 
 	echo $LINE
 	echo "${S}Updating backup records now...${N}"
