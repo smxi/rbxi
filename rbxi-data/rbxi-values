@@ -1,8 +1,8 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi-values
-####  Version: 1.0.0
-####  Date: 17 December 2008
+####  Version: 2.0.0
+####  Date: 18 December 2008
 ########################################################################
 
 ########################################################################
@@ -20,13 +20,56 @@ BACKUP_APP='rsync'
 # Do not end the destination directory  names below with a '/'
 # SAMPLE
 BACKUP_DIRECTORY='/media/esata'
-# set rsync data separately
+BACKUP_DIRECTORY_1=''
+BACKUP_DIRECTORY_2=''
+BACKUP_DIRECTORY_3=''
+BACKUP_DIRECTORY_4=''
+BACKUP_DIRECTORY_5=''
+BACKUP_DIRECTORY_6=''
+BACKUP_DIRECTORY_7=''
+BACKUP_DIRECTORY_8=''
+BACKUP_DIRECTORY_9=''
+BACKUP_DIRECTORY_10=''
+
+# set rsync backup directory separately
 BACKUP_DIRECTORY_RS='/media/esata'
+BACKUP_DIRECTORY_1_RS=''
+BACKUP_DIRECTORY_2_RS=''
+BACKUP_DIRECTORY_3_RS=''
+BACKUP_DIRECTORY_4_RS=''
+BACKUP_DIRECTORY_5_RS=''
+BACKUP_DIRECTORY_6_RS=''
+BACKUP_DIRECTORY_7_RS=''
+BACKUP_DIRECTORY_8_RS=''
+BACKUP_DIRECTORY_9_RS=''
+BACKUP_DIRECTORY_10_RS=''
 
 # Primary backup directories, these will be located inside of the BACKUP_DIRECTORY
 # You do not need to create these primary backup directories, the script will do it.
-BACKUP_LOCATION='/backup'
-BACKUP_LOCATION_RS='/backup-rs'
+BACKUP_SUB_DIR='/backup'
+BACKUP_SUB_DIR_1=''
+BACKUP_SUB_DIR_2=''
+BACKUP_SUB_DIR_3=''
+BACKUP_SUB_DIR_4=''
+BACKUP_SUB_DIR_5=''
+BACKUP_SUB_DIR_6=''
+BACKUP_SUB_DIR_7=''
+BACKUP_SUB_DIR_8=''
+BACKUP_SUB_DIR_9=''
+BACKUP_SUB_DIR_10=''
+
+# rsync sub directory name
+BACKUP_SUB_DIR_RS='/backup-rs'
+BACKUP_SUB_DIR_1_RS=''
+BACKUP_SUB_DIR_2_RS=''
+BACKUP_SUB_DIR_3_RS=''
+BACKUP_SUB_DIR_4_RS=''
+BACKUP_SUB_DIR_5_RS=''
+BACKUP_SUB_DIR_6_RS=''
+BACKUP_SUB_DIR_7_RS=''
+BACKUP_SUB_DIR_8_RS=''
+BACKUP_SUB_DIR_9_RS=''
+BACKUP_SUB_DIR_10_RS=''
 
 # for remote, via ssh, include the ssh option
 # ie: RSYNC_EXTRA_OPTIONS=' --rsh=ssh ' rsync -e 'ssh -p 30000'
@@ -47,14 +90,23 @@ RDIFF_REMOVE_TIME='60D'
 # NOTE: if either of these is left blank, the script will not back up that item.
 # You do not need to create the following subdirectories, rdiff-backup will create them
 # automatically using the names you give here
-BU_HOME='home'
-BU_ROOT='root-hda1'
+HOME_DIR='home'
+ROOT_DIR='root-hda1'
 
 # these are optional backup subdirectories, if these are used the script will backup these
-# as well as / and /home autumatically
+# as well as / and /home autumatically.
 # Blank '' means the script does not try to back that item up
-BU_DATA_1=''
-BU_DATA_2=''
+# This is the backup sub directory name, not the actual data file path
+DATA_1_DIR=''
+DATA_2_DIR=''
+DATA_3_DIR=''
+DATA_4_DIR=''
+DATA_5_DIR=''
+DATA_6_DIR=''
+DATA_7_DIR=''
+DATA_8_DIR=''
+DATA_9_DIR=''
+DATA_10_DIR=''
 
 #### SYSTEM BACKUP PATH INFORMATION  ------------------
 #    << CHANGE TO YOUR SYSTEM PATHS FOR HOME AND / AND EXTRA BACKUP PATHS IF NEEDED >>
@@ -63,19 +115,36 @@ BU_DATA_2=''
 # Should not change these unless you are backing up an install from outside of it
 # Note: if you leave off the ending /, rsync will create a directory of the last name in
 # the path, which you probably don't want.
-USER_HOME_PARENT='/home/'
-SYSTEM_ROOT='/'
+HOME_PATH='/home/'
+ROOT_PATH='/'
 
 # these two are optional extra backups, set to absolute path if you are using them
-# these correspond to BU_DATA_1 and BU_DATA_2, for example: /home/username/data
-USER_DATA_1=''
-USER_DATA_2=''
+# Correspond to DATA_x, for example: /home/username/data
+# This is the actual file path in your system
+DATA_1_PATH=''
+DATA_2_PATH=''
+DATA_3_PATH=''
+DATA_4_PATH=''
+DATA_5_PATH=''
+DATA_6_PATH=''
+DATA_7_PATH=''
+DATA_8_PATH=''
+DATA_9_PATH=''
+DATA_10_PATH=''
 
 #### SCRIPT OUTPUT STUFF ------------------------------
 #    << CHANGE TO YOUR PREFERRED OUTPUT TEXT FOR EXTRA DATA 1/2 BACKUPS >>
 # this is only used for backup output text, for user information
-USER_DATA_1_DESC='' # for example: USER_DATA_1_DESC=' web'
-USER_DATA_2_DESC='' # for example: USER_DATA_2_DESC=' email'
+DATA_1_DESC='' # for example: DATA_1_DESC=' web'
+DATA_2_DESC='' # for example: DATA_2_DESC=' email'
+DATA_3_DESC=''
+DATA_4_DESC=''
+DATA_5_DESC=''
+DATA_6_DESC=''
+DATA_7_DESC=''
+DATA_8_DESC=''
+DATA_9_DESC=''
+DATA_10_DESC=''
 
 # this is only for print output, it's not used in the actual backup
 # << CHANGE TO YOUR ROOT PARTITION FULL PATH >>
@@ -90,11 +159,13 @@ SLEEP_TIME_BACKUP='2.5'
 
 #### BACKUP DISK / PARITION mount / umount  ------------------
 #    << CHANGE TO FIT YOUR NEEDS >>
-
+#
+# Note that MOUNT/UNMOUNT 1-10 are triggered by the -M option
+#
 # if you are not going to be mounting/unmounting your backup partition / disk,
 # then set value to blank:
-# MOUNT_BU_DISK=""
-# UNMOUNT_BU_DISK=""
+# MOUNT_BU_DISK=''
+# UNMOUNT_BU_DISK=''
 # Note: you can use anything here, </dev/sdd1>; -L <disk label>; -U <disk uuid>
 # replace <....> with your label,uuid, or /dev/...
 # Syntax for label: mount -L <disklabel> $BACKUP_DIRECTORY
@@ -104,21 +175,102 @@ SLEEP_TIME_BACKUP='2.5'
 # If you are using NFS mounted directories, the host nfs server must have these permissions set
 # in /etc/exports: rw,async,,no_root_squash or write permissions will fail in rsync
 #
-# SAMPLE:
+# IMPORTANT: DO NOT USE " " quotes, because the $BACKUP_DIRECTORY will be evaluated later
+# after the final BACKUP_DIRECTORY has been set in the script. Use '' to handle this!
 # rdiff-backup mounts
-MOUNT_BU_DISK="mount -L backup-disk-1 $BACKUP_DIRECTORY"
-UNMOUNT_BU_DISK="umount $BACKUP_DIRECTORY"
+MOUNT_BU_DISK='mount -L backup-disk-1 $BACKUP_DIRECTORY'
+UNMOUNT_BU_DISK='umount $BACKUP_DIRECTORY'
+MOUNT_BU_DISK_1=''
+UNMOUNT_BU_DISK_1=''
+MOUNT_BU_DISK_2=''
+UNMOUNT_BU_DISK_2=''
+MOUNT_BU_DISK_3=''
+UNMOUNT_BU_DISK_3=''
+MOUNT_BU_DISK_4=''
+UNMOUNT_BU_DISK_4=''
+MOUNT_BU_DISK_5=''
+UNMOUNT_BU_DISK_5=''
+MOUNT_BU_DISK_6=''
+UNMOUNT_BU_DISK_6=''
+MOUNT_BU_DISK_7=''
+UNMOUNT_BU_DISK_7=''
+MOUNT_BU_DISK_8=''
+UNMOUNT_BU_DISK_8=''
+MOUNT_BU_DISK_9=''
+UNMOUNT_BU_DISK_9=''
+MOUNT_BU_DISK_10=''
+UNMOUNT_BU_DISK_10=''
 
 # rsync mounts
-MOUNT_BU_DISK_RS="mount -L backup-disk-1 $BACKUP_DIRECTORY_RS"
-UNMOUNT_BU_DISK_RS="umount $BACKUP_DIRECTORY_RS"
+MOUNT_BU_DISK_RS='mount -L backup-disk-1 $BACKUP_DIRECTORY_RS'
+UNMOUNT_BU_DISK_RS='umount $BACKUP_DIRECTORY_RS'
+MOUNT_BU_DISK_1_RS=''
+UNMOUNT_BU_DISK_1_RS=''
+MOUNT_BU_DISK_RS_2=''
+UNMOUNT_BU_DISK_RS_2=''
+MOUNT_BU_DISK_RS_3=''
+UNMOUNT_BU_DISK_RS_3=''
+MOUNT_BU_DISK_RS_4=''
+UNMOUNT_BU_DISK_RS_4=''
+MOUNT_BU_DISK_RS_5=''
+UNMOUNT_BU_DISK_RS_5=''
+MOUNT_BU_DISK_6_RS=''
+UNMOUNT_BU_DISK_6_RS=''
+MOUNT_BU_DISK_7_RS=''
+UNMOUNT_BU_DISK_7_RS=''
+MOUNT_BU_DISK_8_RS=''
+UNMOUNT_BU_DISK_8_RS=''
+MOUNT_BU_DISK_9_RS=''
+UNMOUNT_BU_DISK_9_RS=''
+MOUNT_BU_DISK_10_RS=''
+UNMOUNT_BU_DISK_10_RS=''
+
+# set with whatever arguments you want to start script with, script will restart with those
+# options automatically, then run whatever job you set. Jobs consist of sets of rbxi options:
+# sample: BACKUP_JOB_1=' -M 3 -S rh ' - this would use mount/umount 3, and skip home/root backup
+# sample: BACKUP_JOB_2=' -M 2 -S rh -A 8' - this would use mount/umount 2, skip home/root backup
+# and Add the normally turned off DATA_8
+#
+# This is triggered by the -J <1-10> option.
+BACKUP_JOB_1=''
+BACKUP_JOB_2=''
+BACKUP_JOB_3=''
+BACKUP_JOB_4=''
+BACKUP_JOB_5=''
+BACKUP_JOB_6=''
+BACKUP_JOB_7=''
+BACKUP_JOB_8=''
+BACKUP_JOB_9=''
+BACKUP_JOB_10=''
 
 # these are for options, used in case of cron or option run backups/deletes
 # if you want to hard set any option just set the variable to true.
 # trigger rdiff/rsync cleeanup, either older than x, or remove deleted files
-B_CLEAN_OLDER='false'
-B_DELETED='false' # -d :auto delete contents each backup
+B_CLEAN_OLDER='false' # -c :clean old backup files, then do backup
+B_DELETE_BACKUP='false' # -d :delete old backup, then do backup
 B_DO_BACKUP='false' # -b :automatic backup
+
+# Specialized clone option, only use if you understand this script
+B_CLONE_HOME='false'
+B_CLONE_ROOT='false'
+
+# skip home/root/data can be overridden by -A <r|h|number> when you are creating
+# a separate job (-J <number>).
+B_SKIP_DATA_FULL='false' # -C [..] or -S d - skips all data partition backups
+B_SKIP_DATA_1='false' # -S 1
+B_SKIP_DATA_2='false' # -S 2
+B_SKIP_DATA_3='false' # -S 3
+B_SKIP_DATA_4='false' # -S 4
+B_SKIP_DATA_5='false' # -S 5
+B_SKIP_DATA_6='false' # -S 6
+B_SKIP_DATA_7='false' # -S 7
+B_SKIP_DATA_8='false' # -S 8
+B_SKIP_DATA_9='false' # -S 9
+B_SKIP_DATA_10='false' # -S 10
+B_SKIP_HOME='false' # -S h
+B_SKIP_ROOT='false' # -S r
+
+# miscellaneous script option booleans
 B_SKIP_MOUNT='false' # -m :do not mount backup drive, or umount it
 B_SPINNING_WHEEL='false' # -s :use spinning wheel option
 B_TESTING_1='false' # -! 1 :testing flag 1

@@ -17,13 +17,7 @@
 + xover-cache/
 - **/xover-cache/*
 
-### lockfiles ###
-+ **/lock/
-- **/lock
-- **/*.lock
-+ **/parentlock/
-- **/parentlock
-- **/*.parentlock
+### sockets ###
 + **/*.sock/
 - **/*.sock
 + **/socket/
