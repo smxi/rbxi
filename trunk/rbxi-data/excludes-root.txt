@@ -13,10 +13,6 @@
 - /var/cache/apt/archives/
 - **/xover-cache/*
 
-- **/*.lock
-- **/*.parentlock
-- **/*.sock
-
 - /home/*/*
 - /media/*/*
 - /mnt/*/*

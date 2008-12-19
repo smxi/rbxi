@@ -1,5 +1,2 @@
 - **/.mozilla/**/Cache/*
 
-- **/*.lock
-- **/*.parentlock
-- **/*.sock
