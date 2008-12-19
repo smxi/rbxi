@@ -1,7 +1,7 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi
-####  Version: 2.0.5
+####  Version: 2.0.6
 ####  Date: 18 December 2008
 ####  Copyright (C) Harald Hope 2006-9
 ####
@@ -1252,11 +1252,26 @@ run_backup_question()
 
 remove_backups()
 {
-	local options='' opt='' repeat='' deleteBackup=''
+	local options='' opt='' repeat='' deleteBackup='' directory='' directories=''
+	local backupDirectories=$( ls $BACKUP_LOCATION )
+
+	# dump line breaks
+	for directory in $backupDirectories
+	do
+		directories="$directories$directory "
+	done
+	if [ -z "$backupDirectories" ];then
+		directories='No Directories to Delete '
+	fi
 
 	echo $LINE
 	echo "${Q}Are you sure you want to delete the contents of your backup directories?${N}"
-	echo "${S}[Type in the appropriate number and hit enter]"
+	echo
+	echo "${S}These directories will be removed: ${C}$directories${S}in ${C}$BACKUP_LOCATION"
+	echo
+	echo "${C}1 - yes-delete${S} - Deletes ALL directories in ${C}$BACKUP_LOCATION"
+	echo "${C}2 - no-keep${S} - Keeps current data in ${C}$BACKUP_LOCATION${S} and backs up as normal."
+	echo "${C}3 - quit${S} - Quit, think about it later."
 	echo $LINE
 	options='yes-delete no-keep quit'
 	select opt in $options
@@ -1295,31 +1310,43 @@ remove_backups()
 delete_old_backup()
 {
 	local removedDirectories=$( ls $BACKUP_LOCATION )  directory=''
-	GET_PID=''
 
 	echo $LINE
-	echo -n "${S}Deleting "
-	for directory in $removedDirectories
-	do
-		echo -n "${C}$directory${S} "
-	done
-	echo -n "in ${C}$BACKUP_LOCATION${N}"
-	echo
-	echo -n "${S}This could take a while, be patient$ENDING_2${N}"
-	if [ "$B_SPINNING_WHEEL" == 'true' ];then
-		rm -fr $BACKUP_LOCATION/* &
-		GET_PID="$!"
-		spinning_wheel_activity_indicator delete
-		wait
+	if [ -n "$removedDirectories" ];then
+		GET_PID=''
+		echo -n "${S}Starting deletion of "
+		for directory in $removedDirectories
+		do
+			echo -n "${C}$directory${S} "
+		done
+		echo -n "in ${C}$BACKUP_LOCATION${N}"
+		echo
+		echo -n "${S}This could take a while, be patient$ENDING_2${N}"
+		if [ "$B_SPINNING_WHEEL" != 'true' ];then
+			echo
+			echo # clear that -n
+		fi
+		for directory in $removedDirectories
+		do
+			if [ "$B_SPINNING_WHEEL" == 'true' ];then
+				rm -fr $BACKUP_LOCATION/$directory &
+				GET_PID="$!"
+				spinning_wheel_activity_indicator delete
+				wait
+			else
+				echo -n "${S}Deleting ${C}$BACKUP_LOCATION/$directory${S} now.....${N}"
+				rm -fr $BACKUP_LOCATION/$directory
+				echo "${S}... directory deleted${N}"
+			fi
+		done
 	else
-		rm -fr $BACKUP_LOCATION/*
-		echo "${S}Backup directories removed."
+		echo -n "${S}There is nothing to delete, continuing with backup...${N}"
 	fi
-	DELETION_TEXT=' deletion and'
-	sleep $SLEEP_TIME_BACKUP
-	echo
-	echo "Starting backup now${N}"
 
+	DELETION_TEXT=' deletion and'
+	echo
+	echo "${S}Starting backup now...${N}"
+	sleep $SLEEP_TIME_BACKUP
 	DELETE_STATUS='true'
 }
 
