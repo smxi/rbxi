@@ -2,7 +2,7 @@
 ####### README DIRECTIONS FOR rbxi RDIFF-BACKUP/RSYNC SCRIPT ############
 #########################################################################
 ####  Name: rbxi-readme.txt
-####  Version: 2.0.2
+####  Version: 2.0.4
 #########################################################################
 
 rbxi script is designed to only require a single setup, one time.
@@ -253,6 +253,13 @@ match your backup needs if you leave them unchanged.
 BACKUP_APP='rsync'
 
 Set to either rdiff-backup or rsync. Can be overridden with r/R option. Default is rsync.
+
+Change these to the true system paths if you are going to run this as a cron job
+like so: RDIFF_PATH='/usr/bin/rdiff-backup'
+or this: RSYNC_PATH='/usr/bin/rsync'
+Use'which rdiff-backup' OR 'which rsync' (no quotes) to find the true path.
+RDIFF_PATH='rdiff-backup'
+RSYNC_PATH='rsync'
 =========================================================================
 BACKUP_DIRECTORY='/media/usbdisk'
 BACKUP_DIRECTORY_1=''
@@ -500,6 +507,11 @@ based on the values you used in the config file.
 
 If you want the script to automatically mount/umount your backup drive / partition,
 use this. If you don't want this, just leave the variables with a blank value.
+
+For cron jobs, put the full system path to mount/umount in the command.
+MOUNT_BU_DISK='/usr/bin/mount -L backup-disk-1 $BACKUP_DIRECTORY'
+UNMOUNT_BU_DISK='/usr/bin/umount $BACKUP_DIRECTORY'
+Use'which mount' OR 'which umount' (no quotes) to find the true path.
 .........................................................................
 MOUNT_BU_DISK='mount -L backup-disk-1 $BACKUP_DIRECTORY'
 UNMOUNT_BU_DISK='umount $BACKUP_DIRECTORY'
