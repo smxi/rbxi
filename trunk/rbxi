@@ -151,7 +151,7 @@ BACKUP_CLEAR=''
 BACKUP_DURATION=''
 # only for logging/history purposes
 BACKUP_JOB_NU='default'
-DELETE_STATUS=''
+DELETE_STATUS='false'
 DELETION_TEXT=''
 # spinning wheel pid value
 GET_PID=''
