@@ -1,7 +1,7 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi
-####  Version: 2.0.1
+####  Version: 2.0.2
 ####  Date: 18 December 2008
 ####  Copyright (C) Harald Hope 2006-9
 ####
@@ -212,7 +212,7 @@ print_usage()
 # args: $1 - $@ - all args
 get_options()
 {
-	local opt=''
+	local opt='' setDirectory='' setSubDir='' setMount=''
 
 	while getopts :A:bB:cC:dD:hj:J:LmM:o:sS:Uv!: opt
 	do
@@ -220,63 +220,7 @@ get_options()
 			h)	print_usage
 				;;
 			A)	if [ -n "$( egrep '^(d|h|r|rh|hr|[1-9]|10)$' <<< $OPTARG )" ];then
-					case $OPTARG in
-						d)
-							B_SKIP_DATA_FULL='false'
-							;;
-						h)
-							B_SKIP_HOME='false'
-							;;
-						r)
-							B_SKIP_ROOT='false'
-							;;
-						rh|hr)
-							B_SKIP_HOME='false'
-							B_SKIP_ROOT='false'
-							;;
-						# note that B_SKIP_DATA_FULL='false' is required
-						# to override the block off switch for DATA
-						1)
-							B_SKIP_DATA_1='false'
-							B_SKIP_DATA_FULL='false'
-							;;
-						2)
-							B_SKIP_DATA_2='false'
-							B_SKIP_DATA_FULL='false'
-							;;
-						3)
-							B_SKIP_DATA_3='false'
-							B_SKIP_DATA_FULL='false'
-							;;
-						4)
-							B_SKIP_DATA_4='false'
-							B_SKIP_DATA_FULL='false'
-							;;
-						5)
-							B_SKIP_DATA_5='false'
-							B_SKIP_DATA_FULL='false'
-							;;
-						6)
-							B_SKIP_DATA_6='false'
-							B_SKIP_DATA_FULL='false'
-							;;
-						7)
-							B_SKIP_DATA_7='false'
-							B_SKIP_DATA_FULL='false'
-							;;
-						8)
-							B_SKIP_DATA_8='false'
-							B_SKIP_DATA_FULL='false'
-							;;
-						9)
-							B_SKIP_DATA_9='false'
-							B_SKIP_DATA_FULL='false'
-							;;
-						10)
-							B_SKIP_DATA_10='false'
-							B_SKIP_DATA_FULL='false'
-							;;
-					esac
+					set_add_data $OPTARG
 				else
 					error_handler 13 "-$opt $OPTARG"
 				fi
@@ -284,7 +228,7 @@ get_options()
 			b)	B_DO_BACKUP='true'
 				;;
 			B)	if [ -n "$( egrep '^([1-9]|10)$' <<< $OPTARG )" ];then
-					set_backup_directory $OPTARG
+					setDirectory="$OPTARG"
 				else
 					error_handler 13 "-$opt $OPTARG"
 				fi
@@ -317,8 +261,8 @@ get_options()
 				;;
 			d)	B_DELETE_BACKUP='true'
 				;;
-			B)	if [ -n "$( egrep '^([1-9]|10)$' <<< $OPTARG )" ];then
-					set_backup_sub_directory $OPTARG
+			D)	if [ -n "$( egrep '^([1-9]|10)$' <<< $OPTARG )" ];then
+					setSubDir="$OPTARG"
 				else
 					error_handler 13 "-$opt $OPTARG"
 				fi
@@ -339,7 +283,7 @@ get_options()
 			m)	B_SKIP_MOUNT='true'
 				;;
 			M)	if [ -n "$( egrep '^([1-9]|10)$' <<< $OPTARG )" ];then
-					set_mount_data $OPTARG
+					setMount="$OPTARG"
 				else
 					error_handler 13 "-$opt $OPTARG"
 				fi
@@ -362,51 +306,7 @@ get_options()
 				ENDING_2=', watch the spinning wheel: '
 				;;
 			S)	if [ -n "$( egrep '^(d|h|r|rh|hr|[1-9]|10)$' <<< $OPTARG )" ];then
-					case $OPTARG in
-						d)
-							B_SKIP_DATA_FULL='true'
-							;;
-						h)
-							B_SKIP_HOME='true'
-							;;
-						r)
-							B_SKIP_ROOT='true'
-							;;
-						rh|hr)
-							B_SKIP_HOME='true'
-							B_SKIP_ROOT='true'
-							;;
-						1)
-							B_SKIP_DATA_1='true'
-							;;
-						2)
-							B_SKIP_DATA_2='true'
-							;;
-						3)
-							B_SKIP_DATA_3='true'
-							;;
-						4)
-							B_SKIP_DATA_4='true'
-							;;
-						5)
-							B_SKIP_DATA_5='true'
-							;;
-						6)
-							B_SKIP_DATA_6='true'
-							;;
-						7)
-							B_SKIP_DATA_7='true'
-							;;
-						8)
-							B_SKIP_DATA_8='true'
-							;;
-						9)
-							B_SKIP_DATA_9='true'
-							;;
-						10)
-							B_SKIP_DATA_10='true'
-							;;
-					esac
+					set_skip_data $OPTARG
 				else
 					error_handler 13 "-$opt $OPTARG"
 				fi
@@ -442,6 +342,17 @@ get_options()
 				;;
 		esac
 	done
+	# note, because mount will use the first value, I have to set this here, to
+	# ensure the proper order. Or you can just set the stuff manually in your rbxi-values file
+	if [ -n "$setDirectory" ];then
+		set_backup_directory "$setDirectory"
+	fi
+	if [ -n "$setSubDir" ];then
+		set_backup_sub_directory "$setSubDir"
+	fi
+	if [ -n "$setMount" ];then
+		set_mount_data "$setMount"
+	fi
 }
 
 #### -------------------------------------------------------------------
@@ -1055,6 +966,118 @@ set_mount_data()
 	esac
 }
 
+# args: $1 - item to add, this can be called repeatedly
+set_add_data()
+{
+	case $1 in
+		d)
+			B_SKIP_DATA_FULL='false'
+			;;
+		h)
+			B_SKIP_HOME='false'
+			;;
+		r)
+			B_SKIP_ROOT='false'
+			;;
+		rh|hr)
+			B_SKIP_HOME='false'
+			B_SKIP_ROOT='false'
+			;;
+		# note that B_SKIP_DATA_FULL='false' is required
+		# to override the block off switch for DATA
+		1)
+			B_SKIP_DATA_1='false'
+			B_SKIP_DATA_FULL='false'
+			;;
+		2)
+			B_SKIP_DATA_2='false'
+			B_SKIP_DATA_FULL='false'
+			;;
+		3)
+			B_SKIP_DATA_3='false'
+			B_SKIP_DATA_FULL='false'
+			;;
+		4)
+			B_SKIP_DATA_4='false'
+			B_SKIP_DATA_FULL='false'
+			;;
+		5)
+			B_SKIP_DATA_5='false'
+			B_SKIP_DATA_FULL='false'
+			;;
+		6)
+			B_SKIP_DATA_6='false'
+			B_SKIP_DATA_FULL='false'
+			;;
+		7)
+			B_SKIP_DATA_7='false'
+			B_SKIP_DATA_FULL='false'
+			;;
+		8)
+			B_SKIP_DATA_8='false'
+			B_SKIP_DATA_FULL='false'
+			;;
+		9)
+			B_SKIP_DATA_9='false'
+			B_SKIP_DATA_FULL='false'
+			;;
+		10)
+			B_SKIP_DATA_10='false'
+			B_SKIP_DATA_FULL='false'
+			;;
+	esac
+}
+
+# args: $1 - item to skip, this can be called repeatedly
+set_skip_data()
+{
+	case $1 in
+		d)
+			B_SKIP_DATA_FULL='true'
+			;;
+		h)
+			B_SKIP_HOME='true'
+			;;
+		r)
+			B_SKIP_ROOT='true'
+			;;
+		rh|hr)
+			B_SKIP_HOME='true'
+			B_SKIP_ROOT='true'
+			;;
+		1)
+			B_SKIP_DATA_1='true'
+			;;
+		2)
+			B_SKIP_DATA_2='true'
+			;;
+		3)
+			B_SKIP_DATA_3='true'
+			;;
+		4)
+			B_SKIP_DATA_4='true'
+			;;
+		5)
+			B_SKIP_DATA_5='true'
+			;;
+		6)
+			B_SKIP_DATA_6='true'
+			;;
+		7)
+			B_SKIP_DATA_7='true'
+			;;
+		8)
+			B_SKIP_DATA_8='true'
+			;;
+		9)
+			B_SKIP_DATA_9='true'
+			;;
+		10)
+			B_SKIP_DATA_10='true'
+			;;
+	esac
+}
+
 # args: $1 - backup job number; $2 - set/print
 set_print_backup_job()
 {
@@ -1285,13 +1308,7 @@ run_backup_components()
 	# If you don't need excludes in /home, then just delete the exclude stuff, --exclude...
 	echo $LINE
 
-# 	if [ "$BACKUP_APP" == 'rsync' -a "$B_TESTING_1" != 'true' ];then
-# 		error_handler 100 $BACKUP_APP
-# 	fi
-
 	#backup home directory
-	# backup optional user data 1
-
 	if [ "$HOME_DIR" != '' -a "$B_SKIP_HOME" != 'true' ] || [ "$B_CLONE_HOME" == 'true' ];then
 		echo -n "${S}$BACKUP_CLEAR ${C}home${S} directory$ENDING_1${N}"
 		if [ "$B_SPINNING_WHEEL" == 'true' ];then
@@ -1307,7 +1324,6 @@ run_backup_components()
 	fi
 
 	# backup system root directory
-	# backup optional user data 1
 	if [ "$ROOT_DIR" != '' -a "$B_SKIP_ROOT" != 'true'  ] || [ "$B_CLONE_ROOT" == 'true' ];then
 		echo -n "${S}$BACKUP_CLEAR ${C}root${S} directory ${C}$ROOT_DESC${S}$ENDING_1${N}"
 		if [ "$B_SPINNING_WHEEL" == 'true' ];then
@@ -1576,9 +1592,9 @@ mount_backup_disk()
 			echo "${S}.....${W}MOUNT FAILED!${N}"
 			error_handler 2 "$retNu"
 		fi
+		# set the trap here
+		trap 'trap_handler umount' INT TERM EXIT
 	fi
-	# set the trap here
-	trap 'trap_handler umount' INT TERM EXIT
 }
 
 umount_backup_disk()
@@ -1595,8 +1611,8 @@ umount_backup_disk()
 			echo "${S}.....${W}UNMOUNT FAILED!${N}"
 			error_handler 3 "$retNu"
 		fi
+		trap - INT TERM EXIT
 	fi
-	trap - INT TERM EXIT
 }
 
 print_complete_message()
