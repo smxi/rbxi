@@ -1,8 +1,8 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi
-####  Version: 2.1.0
-####  Date: 19 December 2008
+####  Version: 2.2.0
+####  Date: 20 December 2008
 ####  Copyright (C) Harald Hope 2006-9
 ####
 ####  This program is free software; you can redistribute it and/or modify it under
@@ -160,11 +160,13 @@ B_CLONE_DATA_8='false'
 B_CLONE_DATA_9='false'
 B_CLONE_DATA_10='false'
 B_DELETE_STATUS='false'
+B_DRY_RUN='false'
 B_IS_CLONE='false'
 # initialize globals to be set later
 BACKUP_CLEAR=''
 BACKUP_DURATION=''
 # only for logging/history purposes
+BACKUP_JOB_NAME=''
 BACKUP_JOB_NU='none'
 CLONE_SOURCE_DIR=''
 DELETION_TEXT=''
@@ -207,8 +209,8 @@ print_usage()
 	echo "-L Create symbolic link in /usr/local/bin to $SCRIPT_NAME"
 	echo '-m Skip the mounting option.'
 	echo '-M use alternate mount/umount set (1-10)'
-	echo '-o Override default backup application."
-	echo "   Requires argument: rs for rsync; rd for rdiff-backup'
+	echo '-o Override default backup application.'
+	echo '-r Trigger --dry-run for rsync. This simulates the backup, but does not actually run it.'
 	echo '-s Show spinning wheel indicator.'
 	echo '-S Skip backup component (d|h|hr|1-10)'
 	echo '   d - skip all DATA; h - skip HOME; r - skip ROOT; skip DATA 1-10'
@@ -237,7 +239,7 @@ get_options()
 	local opt='' setDirectory='' setSubDir='' setMount=''
 	local setFullAdds='' setFullSkips='' setCloneData=''
 
-	while getopts :A:bB:cC:dD:hj:J:LmM:o:sS:Uv!: opt
+	while getopts :A:bB:cC:dD:hj:J:LmM:o:rsS:Uv!: opt
 	do
 		case $opt in
 			h)	print_usage
@@ -307,6 +309,8 @@ get_options()
 					error_handler 13 "-$opt $OPTARG"
 				fi
 				;;
+			r)	B_DRY_RUN='true'
+				;;
 			s)	B_SPINNING_WHEEL='true'
 				ENDING_1=': '
 				ENDING_2=', watch the spinning wheel: '
@@ -319,7 +323,7 @@ get_options()
 				;;
 			U)	script_self_updater "$SCRIPT_DOWNLOAD" 'svn server'
 				;;
-			v)	print_version_info
+			v)	print_version_info 'opt'
 				exit 0
 				;;
 			!)	# test for various supported methods
@@ -496,7 +500,7 @@ print_history_data()
 
 		if [ -n "$( grep '~' <<< $rdbuHistoryHolder )" ];then
 			rdbuHistory2="$( cut -d '~' -f 2 <<< $rdbuHistoryHolder )"
-			rdbuHistory2='echo "                     ${S}'$rdbuHistory2'${N}"'
+			rdbuHistory2='echo "                      ${S}'$rdbuHistory2'${N}"'
 		fi
 		if [ -n "$( grep '~' <<< $rsyncHistoryHolder )" ];then
 			rsyncHistory2="$( cut -d '~' -f 2 <<< $rsyncHistoryHolder )"
@@ -530,12 +534,28 @@ print_history_data()
 print_version_info()
 {
 	local last_modified=$( grep -im 1 'date:' $SCRIPT_PATH/$SCRIPT_NAME | awk '{print $3,$4,$5}' )
+	local versionRemote='' versionRemoteDate='' versionRemoteNumber='' remoteNotify=''
 
-	echo "$SCRIPT_NAME - the universal, portable, system backup script."
-	echo "Version: $SCRIPT_VERSION_NUMBER"
-	echo "Script Last Modified: $last_modified"
-	echo "Script Location: $SCRIPT_PATH${N}"
-	print_history_data
+	if [ "$B_UPDATE_NOTIFIER" == 'true' ];then
+		versionRemote=$( check_remote_version )
+		versionRemoteDate=$( cut -d ':' -f 2 <<< $versionRemote )
+		versionRemoteNumber=$( cut -d ':' -f 1 <<< $versionRemote )
+		if [ "$versionRemoteNumber" != "$SCRIPT_VERSION_NUMBER" ];then
+			remoteNotify='echo "  ${S}A newer version is available: ${C}$versionRemoteNumber${S} Release Date: ${C}$versionRemoteDate${S}"'
+		fi
+	fi
+
+	if [ "$1" == 'opt' ];then
+		echo $LINE
+		echo "$SCRIPT_NAME - the universal, portable, system backup script."
+		echo "Version: $SCRIPT_VERSION_NUMBER"
+		echo "Script Last Modified: $last_modified"
+		echo "Script Location: $SCRIPT_PATH${N}"
+		print_history_data
+	elif [ "$1" == 'main' ];then
+		echo " ${C}$SCRIPT_NAME${S} :: Version: ${C}$SCRIPT_VERSION_NUMBER${S} :: Released: ${C}$last_modified${N}"
+		eval "$remoteNotify"
+	fi
 }
 
 # args: $1 - download url, not including file name; $2 - string to print out
@@ -699,6 +719,15 @@ check_backup_source_directory()
 	fi
 }
 
+check_remote_version()
+{
+	local versionRemote=''
+
+	# get ip using wget redirect to stdout. This is a clean, text only IP output url.
+	versionRemote=$( wget -q -O - http://smxi.org/rb/rb-version | grep 'rbxi=' | cut -d '=' -f 2 )
+	echo "$versionRemote"
+}
+
 create_etc_configs()
 {
 	if [ ! -f $SCRIPT_CONFIGS ];then
@@ -813,24 +842,31 @@ set_backup_directory_path()
 
 set_backup_commands()
 {
+	local dryRun='' options=''
+
 	case "$BACKUP_APP" in
 		rsync)
 			if [ "$B_CLEAN_OLDER" == 'true' ];then
 				RSYNC_DELETE=' --delete --delete-excluded '
 			fi
+			if [ "$B_DRY_RUN" == 'true' ];then
+				dryRun=' --dry-run '
+			fi
 			# set commands
-			HOME_BU_COMMAND="$RSYNC_PATH -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_HOME $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $HOME_PATH $HOME_BACKUP"
-			ROOT_BU_COMMAND="$RSYNC_PATH -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_ROOT $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $ROOT_PATH $ROOT_BACKUP"
-			DATA_1_BU_COMMAND="$RSYNC_PATH -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_1 $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $DATA_1_PATH $DATA_1_BACKUP"
-			DATA_2_BU_COMMAND="$RSYNC_PATH -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_2 $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $DATA_2_PATH $DATA_2_BACKUP"
-			DATA_3_BU_COMMAND="$RSYNC_PATH -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_3 $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $DATA_3_PATH $DATA_3_BACKUP"
-			DATA_4_BU_COMMAND="$RSYNC_PATH -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_4 $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $DATA_4_PATH $DATA_4_BACKUP"
-			DATA_5_BU_COMMAND="$RSYNC_PATH -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_5 $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $DATA_5_PATH $DATA_5_BACKUP"
-			DATA_6_BU_COMMAND="$RSYNC_PATH -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_6 $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $DATA_6_PATH $DATA_6_BACKUP"
-			DATA_7_BU_COMMAND="$RSYNC_PATH -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_7 $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $DATA_7_PATH $DATA_7_BACKUP"
-			DATA_8_BU_COMMAND="$RSYNC_PATH -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_8 $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $DATA_8_PATH $DATA_8_BACKUP"
-			DATA_9_BU_COMMAND="$RSYNC_PATH -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_9 $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $DATA_9_PATH $DATA_9_BACKUP"
-			DATA_10_BU_COMMAND="$RSYNC_PATH -a --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_10 $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS $DATA_10_PATH $DATA_10_BACKUP"
+			options=" -a $dryRun $RSYNC_EXTRA_OPTIONS $RSYNC_DELETE "
+
+			HOME_BU_COMMAND="$RSYNC_PATH $options --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_HOME $HOME_PATH $HOME_BACKUP"
+			ROOT_BU_COMMAND="$RSYNC_PATH $options --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_ROOT $ROOT_PATH $ROOT_BACKUP"
+			DATA_1_BU_COMMAND="$RSYNC_PATH $options --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_1 $DATA_1_PATH $DATA_1_BACKUP"
+			DATA_2_BU_COMMAND="$RSYNC_PATH $options --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_2 $DATA_2_PATH $DATA_2_BACKUP"
+			DATA_3_BU_COMMAND="$RSYNC_PATH $options --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_3 $DATA_3_PATH $DATA_3_BACKUP"
+			DATA_4_BU_COMMAND="$RSYNC_PATH $options --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_4 $DATA_4_PATH $DATA_4_BACKUP"
+			DATA_5_BU_COMMAND="$RSYNC_PATH $options --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_5 $DATA_5_PATH $DATA_5_BACKUP"
+			DATA_6_BU_COMMAND="$RSYNC_PATH $options --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_6 $DATA_6_PATH $DATA_6_BACKUP"
+			DATA_7_BU_COMMAND="$RSYNC_PATH $options --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_7 $DATA_7_PATH $DATA_7_BACKUP"
+			DATA_8_BU_COMMAND="$RSYNC_PATH $options --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_8 $DATA_8_PATH $DATA_8_BACKUP"
+			DATA_9_BU_COMMAND="$RSYNC_PATH $options --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_9 $DATA_9_PATH $DATA_9_BACKUP"
+			DATA_10_BU_COMMAND="$RSYNC_PATH $options --exclude-from=$SCRIPT_DATA_FILES$EXCLUDE_DATA_10 $DATA_10_PATH $DATA_10_BACKUP"
 
 			# set text
 			BACKUP_CLEAR='Backing up'
@@ -843,35 +879,39 @@ set_backup_commands()
 			# --exclude-sockets to get rid of that dumb socket error
 			if [ "$B_CLEAN_OLDER" != 'true' ];then
 				# set commands
-				HOME_BU_COMMAND="$RDIFF_PATH --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_HOME $RDIFF_EXTRA_OPTIONS $HOME_PATH $HOME_BACKUP"
-				ROOT_BU_COMMAND="$RDIFF_PATH --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_ROOT $RDIFF_EXTRA_OPTIONS $ROOT_PATH $ROOT_BACKUP"
-				DATA_1_BU_COMMAND="$RDIFF_PATH --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_1 $RDIFF_EXTRA_OPTIONS $DATA_1_PATH $DATA_1_BACKUP"
-				DATA_2_BU_COMMAND="$RDIFF_PATH --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_2 $RDIFF_EXTRA_OPTIONS $DATA_2_PATH $DATA_2_BACKUP"
-				DATA_3_BU_COMMAND="$RDIFF_PATH --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_3 $RDIFF_EXTRA_OPTIONS $DATA_3_PATH $DATA_3_BACKUP"
-				DATA_4_BU_COMMAND="$RDIFF_PATH --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_4 $RDIFF_EXTRA_OPTIONS $DATA_4_PATH $DATA_4_BACKUP"
-				DATA_5_BU_COMMAND="$RDIFF_PATH --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_5 $RDIFF_EXTRA_OPTIONS $DATA_5_PATH $DATA_5_BACKUP"
-				DATA_6_BU_COMMAND="$RDIFF_PATH --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_6 $RDIFF_EXTRA_OPTIONS $DATA_6_PATH $DATA_6_BACKUP"
-				DATA_7_BU_COMMAND="$RDIFF_PATH --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_7 $RDIFF_EXTRA_OPTIONS $DATA_7_PATH $DATA_7_BACKUP"
-				DATA_8_BU_COMMAND="$RDIFF_PATH --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_8 $RDIFF_EXTRA_OPTIONS $DATA_8_PATH $DATA_8_BACKUP"
-				DATA_9_BU_COMMAND="$RDIFF_PATH --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_9 $RDIFF_EXTRA_OPTIONS $DATA_9_PATH $DATA_9_BACKUP"
-				DATA_10_BU_COMMAND="$RDIFF_PATH --exclude-sockets --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_10 $RDIFF_EXTRA_OPTIONS $DATA_10_PATH $DATA_10_BACKUP"
+				options=" --exclude-sockets $RDIFF_EXTRA_OPTIONS "
+
+				HOME_BU_COMMAND="$RDIFF_PATH $options --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_HOME $HOME_PATH $HOME_BACKUP"
+				ROOT_BU_COMMAND="$RDIFF_PATH $options --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_ROOT $ROOT_PATH $ROOT_BACKUP"
+				DATA_1_BU_COMMAND="$RDIFF_PATH $options --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_1 $DATA_1_PATH $DATA_1_BACKUP"
+				DATA_2_BU_COMMAND="$RDIFF_PATH $options --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_2 $DATA_2_PATH $DATA_2_BACKUP"
+				DATA_3_BU_COMMAND="$RDIFF_PATH $options --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_3 $DATA_3_PATH $DATA_3_BACKUP"
+				DATA_4_BU_COMMAND="$RDIFF_PATH $options --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_4 $DATA_4_PATH $DATA_4_BACKUP"
+				DATA_5_BU_COMMAND="$RDIFF_PATH $options --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_5 $DATA_5_PATH $DATA_5_BACKUP"
+				DATA_6_BU_COMMAND="$RDIFF_PATH $options --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_6 $DATA_6_PATH $DATA_6_BACKUP"
+				DATA_7_BU_COMMAND="$RDIFF_PATH $options --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_7 $DATA_7_PATH $DATA_7_BACKUP"
+				DATA_8_BU_COMMAND="$RDIFF_PATH $options --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_8 $DATA_8_PATH $DATA_8_BACKUP"
+				DATA_9_BU_COMMAND="$RDIFF_PATH $options --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_9 $DATA_9_PATH $DATA_9_BACKUP"
+				DATA_10_BU_COMMAND="$RDIFF_PATH $options --exclude-globbing-filelist $SCRIPT_DATA_FILES$EXCLUDE_DATA_10 $DATA_10_PATH $DATA_10_BACKUP"
 
 				# set text
 				BACKUP_CLEAR='Backing up'
 			else
 				# set commands
-				HOME_BU_COMMAND="$RDIFF_PATH --force --remove-older-than $RDIFF_REMOVE_TIME $HOME_BACKUP"
-				ROOT_BU_COMMAND="$RDIFF_PATH --force --remove-older-than $RDIFF_REMOVE_TIME $ROOT_BACKUP"
-				DATA_1_BU_COMMAND="$RDIFF_PATH --force --remove-older-than $RDIFF_REMOVE_TIME $DATA_1_BACKUP"
-				DATA_2_BU_COMMAND="$RDIFF_PATH --force --remove-older-than $RDIFF_REMOVE_TIME $DATA_2_BACKUP"
-				DATA_3_BU_COMMAND="$RDIFF_PATH --force --remove-older-than $RDIFF_REMOVE_TIME $DATA_3_BACKUP"
-				DATA_4_BU_COMMAND="$RDIFF_PATH --force --remove-older-than $RDIFF_REMOVE_TIME $DATA_4_BACKUP"
-				DATA_5_BU_COMMAND="$RDIFF_PATH --force --remove-older-than $RDIFF_REMOVE_TIME $DATA_5_BACKUP"
-				DATA_6_BU_COMMAND="$RDIFF_PATH --force --remove-older-than $RDIFF_REMOVE_TIME $DATA_6_BACKUP"
-				DATA_7_BU_COMMAND="$RDIFF_PATH --force --remove-older-than $RDIFF_REMOVE_TIME $DATA_7_BACKUP"
-				DATA_8_BU_COMMAND="$RDIFF_PATH --force --remove-older-than $RDIFF_REMOVE_TIME $DATA_8_BACKUP"
-				DATA_9_BU_COMMAND="$RDIFF_PATH --force --remove-older-than $RDIFF_REMOVE_TIME $DATA_9_BACKUP"
-				DATA_10_BU_COMMAND="$RDIFF_PATH --force --remove-older-than $RDIFF_REMOVE_TIME $DATA_10_BACKUP"
+				options=" --force --remove-older-than "
+
+				HOME_BU_COMMAND="$RDIFF_PATH $options $RDIFF_REMOVE_TIME $HOME_BACKUP"
+				ROOT_BU_COMMAND="$RDIFF_PATH $options $RDIFF_REMOVE_TIME $ROOT_BACKUP"
+				DATA_1_BU_COMMAND="$RDIFF_PATH $options $RDIFF_REMOVE_TIME $DATA_1_BACKUP"
+				DATA_2_BU_COMMAND="$RDIFF_PATH $options $RDIFF_REMOVE_TIME $DATA_2_BACKUP"
+				DATA_3_BU_COMMAND="$RDIFF_PATH $options $RDIFF_REMOVE_TIME $DATA_3_BACKUP"
+				DATA_4_BU_COMMAND="$RDIFF_PATH $options $RDIFF_REMOVE_TIME $DATA_4_BACKUP"
+				DATA_5_BU_COMMAND="$RDIFF_PATH $options $RDIFF_REMOVE_TIME $DATA_5_BACKUP"
+				DATA_6_BU_COMMAND="$RDIFF_PATH $options $RDIFF_REMOVE_TIME $DATA_6_BACKUP"
+				DATA_7_BU_COMMAND="$RDIFF_PATH $options $RDIFF_REMOVE_TIME $DATA_7_BACKUP"
+				DATA_8_BU_COMMAND="$RDIFF_PATH $options $RDIFF_REMOVE_TIME $DATA_8_BACKUP"
+				DATA_9_BU_COMMAND="$RDIFF_PATH $options $RDIFF_REMOVE_TIME $DATA_9_BACKUP"
+				DATA_10_BU_COMMAND="$RDIFF_PATH $options $RDIFF_REMOVE_TIME $DATA_10_BACKUP"
 
 				# set text
 				BACKUP_CLEAR="Removing all increments older than $RDIFF_REMOVE_TIME from"
@@ -1025,7 +1065,7 @@ set_mount_data()
 # args: $1 - backup job number; $2 - set/print
 set_or_print_backup_job()
 {
-	local backupJob=''
+	local backupJob='' backupJobData='' backupJobName=''
 
 	case $1 in
 		1)
@@ -1059,16 +1099,25 @@ set_or_print_backup_job()
 			backupJob="$BACKUP_JOB_10"
 			;;
 	esac
+	if [ -n "$( grep ':' <<< $backupJob )" ];then
+		backupJobData=$( cut -d ':' -f 2 <<< $backupJob )
+		BACKUP_JOB_NAME=$( cut -d ':' -f 1 <<< $backupJob )
+	else
+		backupJobData=$backupJob
+	fi
+	if [ -n "$BACKUP_JOB_NAME" ];then
+		backupJobName=" ${C}$BACKUP_JOB_NAME${S}"
+	fi
 	# make sure the job has content
-	if [ -n "$backupJob" ];then
+	if [ -n "$backupJob" -a "$backupJob" != ':' ];then
 		if [ "$2" == 'set' ];then
-			echo "${S}Your job presets are: ${C}$backupJob"
-			echo "${S}Restarting $SCRIPT_NAME to run backup job ${C}$1${S} now...${N}"
+			echo "${S}Your job presets are: ${C}$backupJobData"
+			echo "${S}Restarting $SCRIPT_NAME to run backup job$backupJobName (Job No. ${C}$1${S}) now...${N}"
 			sleep 1
-			$SCRIPT_PATH/$SCRIPT_NAME -j $1 $backupJob
+			$SCRIPT_PATH/$SCRIPT_NAME -j $1 $backupJobData
 			exit 0
 		elif [ "$2" == 'print' ];then
-			echo "${S}Your job presets are: ${C}$backupJob${N}"
+			echo "${S}Your job$backupJobName (Job No. ${C}$1${S}) presets are: ${C}$backupJobData${N}"
 		fi
 	else
 		error_handler 17 "$1"
@@ -1324,6 +1373,8 @@ run_backup_question()
 	local opt='' options='' doTheBackup='' removeBackup='' repeat=''
 	local removeDeleteOpt='' nullCloneSource='' cloneSource=''
 
+	echo $MLINE
+	print_version_info 'main'
 	echo $MLINE
 	print_history_data 'main'
 	echo $MLINE
@@ -1754,11 +1805,14 @@ finish_backup()
 update_configs()
 {
 	local backupDate=$( date +"%e %B %Y - %R" )
-	local cloneJob=''
+	local cloneJob='' backupJobName=''
 	if [ "$B_IS_CLONE" == 'true' -a -n "$CLONE_SOURCE_DIR" ];then
 		cloneJob=" :: Cloned: $CLONE_SOURCE_DIR"
 	fi
-	local backupString="Location: $BACKUP_LOCATION :: Date: $backupDate~Run Time: $BACKUP_DURATION :: Deletion: $B_DELETE_STATUS :: Job No: $BACKUP_JOB_NU$cloneJob"
+	if [ -n "$BACKUP_JOB_NAME" ];then
+		backupJobName=" ($BACKUP_JOB_NAME)"
+	fi
+	local backupString="Location: $BACKUP_LOCATION :: Date: $backupDate~Run Time: $BACKUP_DURATION :: Deletion: $B_DELETE_STATUS :: Job No: $BACKUP_JOB_NU$backupJobName$cloneJob"
 
 	echo $LINE
 	echo "${S}Updating backup records now...${N}"

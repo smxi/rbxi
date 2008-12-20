@@ -2,7 +2,7 @@
 ####### README DIRECTIONS FOR rbxi RDIFF-BACKUP/RSYNC SCRIPT ############
 #########################################################################
 ####  Name: rbxi-readme.txt
-####  Version: 2.1.0
+####  Version: 2.2.0
 #########################################################################
 
 rbxi script is designed to only require a single setup, one time.
@@ -597,22 +597,23 @@ UNMOUNT_BU_DISK_10='umount $BACKUP_DIRECTORY && echo "Unmounted $BACKUP_DIRECTOR
 ########################################################################
 
 Set with whatever arguments you want to start script with, script will restart with those
-options automatically, then run whatever job you set. Jobs consist of sets of rbxi options:
+options automatically, then run whatever job you set.
+Jobs consist of <job name> plus ':' plus <sets of rbxi options>
 sample: BACKUP_JOB_1=' -M 3 -S rh ' - this would use mount/umount 3, and skip home/root backup
 sample: BACKUP_JOB_2=' -M 2 -S rh -A 8' - this would use mount/umount 2, skip home/root backup
 and Add the normally turned off DATA_8
 
 This is triggered by the -J <1-10> option.
-BACKUP_JOB_1=''
-BACKUP_JOB_2=''
-BACKUP_JOB_3=''
-BACKUP_JOB_4=''
-BACKUP_JOB_5=''
-BACKUP_JOB_6=''
-BACKUP_JOB_7=''
-BACKUP_JOB_8=''
-BACKUP_JOB_9=''
-BACKUP_JOB_10=''
+BACKUP_JOB_1=':'
+BACKUP_JOB_2=':'
+BACKUP_JOB_3=':'
+BACKUP_JOB_4=':'
+BACKUP_JOB_5=':'
+BACKUP_JOB_6=':'
+BACKUP_JOB_7=':'
+BACKUP_JOB_8=':'
+BACKUP_JOB_9=':'
+BACKUP_JOB_10=':'
 
 .........................................................................
 EXAMPLES:
@@ -661,6 +662,10 @@ B_SKIP_MOUNT='false' # -m :do not mount backup drive, or umount it
 B_SPINNING_WHEEL='false' # -s :use spinning wheel option
 B_TESTING_1='false' # -! 1 :testing flag 1
 B_TESTING_2='false' # -! 2 :testing flag 2
+
+If you want rbxi to notify you of newer versions when it runs, set to true.
+Default is false, no checking for latest versions.
+B_UPDATE_NOTIFIER='false'
 
 .........................................................................
 These sleep times are all in seconds.

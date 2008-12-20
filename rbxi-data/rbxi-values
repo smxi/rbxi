@@ -1,8 +1,8 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi-values
-####  Version: 2.1.0
-####  Date: 19 December 2008
+####  Version: 2.2.0
+####  Date: 20 December 2008
 ########################################################################
 
 ########################################################################
@@ -238,23 +238,25 @@ UNMOUNT_BU_DISK_10=''
 ########################################################################
 #### JOB PRESETS #######################################################
 ########################################################################
-# set with whatever arguments you want to start script with, script will restart with those
-# options automatically, then run whatever job you set. Jobs consist of sets of rbxi options:
-# sample: BACKUP_JOB_1=' -M 3 -S rh ' - this would use mount/umount 3, and skip home/root backup
-# sample: BACKUP_JOB_2=' -M 2 -S rh -A 8' - this would use mount/umount 2, skip home/root backup
+# set with whatever arguments you want to start script with, script will restart with those options
+# automatically, then run whatever job you set.
+# Jobs consist of <job name> plus ':' plus <sets of rbxi options>
+# sample: BACKUP_JOB_1='system-b-bu: -M 3 -S rh ' - this would use mount/umount 3, and skip home/root backup
+# sample: BACKUP_JOB_2='system-c-bu: -M 2 -S rh -A 8' - this would use mount/umount 2, skip home/root backup
 # and Add the normally turned off DATA_8
 #
 # This is triggered by the -J <1-10> option.
-BACKUP_JOB_1=''
-BACKUP_JOB_2=''
-BACKUP_JOB_3=''
-BACKUP_JOB_4=''
-BACKUP_JOB_5=''
-BACKUP_JOB_6=''
-BACKUP_JOB_7=''
-BACKUP_JOB_8=''
-BACKUP_JOB_9=''
-BACKUP_JOB_10=''
+# syntax: 'job-display-name: <job options>'
+BACKUP_JOB_1=':'
+BACKUP_JOB_2=':'
+BACKUP_JOB_3=':'
+BACKUP_JOB_4=':'
+BACKUP_JOB_5=':'
+BACKUP_JOB_6=':'
+BACKUP_JOB_7=':'
+BACKUP_JOB_8=':'
+BACKUP_JOB_9=':'
+BACKUP_JOB_10=':'
 
 ########################################################################
 #### CLEAN / DELETE / BACKUP / SKIP ####################################
@@ -290,6 +292,7 @@ B_SKIP_MOUNT='false' # -m :do not mount backup drive, or umount it
 B_SPINNING_WHEEL='false' # -s :use spinning wheel option
 B_TESTING_1='false' # -! 1 :testing flag 1
 B_TESTING_2='false' # -! 2 :testing flag 2
+B_UPDATE_NOTIFIER='false' # if you want rbxi to notify you of newer versions, set true.
 
 # this is how fast the spinning wheel moves. Anything less than 0.5 not
 # recommended due to performance problems on most machines.
