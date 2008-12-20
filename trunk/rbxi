@@ -1,7 +1,7 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi
-####  Version: 2.2.0
+####  Version: 2.2.1
 ####  Date: 20 December 2008
 ####  Copyright (C) Harald Hope 2006-9
 ####
@@ -541,7 +541,7 @@ print_version_info()
 		versionRemoteDate=$( cut -d ':' -f 2 <<< $versionRemote )
 		versionRemoteNumber=$( cut -d ':' -f 1 <<< $versionRemote )
 		if [ "$versionRemoteNumber" != "$SCRIPT_VERSION_NUMBER" ];then
-			remoteNotify='echo "  ${S}A newer version is available: ${C}$versionRemoteNumber${S} Release Date: ${C}$versionRemoteDate${S}"'
+			remoteNotify='echo " ${S}(Newer version available: ${C}$versionRemoteNumber${S} Release Date: ${C}$versionRemoteDate${S})"'
 		fi
 	fi
 
