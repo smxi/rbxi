@@ -1,7 +1,7 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi
-####  Version: 2.2.0
+####  Version: 2.2.1
 ####  Date: 20 December 2008
 ####  Copyright (C) Harald Hope 2006-9
 ####
@@ -898,20 +898,20 @@ set_backup_commands()
 				BACKUP_CLEAR='Backing up'
 			else
 				# set commands
-				options=" --force --remove-older-than "
+				options=" --force --remove-older-than $RDIFF_REMOVE_TIME "
 
-				HOME_BU_COMMAND="$RDIFF_PATH $options $RDIFF_REMOVE_TIME $HOME_BACKUP"
+				HOME_BU_COMMAND="$RDIFF_PATH $options $HOME_BACKUP"
 				ROOT_BU_COMMAND="$RDIFF_PATH $options $RDIFF_REMOVE_TIME $ROOT_BACKUP"
-				DATA_1_BU_COMMAND="$RDIFF_PATH $options $RDIFF_REMOVE_TIME $DATA_1_BACKUP"
-				DATA_2_BU_COMMAND="$RDIFF_PATH $options $RDIFF_REMOVE_TIME $DATA_2_BACKUP"
-				DATA_3_BU_COMMAND="$RDIFF_PATH $options $RDIFF_REMOVE_TIME $DATA_3_BACKUP"
-				DATA_4_BU_COMMAND="$RDIFF_PATH $options $RDIFF_REMOVE_TIME $DATA_4_BACKUP"
-				DATA_5_BU_COMMAND="$RDIFF_PATH $options $RDIFF_REMOVE_TIME $DATA_5_BACKUP"
-				DATA_6_BU_COMMAND="$RDIFF_PATH $options $RDIFF_REMOVE_TIME $DATA_6_BACKUP"
-				DATA_7_BU_COMMAND="$RDIFF_PATH $options $RDIFF_REMOVE_TIME $DATA_7_BACKUP"
-				DATA_8_BU_COMMAND="$RDIFF_PATH $options $RDIFF_REMOVE_TIME $DATA_8_BACKUP"
-				DATA_9_BU_COMMAND="$RDIFF_PATH $options $RDIFF_REMOVE_TIME $DATA_9_BACKUP"
-				DATA_10_BU_COMMAND="$RDIFF_PATH $options $RDIFF_REMOVE_TIME $DATA_10_BACKUP"
+				DATA_1_BU_COMMAND="$RDIFF_PATH $options $DATA_1_BACKUP"
+				DATA_2_BU_COMMAND="$RDIFF_PATH $options $DATA_2_BACKUP"
+				DATA_3_BU_COMMAND="$RDIFF_PATH $options $DATA_3_BACKUP"
+				DATA_4_BU_COMMAND="$RDIFF_PATH $options $DATA_4_BACKUP"
+				DATA_5_BU_COMMAND="$RDIFF_PATH $options $DATA_5_BACKUP"
+				DATA_6_BU_COMMAND="$RDIFF_PATH $options $DATA_6_BACKUP"
+				DATA_7_BU_COMMAND="$RDIFF_PATH $options $DATA_7_BACKUP"
+				DATA_8_BU_COMMAND="$RDIFF_PATH $options $DATA_8_BACKUP"
+				DATA_9_BU_COMMAND="$RDIFF_PATH $options $DATA_9_BACKUP"
+				DATA_10_BU_COMMAND="$RDIFF_PATH $options $DATA_10_BACKUP"
 
 				# set text
 				BACKUP_CLEAR="Removing all increments older than $RDIFF_REMOVE_TIME from"
