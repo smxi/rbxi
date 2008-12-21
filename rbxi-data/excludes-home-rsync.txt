@@ -1,3 +1,16 @@
+## NOTE: rsync exclude paths start in the directory of the backup
+## in this case, /home, for example, if you wanted to exclude
+## /home/fred/.thumbnails you would NOT use:
+## - /home/fred/.thumbnails
+## but would instead exclude starting from the path that is being
+## backed up, so the exclude would look like this:
+## - /fred/.thumbnails
+## or if you want to make it apply to all users:
+## - /*/.thumbnails
+## * means anything in the directory, in this case, anything in /home/.../
+## /*/ means any directory in the container directory
+## means anything at all, including /
+
 ### cache ###
 - **/.mozilla/**/Cache/
 
@@ -12,4 +25,16 @@
 - **/lost+found
 
 ### User Data ###
+## sample:
+#- /*/.thumbnails
+## or to exclude ALL .thumbnails directories found in /home:
+#- **/.thumbnails
+## this will NOT work as you expect:
+#- /home/username/.thumbnails
+## because it would be excluding: /home/home/username/.thumbnails, which doesn't exist.
+## but this would:
+#- /username/.thumbnails
 
+## if you wanted to include the .thumbnails directory but NOT its content, do this:
+## This only works for rsync, not rdiff-backup
+#- /*/.thumbnails/

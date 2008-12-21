@@ -2,7 +2,7 @@
 ####### README DIRECTIONS FOR rbxi RDIFF-BACKUP/RSYNC SCRIPT ############
 #########################################################################
 ####  Name: rbxi-readme.txt
-####  Version: 2.2.0
+####  Version: 2.2.1
 #########################################################################
 
 rbxi script is designed to only require a single setup, one time.
@@ -215,6 +215,36 @@ rdiff-backup basically only supports this:
 /usr/* will include/exclude files/directories one level below usr
 /usr/ will include/exclude /usr if the directory has content, and not if it's empty
 /usr will include/exclude /usr
+
+For any non root backups, you need to understand that rsync starts the exclude/include path
+not absolutely, but relative to the path of the thing being backed up, so for example you
+would NOT use:
+/home/fred/.qt
+to exclude fred/.qt in the /home backup, but would rather use:
+/fred/.qt
+or better
+/*/.qt
+which would exclude all users in /home
+
+* only stays within the directory it's in, but ** includes / as a super wildcard, so,
+again, say, for /home,
+
+**/.qt would exclude /home/fred/.qt AND /home/fred/blogs/.qt
+but
+/*/.qt would exclude only /home/usernames/.qt
+
+All rules not starting with ** must start with /, otherwise you get an error.
+
+Rules can contain either ** or *, but with **  especially, make sure to test it
+well before you stay with it.
+
+I like to start excludes with:
+- /*/.qt
+and include rules with
++ /*/.qt
+Just to make it clear, but in the excludes files, the - is optional.
+
+When you use either - or +, they must be followed by a space then the rule.
 
 The main syntax you need to understand for creating an exclude list is this:
 1. /some/directory - Excludes any file or directory called: directory in /some
