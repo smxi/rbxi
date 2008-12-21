@@ -1,7 +1,7 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi
-####  Version: 2.3.0
+####  Version: 2.3.1
 ####  Date: 21 December 2008
 ####  Copyright (C) Harald Hope 2006-9
 ####
@@ -29,19 +29,7 @@
 ########################################################################
 
 ########################################################################
-####  LAYOUT VARIABLES
-####--------------------------------------------------------------------
-
-########################################################################
-####  USER SPECIFIC VARIABLES - REQUIRES rbxi-data/rbxi-values file
-####--------------------------------------------------------------------
-
-### See the file rbxi-data/rbxi-values for variable lists and how to
-### set them. That file will be the actual data used.
-### rbxi cannot run without the user data values file: rbxi-data/rbxi-values
-
-########################################################################
-####  STATIC VARIABLES, SHOULD NOT REQUIRE CHANGES
+####  SCRIPT PATH VARIABLES
 ####--------------------------------------------------------------------
 
 ### if you do need to change one of these, make sure to change it in the
@@ -49,12 +37,29 @@
 ### your changes if you update this script.
 
 ### Script names/paths
+# set this as absolute path for cron jobs if you need to, you'll have to
+# update this manually every time you update the script:
+LSOF='lsof'
 SCRIPT_CONFIGS='/etc/rbxi.conf'
 SCRIPT_NAME='rbxi'
+SCRIPT_DATA='/rbxi-data/'
 SCRIPT_VALUES='rbxi-values'
 # http://forums.macosxhints.com/archive/index.php/t-73839.html
-SCRIPT_PATH=$( dirname $( lsof -p $$ | grep 'REG' | grep -oE "/.*$(basename $0)$" ) )
-SCRIPT_DATA_FILES="$SCRIPT_PATH/rbxi-data/"
+# note, no other method works reliably to get the true script path, not dirname $0.
+if type $LSOF &>/dev/null;then
+	SCRIPT_PATH=$( dirname $( $LSOF -p $$ | grep 'REG' | grep -oE "/.*$(basename $0)$" ) )
+# checking if the dirname method works
+elif [ -d $( dirname $0 )$SCRIPT_DATA ];then
+	SCRIPT_PATH=$( dirname $0 )
+fi
+
+# in worst cases, you can manually set the script directory path here, uncomment and make the path
+# explicit. Must not end with /, and must be the full path of the rbxi directory rbxi came with.
+# you'll have to update this manually every time you update the script:
+# example:  SCRIPT_PATH='/home/fred/scripts/rbxi'
+# SCRIPT_PATH=''
+
+SCRIPT_DATA_FILES="$SCRIPT_PATH$SCRIPT_DATA"
 SCRIPT_VERSION_NUMBER=$( grep -im 1 'version:' $SCRIPT_PATH/$SCRIPT_NAME | awk '{print $3}' )
 SCRIPT_DOWNLOAD='http://rbxi.googlecode.com/svn/trunk/'
 SCRIPT_DOWNLOAD_BRANCH_1='http://rbxi.googlecode.com/svn/branches/one/'
@@ -88,6 +93,24 @@ EXCLUDE_DATA_7_RS='excludes-data-7-rsync.txt'
 EXCLUDE_DATA_8_RS='excludes-data-8-rsync.txt'
 EXCLUDE_DATA_9_RS='excludes-data-9-rsync.txt'
 EXCLUDE_DATA_10_RS='excludes-data-10-rsync.txt'
+
+########################################################################
+####  USER SPECIFIC VARIABLES - REQUIRES rbxi-data/rbxi-values file
+####--------------------------------------------------------------------
+
+## add in user variable values, sticky value file
+# missing test will occur a bit later
+if [ -f "$SCRIPT_DATA_FILES$SCRIPT_VALUES" ];then
+	source $SCRIPT_DATA_FILES$SCRIPT_VALUES
+fi
+
+### See the file rbxi-data/rbxi-values for variable lists and how to
+### set them. That file will be the actual data used.
+### rbxi cannot run without the user data values file: rbxi-data/rbxi-values
+
+########################################################################
+####  STATIC VARIABLES, SHOULD NOT REQUIRE CHANGES
+####--------------------------------------------------------------------
 
 #### INITIALIZE VARIABLES TO BE SET ELSEWHERE
 HOME_BACKUP=''
@@ -152,14 +175,6 @@ DELETION_TEXT=''
 # spinning wheel pid value
 GET_PID=''
 RSYNC_DELETE=''
-
-## add in user variable values, sticky value file
-if [ -f "$SCRIPT_DATA_FILES$SCRIPT_VALUES" ];then
-	source $SCRIPT_DATA_FILES$SCRIPT_VALUES
-else
-	echo "${W}User Values File $SCRIPT_DATA_FILES$SCRIPT_VALUES is missing. Exiting now.${N}"
-	exit 1
-fi
 
 ###################################################################
 #####  Functions
@@ -369,6 +384,7 @@ get_options()
 #### Error Handling
 #### -------------------------------------------------------------------
 
+
 # Error handling
 # args: $1 - error number; $2 - optional, extra information
 error_handler()
@@ -438,6 +454,12 @@ error_handler()
 			;;
 		21)
 			error_message="You are using an unsupported color scheme: ${C}$2"
+			;;
+		22)
+			error_message="User Values File ${C}$SCRIPT_DATA_FILES$SCRIPT_VALUES${W} was not found. Exiting now."
+			;;
+		23)
+			error_message="${C}rbxi${W} requires the program ${C}$2${W} if you start it using a symbolic link.\nYou must install this application before you can run ${C}$SCRIPT_NAME${W} with a sybolic link.\nUnable to continue."
 			;;
 		50)
 			error_message="User initiated script termination. Exiting $SCRIPT_NAME now."
@@ -549,7 +571,6 @@ set_script_colors()
 	SPACER='  '
 }
 
-
 create_symbolic_link()
 {
 	local ulbLink="/usr/local/bin/$SCRIPT_NAME"
@@ -557,10 +578,15 @@ create_symbolic_link()
 
 	if [ ! -L $ulbLink -a ! -f $ulbLink -a -z "$scriptInPath" ];then
 		check_is_root
-		echo "${S}Creating link now...${N}"
-		ln -s $SCRIPT_PATH/$SCRIPT_NAME $ulbLink
+		# only do the linking if the path is real
+		if type $LSOF &>/dev/null;then
+			echo "${S}Creating link now...${N}"
+			ln -s $SCRIPT_PATH/$SCRIPT_NAME $ulbLink
+		else
+			echo "${C}$SCRIPT_PATH ${W}is not properly set, cannot automatically create symbolic link.${N}"
+		fi
 	else
-		echo "${S}$SCRIPT_NAME is already in your system path, or a link to it already exists.${N}"
+		echo "${M}$SCRIPT_NAME is already in your system path, or a link to it already exists.${N}"
 	fi
 }
 
@@ -758,6 +784,18 @@ trap_handler()
 #### -------------------------------------------------------------------
 #### basic tests
 #### -------------------------------------------------------------------
+
+# this will load/test anything that is required
+check_script_requires()
+{
+	if ! type $LSOF &>/dev/null && [ ! -d $( dirname $0 )$SCRIPT_DATA ];then
+		error_handler 23 'lsof'
+	fi
+	## add in user variable values, sticky value file
+	if [ ! -f "$SCRIPT_DATA_FILES$SCRIPT_VALUES" ];then
+		error_handler 22
+	fi
+}
 
 check_is_root()
 {
@@ -2034,6 +2072,7 @@ print_complete_message()
 #####   EXECUTE SCRIPT COMPONENTS
 ###################################################################
 set_script_colors
+check_script_requires
 get_options "$@"
 # Make sure user is logged in as root first and that backup location is present
 check_startup_stuff
