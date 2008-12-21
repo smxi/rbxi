@@ -216,6 +216,9 @@ rdiff-backup basically only supports this:
 /usr/ will include/exclude /usr if the directory has content, and not if it's empty
 /usr will include/exclude /usr
 
+-------------------------------------------------------------------------
+rsync specific exclude path information
+.........................................................................
 For any non root backups, you need to understand that rsync starts the exclude/include path
 not absolutely, but relative to the path of the thing being backed up, so for example you
 would NOT use:
@@ -245,6 +248,18 @@ and include rules with
 Just to make it clear, but in the excludes files, the - is optional.
 
 When you use either - or +, they must be followed by a space then the rule.
+-------------------------------------------------------------------------
+rdiff-backup specific exclude path information
+.........................................................................
+paths work as expected, for example
+- /home/username/.qt
+will exclude that directory in /home
+
+Everything else above applies however except for the path oddities.
+
+-------------------------------------------------------------------------
+Main comments on excludes.
+.........................................................................
 
 The main syntax you need to understand for creating an exclude list is this:
 1. /some/directory - Excludes any file or directory called: directory in /some
