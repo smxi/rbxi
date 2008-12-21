@@ -810,9 +810,12 @@ check_is_root()
 
 check_startup_stuff()
 {
+	local localBackupDir=$( grep -E '^/' <<< $BACKUP_DIRECTORY | grep -E -v '@' )
+
 	check_is_root
 	create_etc_configs
-	if [ ! -d $BACKUP_DIRECTORY ];then
+	# check that it's a local directory, and that it doesn't exist
+	if [ -n "$localBackupDir" -a ! -d $BACKUP_DIRECTORY ];then
 		error_handler 9 $BACKUP_DIRECTORY
 	fi
 	check_bu_app_installed
