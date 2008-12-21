@@ -1,13 +1,14 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi-values
-####  Version: 2.3.0
+####  Version: 2.3.1
 ####  Date: 21 December 2008
 ########################################################################
 
 ########################################################################
-#### RSYNC/RDIFF-BACKUP DATA ###########################################
+#### RSYNC/RDIFF-BACKUP DATA, REQUIRED APPLICATION PATHS ###############
 ########################################################################
+
 # set to either rdiff-backup or rsync. Can be overridden with -o [rm/rs] optionn
 BACKUP_APP='rsync'
 

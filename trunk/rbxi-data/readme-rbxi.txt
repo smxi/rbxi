@@ -2,7 +2,7 @@
 ####### README DIRECTIONS FOR rbxi RDIFF-BACKUP/RSYNC SCRIPT ############
 #########################################################################
 ####  Name: rbxi-readme.txt
-####  Version: 2.3.0
+####  Version: 2.3.1
 #########################################################################
 
 rbxi script is designed to only require a single setup, one time.
@@ -51,6 +51,19 @@ update or change anything.
 
 4. rbxi-data/readme-rbxi.txt
 This readme file.
+
+#########################################################################
+### Required programs to run rbxi
+-------------------------------------------------------------------------
+
+The only currently required program, aside from rsync or rdiff-backup,  you need
+for rbxi to run is: lsof
+
+All other tools should be standard for bash.
+
+To see if you have lsof, simply run this command:
+which lsof
+If it show the path, you have it.
 
 #########################################################################
 ### PRIMARY rbxi functions and features.
@@ -290,13 +303,31 @@ if you update rbxi, you will not need to change anything at all.
 
 I will run down the variables one by one to explain how to set them correctly.
 =========================================================================
-LAYOUT VARIABLES:
+PATH VARIABLES IN MAIN SCRIPT:
 =========================================================================
-These are colors and background colors. Change to suite your
-taste if you want, but the defaults should work fine for most users.
+Only set these in the main script if things will not work any other way.
 
-If you don't know how to change these, then search online for: bash ascii colors
-and you will find many good tutorials. Please do not ask me for help with this.
+You have to reset these every time the script updates.
+.........................................................................
+# set this as absolute path for cron jobs if you need to, you'll have to
+# update this manually every time you update the script:
+LSOF='lsof'
+
+.........................................................................
+# http://forums.macosxhints.com/archive/index.php/t-73839.html
+# note, no other method works reliably to get the true script path, not dirname $0.
+if type $LSOF &>/dev/null;then
+	SCRIPT_PATH=$( dirname $( $LSOF -p $$ | grep 'REG' | grep -oE "/.*$(basename $0)$" ) )
+# checking if the dirname method works
+elif [ -d $( dirname $0 )/rbxi-data ];then
+	SCRIPT_PATH=$( dirname $0 )
+fi
+
+# in worst cases, you can manually set the script directory path here, uncomment and make the path
+# explicit. Must not end with /, and must be the full path of the rbxi directory rbxi came with.
+# you'll have to update this manually every time you update the script:
+# example:  SCRIPT_PATH='/home/fred/scripts/rbxi'
+# SCRIPT_PATH=''
 
 =========================================================================
 USER SPECIFIC VARIABLES - CHANGE AS REQUIRED:
@@ -308,8 +339,10 @@ Please note: some of these have default values already, make sure that the defau
 match your backup needs if you leave them unchanged.
 
 ########################################################################
-#### RSYNC/RDIFF-BACKUP DATA ###########################################
+#### RSYNC/RDIFF-BACKUP DATA, REQUIRED APPLICATION PATHS ###############
 ########################################################################
+
+.........................................................................
 BACKUP_APP='rsync'
 
 Set to either rdiff-backup or rsync. Can be overridden with r/R option. Default is rsync.
@@ -765,28 +798,7 @@ B_VARIABLES_SET='false'
 =========================================================================
 
 These variables should not be changed unless you have some particularly good
-reason to do that.
-.........................................................................
-SCRIPT_CONFIGS='/etc/rbxi.conf'
-SCRIPT_NAME='rbxi'
-SCRIPT_VALUES='rbxi-values'
-# http://forums.macosxhints.com/archive/index.php/t-73839.html
-SCRIPT_PATH=$( dirname $( lsof -p $$ | grep 'REG' | grep -oE "/.*$(basename $0)$" ) )
-SCRIPT_DATA_FILES="$SCRIPT_PATH/rbxi-data/"
-SCRIPT_VERSION_NUMBER=$( grep -im 1 'version:' $SCRIPT_PATH/$SCRIPT_NAME | awk '{print $3}' )
-SCRIPT_DOWNLOAD='http://rbxi.googlecode.com/svn/trunk/'
-SCRIPT_DOWNLOAD_BRANCH_1='http://rbxi.googlecode.com/svn/branches/one/'
-SCRIPT_DOWNLOAD_BRANCH_2='http://rbxi.googlecode.com/svn/branches/two/'
-SCRIPT_DOWNLOAD_DEV='http://techpatterns.com/downloads/scripts/'
-
-These should not require any modification, unless you have a problem with the
-default script SCRIPT_PATH value, if you do, that's a bug, get in touch with
-me here: http://techpatterns.com/forums/forum-33.html
-.........................................................................
-EXCLUDE_HOME_LIST='home-excludes.txt'
-EXCLUDE_HOME_LIST='home-excludes.txt' and so on...
-
-Do NOT change any paths here unless you change all the paths for all rbxi-data files and directory.
+reason to do that, such as needing to reset the script or lsof path.
 .........................................................................
 
 Do not change any of these, these are simply initializing variables.
