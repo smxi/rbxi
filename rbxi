@@ -1,8 +1,8 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi
-####  Version: 2.2.2
-####  Date: 20 December 2008
+####  Version: 2.3.0
+####  Date: 21 December 2008
 ####  Copyright (C) Harald Hope 2006-9
 ####
 ####  This program is free software; you can redistribute it and/or modify it under
@@ -31,28 +31,6 @@
 ########################################################################
 ####  LAYOUT VARIABLES
 ####--------------------------------------------------------------------
-# colors
-# dump the background? [1;31;40m
-W="[1;31m" # red: Warning message
-E="[1;33m" # yellow: script Error
-S="[0;39m" # green: Standard message
-Q="[1;36m" # CYAN: Questions
-M="[1;36m" # CYAN: Message
-# M="[1;34m" # BLUE: Message
-C="[1;35m" # MAGENTA: Command or Path
-B="[40m" # black background
-N="[0;39m" # default system console color: Normal
-# script layout stuff
-BA='=================================================================='
-LI='------------------------------------------------------------------'
-BAR=${S}$BA${N}
-EBAR=${E}$BA${N}
-WBAR=${W}$BA${N}
-MBAR=${M}$BA${N}
-LINE=${S}$LI${N}
-ELINE=${E}$LI${N}
-MLINE=${M}$LI${N}
-WLINE=${W}$LI${N}
 
 ########################################################################
 ####  USER SPECIFIC VARIABLES - REQUIRES rbxi-data/rbxi-values file
@@ -206,6 +184,8 @@ print_usage()
 	echo '   Takes parameters: (h|r|1-10). Clone root, home, or a data direcory.'
 	echo '-d Automatic backup and delete, non interactive.'
 	echo '-D Change default backup sub directory (1-10).'
+	echo '-j Set script color scheme -j [0-5]: 0 - no colors; 1 - default, ok for dark/light or light/dark'
+	echo '   2 - fancy dark on light; 3 - basic light on dark; 3 - fancy light on dark; 4 - smxi style'
 	echo '-J Start preset backup job (1-10). Cannot be used with any other option.'
 	echo "-L Create symbolic link in /usr/local/bin to $SCRIPT_NAME"
 	echo '-m Skip the mounting option.'
@@ -240,7 +220,7 @@ get_options()
 	local opt='' setDirectory='' setSubDir='' setMount=''
 	local setFullAdds='' setFullSkips='' setCloneData=''
 
-	while getopts :A:bB:cC:dD:hj:J:LmM:o:rsS:Uv!: opt
+	while getopts :A:bB:cC:dD:hj:J:LmM:o:rsS:Uvz:!: opt
 	do
 		case $opt in
 			h)	print_usage
@@ -276,8 +256,11 @@ get_options()
 					error_handler 13 "-$opt $OPTARG"
 				fi
 				;;
-			j)	if [ -n "$( egrep '^([1-9]|10)$' <<< $OPTARG )" ];then
-					BACKUP_JOB_NU=$OPTARG
+			j)	if [ -n "$( egrep '^([0-5])$' <<< $OPTARG )" ];then
+					COLOR_SCHEME=$OPTARG
+					set_script_colors
+				else
+					error_handler 13 "-$opt $OPTARG"
 				fi
 				;;
 			J)	if [ -n "$( egrep '^([1-9]|10)$' <<< $OPTARG )" ];then
@@ -326,6 +309,10 @@ get_options()
 				;;
 			v)	print_version_info 'opt'
 				exit 0
+				;;
+			z)	if [ -n "$( egrep '^([1-9]|10)$' <<< $OPTARG )" ];then
+					BACKUP_JOB_NU=$OPTARG
+				fi
 				;;
 			!)	# test for various supported methods
 				case $OPTARG in
@@ -386,77 +373,182 @@ get_options()
 # args: $1 - error number; $2 - optional, extra information
 error_handler()
 {
-	local error_message=''
+	local error_message='' errorType=''
+
+	case $1 in
+		50)
+			errorType="Event"
+			W=${M}
+			;;
+		*)
+			errorType="Error"
+			;;
+	esac
 
 	# assemble the error message
 	case $1 in
-		2)	error_message="The component: MOUNT_BU_DISK failed to successfully complete its task. Error code was: $2"
+		2)	error_message="The component: ${C}MOUNT_BU_DISK${W} failed to successfully complete its task. Error code was: ${C}$2"
 			;;
-		3)	error_message="The component: UNMOUNT_BU_DISK failed to successfully complete its task. Error code was: $2"
+		3)	error_message="The component: ${C}UNMOUNT_BU_DISK${W} failed to successfully complete its task. Error code was: ${C}$2"
 			;;
-		4)	error_message="You must be logged in as root to run this script."
+		4)	error_message="You must be logged in as ${C}root${W} to run this script."
 			;;
-		5)	error_message="dependency not met: $2 not found in path"
+		5)	error_message="dependency not met: ${C}$2${W} not found in path"
 			;;
-		6)	error_message="Your backup partition/directory ${C}$BACKUP_DIRECTORY${E} is not present.\nPlease make sure to create it or mount it up before you proceed."
+		6)	error_message="Your backup partition/directory ${C}$BACKUP_DIRECTORY${W} is not present.\nPlease make sure to create it or mount it up before you proceed."
 			;;
-		7)	error_message="One of the options you entered in your script parameters: $2\nIs not supported. For supported options, check the help menu: $SCRIPT_NAME -h"
+		7)	error_message="One of the options you entered in your script parameters: ${C}$2${W}\nIs not supported, or requires a further argument.\nFor a list of supported options, check the help menu: ${C}$SCRIPT_NAME -h"
 			;;
-		8)	error_message="the self-updater failed, wget exited with error: $2.\nYou probably need to be root.\nHint, to make for easy updates without being root, do: chown <user name> $SCRIPT_PATH/$SCRIPT_NAME"
+		8)	error_message="the self-updater failed, wget exited with error: ${C}$2${W}.\nYou probably need to be root.\nHint, to make for easy updates without being root, do: chown <user name> ${C}$SCRIPT_PATH/$SCRIPT_NAME"
 			;;
-		9)	error_message="missing the required script directory: $2"
+		9)	error_message="missing the required script directory: ${C}$2"
 			;;
 		10)
-			error_message="the alt download url you provided: $2\nappears to be wrong, download aborted. Please note, the url\nneeds to end in /, without $SCRIPT_NAME, like: http://yoursite.com/downloads/"
+			error_message="the alt download url you provided: ${C}$2${W}\nappears to be wrong, download aborted. Please note, the url\nneeds to end in ${C}/${W}, without ${C}$SCRIPT_NAME${W}, like: ${C}http://yoursite.com/downloads/"
 			;;
 		11)
-			error_message="unsupported testing option argument: -! $2"
+			error_message="unsupported testing option argument: ${C}-! $2"
 			;;
 		12)
-			error_message="the svn branch download url: $2\nappears to be empty currently. Make sure there is an actual svn branch version\nactive before you try this again. Check http://code.google.com/p/inxi\nto verify the branch status."
+			error_message="the svn branch download url: ${C}$2${W}\nappears to be empty currently. Make sure there is an actual svn branch version\nactive before you try this again. Check http://code.google.com/p/inxi\nto verify the branch status."
 			;;
 		13)
-			error_message="The option argument you gave is not supported: $2"
+			error_message="The option argument you gave is not supported: ${C}$2"
 			;;
 		14)
-			error_message="You do not have the required backup application installed. Missing: $2"
+			error_message="You do not have the required backup application installed. Missing: ${C}$2"
 			;;
 		15)
-			error_message="You cannot use both -c and -d, only one or the other. Either you are clearing, or deleting."
+			error_message="You cannot use both ${C}-c${W} and ${C}-d${W}, only one or the other. Either you are clearing, or deleting."
 			;;
 		16)
-			error_message="B_VARIABLES_SET='false' in the file rbxi-data/$SCRIPT_VALUES must be set to 'true' before you can run $SCRIPT_NAME\nYou must configure that file first, then when you're done, you can the script."
+			error_message="${C}B_VARIABLES_SET='false'${W} in the file ${C}rbxi-data/$SCRIPT_VALUES${W} must be set to ${C}'true' before you can run $SCRIPT_NAME\nYou must configure that file first, then when you're done, you can the script."
 			;;
 		17)
-			error_message="The backup job you selected ($2) is empty. Please make sure you entered the right number."
+			error_message="The backup job you selected (${C}$2${W}) is empty. Please make sure you entered the right number."
 			;;
 		18)
-			error_message="The backup directory you selected ($2) is empty.\nYou cannot backup to, or mount, a blank directory."
+			error_message="The backup directory you selected (${C}$2${W}) is empty.\nYou cannot backup to, or mount, a blank directory."
 			;;
 		19)
-			error_message="Your backup program $BACKUP_APP does not support the -C clone option."
+			error_message="Your backup program ${C}$BACKUP_APP${W} does not support the -C clone option."
 			;;
 		20)
-			error_message="The backup source directory: $2 does not exist. Unable to continue."
+			error_message="The backup source directory: ${C}$2${W} does not exist. Unable to continue."
+			;;
+		21)
+			error_message="You are using an unsupported color scheme: ${C}$2"
 			;;
 		50)
 			error_message="User initiated script termination. Exiting $SCRIPT_NAME now."
 			;;
 		100)
-			error_message="$SCRIPT_NAME does not yet support the backup app you requested: $2\nThis support should be coming sometime soon.\nCurrently supported backup applications are: rdiff-backup."
+			error_message="$SCRIPT_NAME does not yet support the backup app you requested: ${C}$2${W}\nThis support should be coming sometime soon.\nCurrently supported backup applications are: rdiff-backup."
 			umount_backup_disk
 			;;
-		*)	error_message="Unknown error number: $1"
+		*)	error_message="Unknown error number: ${C}$1"
 			;;
 	esac
 	# then print it and exit
-	echo -e "${W}Error $1: $error_message${N}"
+	echo -e "${W}$errorType ${C}$1${W}: $error_message${N}"
 	exit $1
 }
 
 #### -------------------------------------------------------------------
 #### Utilities
 #### -------------------------------------------------------------------
+
+# set global color variables
+# options: 0 - no colors; 1 - defaults; 2 light bkgd, fancy; dark background, simple
+# 4 dark background, fancy; 4 smxi
+set_script_colors()
+{
+	# set colors # ="[40m" # black background
+	case "$COLOR_SCHEME" in
+		# colors off
+		0)
+			W='' # Warning message
+			E='' # script Error
+			S='' # Standard message
+			Q='' # Questions
+			M='' # Message
+			C='' # Command or Path
+			N='' # default system console color: Normal :: make last in colors
+			;;
+		# default, either dark or light background
+		''|1)
+			W="[0;31m" # Warning message
+			E="[1;31m" # script Error
+			S="[0;39m" # Standard message
+			Q="[1;39m" # Questions
+			M="[1;39m" # Message
+			C="[0;35m" # Command or Path
+			B="[0;39m" # black background
+			N="[0;39m" # default system console color: Normal
+			;;
+		# light background, fancy
+		2)
+			W="[0;31m" # Warning message
+			E="[1;31m" # script Error
+			S="[0;39m" # Standard message
+			Q="[1;34m" # Questions
+			M="[1;34m" # Message
+			C="[0;35m" # Command or Path
+			B="[0;34m" # black background
+			N="[0;39m" # default system console color: Normal :: make last in colors
+			;;
+		# dark background, simple
+		3)
+			W="[1;31m" # Warning message
+			E="[1;33m" # script Error
+			S="[0;39m" # Standard message
+			Q="[1;39m" # Questions
+			M="[1;39m" # Message
+			C="[1;35m" # Command or Path
+			B="[0;39m" # black background
+			N="[0;39m" # default system console color: Normal
+			;;
+		# dark background, fancy
+		4)
+			W="[1;31m" # Warning message
+			E="[1;33m" # script Error
+			S="[0;39m" # Standard message
+			Q="[1;36m" # Questions
+			M="[1;36m" # Message
+			C="[1;35m" # Command or Path
+			B="[0;34m" # black background
+			N="[0;39m" # default system console color: Normal :: make last in colors
+			;;
+		# dark background, smxi style
+		5)
+			W="[0;31m" # red: Warning message
+			E="[0;33m" # yellow: script Error
+			S="[1;32m" # green: Standard message
+			Q="[1;36m" # CYAN: Questions
+			M="[1;36m" # CYAN: Message
+			C="[1;35m" # MAGENTA: Command or Path
+			B="[1;34m" # BLUE: Message
+			N="[0;39m" # default system console color: Normal :: make last in colors
+			;;
+		*)
+			error_handler 21 "$COLOR_SCHEME"
+			;;
+	esac
+
+	# script layout stuff
+	BA='=================================================================='
+	LI='------------------------------------------------------------------'
+	BAR=${S}$BA${N}
+	EBAR=${E}$BA${N}
+	WBAR=${W}$BA${N}
+	MBAR=${M}$BA${N}
+	LINE=${S}$LI${N}
+	ELINE=${E}$LI${N}
+	MLINE=${M}$LI${N}
+	WLINE=${W}$LI${N}
+	SPACER='  '
+}
+
 
 create_symbolic_link()
 {
@@ -487,6 +579,13 @@ print_history_data()
 	local rdbuHistory2=''
 	local rsyncHistory2=''
 
+	if [ "$1" != 'main' ];then
+		M=''
+		C=''
+		N=''
+		S=''
+	fi
+
 	if [ -f $SCRIPT_CONFIGS ];then
 		lastBackupDirectory=$( grep 'last-backup-directory=' $SCRIPT_CONFIGS | cut -d '=' -f 2 )
 		lastBackupDate=$( grep 'last-backup-date=' $SCRIPT_CONFIGS | cut -d '=' -f 2 )
@@ -508,29 +607,29 @@ print_history_data()
 			rsyncHistory2='echo "                      ${C}'$rsyncHistory2'${N}"'
 		fi
 	fi
-	echo "${S}Last Backup Date: ${C}$lastBackupDate${N}"
-	echo "${S}Last Backup Directory: ${C}$lastBackupDirectory${N}"
-	echo "${S}Last Backup Program: ${C}$lastBackupApp${N}"
+	echo "${M}Last Backup Date: ${C}$lastBackupDate${N}"
+	echo "${M}Last Backup Directory: ${C}$lastBackupDirectory${N}"
+	echo "${M}Last Backup Program: ${C}$lastBackupApp${N}"
 	if [ "$lastBackupJobNu" == 'none' ];then
-		echo "${S}Your last backup did not use the ${C}Job${S} feature.${N}"
+		echo "${M}Your last backup did not use the ${C}Job${M} feature.${N}"
 	else
-		echo "${S}Last Backup Job Number: ${C}$lastBackupJobNu${N}"
+		echo "${M}Last Backup Job Number: ${C}$lastBackupJobNu${N}"
 	fi
 	if [ "$1" == 'main' ];then
 		case "$BACKUP_APP" in
 			rdiff-backup)
-				echo "${S}Rdiff-backup history: ${C}$rdbuHistory${N}"
+				echo "${M}Rdiff-backup history: ${C}$rdbuHistory${N}"
 				eval "$rdbuHistory2"
 				;;
 			rsync)
-				echo "${S}Rsync backup history: ${C}$rsyncHistory${N}"
+				echo "${M}Rsync backup history: ${C}$rsyncHistory${N}"
 				eval "$rsyncHistory2"
 				;;
 		esac
 	else
-		echo "${S}Rdiff-backup history: ${C}$rdbuHistory${N}"
+		echo "${M}Rdiff-backup history: ${C}$rdbuHistory${N}"
 		eval "$rdbuHistory2"
-		echo "${S}Rsync backup history: ${C}$rsyncHistory${N}"
+		echo "${M}Rsync backup history: ${C}$rsyncHistory${N}"
 		eval "$rsyncHistory2"
 	fi
 }
@@ -546,7 +645,7 @@ print_version_info()
 		versionRemoteDate=$( cut -d ':' -f 2 <<< $versionRemote )
 		versionRemoteNumber=$( cut -d ':' -f 1 <<< $versionRemote )
 		if [ "$versionRemoteNumber" != "$SCRIPT_VERSION_NUMBER" ];then
-			remoteNotify='echo " ${S}(Newer version available: ${C}$versionRemoteNumber${S} Release Date: ${C}$versionRemoteDate${S})"'
+			remoteNotify='echo " ${M}(Newer version available: ${C}$versionRemoteNumber${M} Release Date: ${C}$versionRemoteDate${M})${N}"'
 		fi
 	fi
 
@@ -558,7 +657,7 @@ print_version_info()
 		echo "Script Location: $SCRIPT_PATH${N}"
 		print_history_data
 	elif [ "$1" == 'main' ];then
-		echo " ${C}$SCRIPT_NAME${S} :: Version: ${C}$SCRIPT_VERSION_NUMBER${S} :: Released: ${C}$last_modified${N}"
+		echo " ${C}$SCRIPT_NAME${S} ${M}:: Version: ${C}$SCRIPT_VERSION_NUMBER${S} ${M}:: Released: ${C}$last_modified${N}"
 		eval "$remoteNotify"
 	fi
 }
@@ -644,10 +743,10 @@ trap_handler()
  			# or forced script exit for umount operation to work successfully.
  			for (( i=0; i < $SLEEP_TIME_UMOUNT; i++ ))
  			do
- 				echo -n "${S}...tick${N}"
+ 				echo -n "${M}...tick${N}"
  				sleep $i
  			done
- 			echo "${S}...done!${N}"
+ 			echo "${M}...done!${N}"
  			umount_backup_disk
  			# set trap to null to avoid loops for final exits
 			trap - INT TERM EXIT
@@ -809,9 +908,6 @@ set_primary_backup_data()
 set_backup_directory_data()
 {
 	local month=$( date +%m )
-
-	echo $LINE
-	echo "${S}Working backup location: ${C}$BACKUP_LOCATION${N}"
 
 	# make sure it exists
 	if [ ! -d "$BACKUP_LOCATION" -a -n "$BACKUP_LOCATION" ];then
@@ -1119,10 +1215,10 @@ set_or_print_backup_job()
 			echo "${S}Your job presets are: ${C}$backupJobData"
 			echo "${S}Restarting $SCRIPT_NAME to run backup job$backupJobName (Job No. ${C}$1${S}) now...${N}"
 			sleep 1
-			$SCRIPT_PATH/$SCRIPT_NAME -j $1 $backupJobData
+			$SCRIPT_PATH/$SCRIPT_NAME -z $1 $backupJobData
 			exit 0
 		elif [ "$2" == 'print' ];then
-			echo "${S}You are currently about to run backup job number: ${C}$BACKUP_JOB_NU"
+			echo "${M}You are currently about to run backup job number: ${C}$BACKUP_JOB_NU"
 			echo "${S}Your job$backupJobName (Job No. ${C}$1${S}) presets are: ${C}$backupJobData${N}"
 		fi
 	else
@@ -1379,32 +1475,34 @@ run_backup_question()
 	local opt='' options='' doTheBackup='' removeBackup='' repeat=''
 	local removeDeleteOpt='' nullCloneSource='' cloneSource='' rsyncSim1=' backup' rsyncSim2=''
 
-	echo $LINE
+	echo $MLINE
 	print_version_info 'main'
-	echo $LINE
+	echo $MLINE
+	echo "${M}Working backup location: ${C}$BACKUP_LOCATION${N}"
+	echo $MLINE
 	print_history_data 'main'
-	echo $LINE
+	echo $MLINE
 	if [ "$BACKUP_JOB_NU" != 'none' ];then
 		set_or_print_backup_job "$BACKUP_JOB_NU" 'print'
 		echo $LINE
 	fi
 	if [ "$BACKUP_APP" == 'rsync' ] && [ "$B_DRY_RUN" == 'true' -o -n "$( grep 'dry-run' <<< $RSYNC_EXTRA_OPTIONS )" ];then
-		echo "${W}You are using the ${C}rsync --dry-run${W} option, which simulates your backup."
+		echo "${M}You are using the ${C}rsync --dry-run${M} option, which simulates your backup."
 		echo "${S}This option lets you see what would happen, before you really run the backup."
 		echo $LINE
 		rsyncSim1=" ${C}simulate${S} the backup of"
-		rsyncSim2=" ${C}simulation${W} of a"
+		rsyncSim2=" ${C}simulation${M} of a"
 	fi
 	if [ "$B_IS_CLONE" == 'true' ];then
 
 		if [ -z "$CLONE_SOURCE_DIR" ];then
-			nullCloneSource='echo -e "${S}Your Clone Source Directory is ${W}empty${S}.${S} Unless you are cloning ${C}root${S}, this is\nprobably a mistake. Make sure this is correct before you proceed please.\n"'
+			nullCloneSource='echo -e "${M}Your Clone Source Directory is ${W}empty${M}.${S} Unless you are cloning ${C}root${S}, this is\nprobably a mistake. Make sure this is correct before you proceed please.\n"'
 			cloneSource='empty'
 		else
 			cloneSource=$CLONE_SOURCE_DIR
 		fi
 
-		echo "${W}You are about to run a$rsyncSim2 direct Clone job (-C) using these directories:${S}"
+		echo "${M}You are about to run a$rsyncSim2 direct ${C}Clone job${M} (${C}-C${M}) using these directories:${S}"
 		echo "Source Directory: ${C}$cloneSource${S} :: Destination Directory: ${C}$BACKUP_DIRECTORY"
 		echo
 		eval "$nullCloneSource"
@@ -1588,11 +1686,11 @@ delete_old_backup()
 			else
 				echo -n "${S}Deleting ${C}$BACKUP_LOCATION/$directory${S} now.....${N}"
 				rm -fr $BACKUP_LOCATION/$directory
-				echo "${S}... directory deleted${N}"
+				echo "${S}... ${M}directory deleted${N}"
 			fi
 		done
 	else
-		echo -n "${S}There is nothing to delete, continuing with backup...${N}"
+		echo -n "${M}There is nothing to delete, continuing with backup...${N}"
 	fi
 
 	DELETION_TEXT=' deletion and'
@@ -1796,7 +1894,7 @@ run_backup_components()
 		finish_backup
 	else
 		echo $LINE
-		echo "Ok, finished cleaning up older backup increments, running main backup now...${N}"
+		echo "${S}Ok, finished cleaning up older backup increments, running main backup now...${N}"
 		sleep $SLEEP_TIME_BACKUP
 	fi
 }
@@ -1897,7 +1995,7 @@ mount_backup_disk()
 		echo -n "${S}Mounting your backup drive/partition to $BACKUP_DIRECTORY now...${N}"
 		eval $MOUNT_BU_DISK || retNu=$?
 		if [ "$retNu" -eq 0 ];then
-			echo "${S}.....successfully mounted.${N}"
+			echo "${S}.....${M}successfully mounted.${N}"
 		else
 			echo "${S}.....${W}MOUNT FAILED!${N}"
 			error_handler 2 "$retNu"
@@ -1916,7 +2014,7 @@ umount_backup_disk()
 		echo -n "${S}Unmounting your backup partition $BACKUP_DIRECTORY now...${N}"
 		eval $UNMOUNT_BU_DISK || retNu=$?
 		if [ "$retNu" -eq 0 ];then
-			echo "${S}.....successfully unmounted.${N}"
+			echo "${S}.....${M}successfully unmounted.${N}"
 		else
 			echo "${S}.....${W}UNMOUNT FAILED!${N}"
 			error_handler 3 "$retNu"
@@ -1927,14 +2025,15 @@ umount_backup_disk()
 
 print_complete_message()
 {
-	echo $LINE
-	echo "${M}Ok, all done backing up for today"
-	echo $LINE
+	echo $MLINE
+	echo "${M}Ok, all done backing up for today!"
+	echo $MLINE
 }
 
 ###################################################################
 #####   EXECUTE SCRIPT COMPONENTS
 ###################################################################
+set_script_colors
 get_options "$@"
 # Make sure user is logged in as root first and that backup location is present
 check_startup_stuff
