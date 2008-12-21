@@ -49,7 +49,7 @@ SCRIPT_VALUES='rbxi-values'
 if type $LSOF &>/dev/null;then
 	SCRIPT_PATH=$( dirname $( $LSOF -p $$ | grep 'REG' | grep -oE "/.*$(basename $0)$" ) )
 # checking if the dirname method works
-elif [ -d $( dirname $0 )$SCRIPT_DATA ];then
+elif [ -d "$( dirname $0 )$SCRIPT_DATA" ];then
 	SCRIPT_PATH=$( dirname $0 )
 fi
 
@@ -459,7 +459,7 @@ error_handler()
 			error_message="User Values File ${C}$SCRIPT_DATA_FILES$SCRIPT_VALUES${W} was not found. Exiting now."
 			;;
 		23)
-			error_message="${C}rbxi${W} requires the program ${C}$2${W} if you start it using a symbolic link.\nYou must install this application before you can run ${C}$SCRIPT_NAME${W} with a sybolic link.\nUnable to continue."
+			error_message="Unable to locate the script data directory: ${C}$SCRIPT_PATH$SCRIPT_DATA\n${C}rbxi${W} requires the program ${C}$2${W} to create its paths if you start using a symbolic link.\nYou must install this application before you can run ${C}$SCRIPT_NAME${W} with a sybolic link.\nUnable to continue."
 			;;
 		50)
 			error_message="User initiated script termination. Exiting $SCRIPT_NAME now."
@@ -788,7 +788,11 @@ trap_handler()
 # this will load/test anything that is required
 check_script_requires()
 {
-	if ! type $LSOF &>/dev/null && [ ! -d $( dirname $0 )$SCRIPT_DATA ];then
+	# this test handles three cases:
+	# 1: constructing a path with possibly user hard-coded value for SCRIPT_PATH fails
+	# 2: constructing the path with dirname and rbxi-data fails to detect a directory
+	# 3: lsof does not exit in system
+	if [ ! -d "$SCRIPT_PATH$SCRIPT_DATA" ] && [ ! -d "$( dirname $0 )$SCRIPT_DATA" ] && ! type $LSOF &>/dev/null;then
 		error_handler 23 'lsof'
 	fi
 	## add in user variable values, sticky value file
