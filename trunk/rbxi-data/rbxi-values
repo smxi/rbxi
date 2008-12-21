@@ -21,7 +21,7 @@ RSYNC_PATH='rsync'
 # ie: RSYNC_EXTRA_OPTIONS=' --rsh=ssh'
 # RSYNC_EXTRA_OPTIONS=' --dry-run -v ' # for verbose, testing only, no actual backup
 # only set if it's a remote machine, otherwise make null: RSYNC_EXTRA_OPTIONS=''
-RSYNC_EXTRA_OPTIONS='  -v --stats '
+RSYNC_EXTRA_OPTIONS=' --dry-run -v --stats '
 RDIFF_EXTRA_OPTIONS=' --terminal-verbosity 5 '
 
 # see man rdiff-backup for proper syntax for time. This is set to remove older
