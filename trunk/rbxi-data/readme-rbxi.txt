@@ -2,7 +2,7 @@
 ####### README DIRECTIONS FOR rbxi RDIFF-BACKUP/RSYNC SCRIPT ############
 #########################################################################
 ####  Name: rbxi-readme.txt
-####  Version: 2.2.2
+####  Version: 2.3.0
 #########################################################################
 
 rbxi script is designed to only require a single setup, one time.
@@ -641,14 +641,15 @@ UNMOUNT_BU_DISK_10='umount $BACKUP_DIRECTORY && echo "Unmounted $BACKUP_DIRECTOR
 #### JOB PRESETS #######################################################
 ########################################################################
 
-Set with whatever arguments you want to start script with, script will restart with those
-options automatically, then run whatever job you set.
-Jobs consist of <job name> plus ':' plus <sets of rbxi options>
-sample: BACKUP_JOB_1=' -M 3 -S rh ' - this would use mount/umount 3, and skip home/root backup
-sample: BACKUP_JOB_2=' -M 2 -S rh -A 8' - this would use mount/umount 2, skip home/root backup
-and Add the normally turned off DATA_8
-
-This is triggered by the -J <1-10> option.
+# set with whatever arguments you want to start script with, script will restart with those options
+# automatically, then run whatever job you set.
+# Jobs consist of <job name> plus ':' plus <sets of rbxi options>
+# sample: BACKUP_JOB_1='system-b-bu: -M 3 -S rh ' - this would use mount/umount 3, and skip home/root backup
+# sample: BACKUP_JOB_2='system-c-bu: -M 2 -S rh -A 8' - this would use mount/umount 2, skip home/root backup
+# and Add the normally turned off DATA_8
+#
+# This is triggered by the -J <1-10> option.
+# syntax: 'job-display-name: <job options>'
 BACKUP_JOB_1=':'
 BACKUP_JOB_2=':'
 BACKUP_JOB_3=':'
@@ -703,14 +704,27 @@ B_SKIP_ROOT='false' # -S r
 ########################################################################
 
 Miscellaneous script booleans
+B_LOGGING='false' # -L : use logging true/false
 B_SKIP_MOUNT='false' # -m :do not mount backup drive, or umount it
 B_SPINNING_WHEEL='false' # -s :use spinning wheel option
 B_TESTING_1='false' # -! 1 :testing flag 1
 B_TESTING_2='false' # -! 2 :testing flag 2
 
+.........................................................................
 If you want rbxi to notify you of newer versions when it runs, set to true.
 Default is false, no checking for latest versions.
 B_UPDATE_NOTIFIER='false'
+
+.........................................................................
+Script color scheme:
+0 - no colors
+1 - default, for dark on light or light on dark, red warning/error, simple highlights
+2 - fancy dark on light, red warning/error, more colors for questions, highlights
+3 - basic light on dark, red warning, yellow error, simple colored highlights
+4 - fancy light on dark, red warning, yellow error, fancy colored highlights
+5 - smxi style, for light on dark, green text, otherwise same as 3
+Try each one and see which works best for your terminal colors using -j <0-5>, then set it here.
+COLOR_SCHEME='1' # -j [0-5]
 
 .........................................................................
 These sleep times are all in seconds.

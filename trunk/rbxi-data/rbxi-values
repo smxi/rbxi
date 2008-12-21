@@ -1,8 +1,8 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi-values
-####  Version: 2.2.2
-####  Date: 20 December 2008
+####  Version: 2.3.0
+####  Date: 21 December 2008
 ########################################################################
 
 ########################################################################
@@ -288,11 +288,17 @@ B_SKIP_ROOT='false' # -S r
 #### MISCELLANEOUS SCRIPT OPTIONS ######################################
 ########################################################################
 # miscellaneous script booleans
+B_LOGGING='false' # -L : use logging true/false
 B_SKIP_MOUNT='false' # -m :do not mount backup drive, or umount it
 B_SPINNING_WHEEL='false' # -s :use spinning wheel option
 B_TESTING_1='false' # -! 1 :testing flag 1
 B_TESTING_2='false' # -! 2 :testing flag 2
 B_UPDATE_NOTIFIER='false' # if you want rbxi to notify you of newer versions, set true.
+
+# try each one and see which works best for your terminal colors using -j <0-5>, then set it below.
+# script color scheme: 0 - no colors; 1 - default simple, for dark on light or light on dark
+# 2 - fancy dark on light; 3 - basic light on dark; 3 - fancy light on dark; 4 - smxi style
+COLOR_SCHEME='1' # -j [0-5]
 
 # this is how fast the spinning wheel moves. Anything less than 0.5 not
 # recommended due to performance problems on most machines.
