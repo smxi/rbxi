@@ -2,7 +2,7 @@
 ####### README DIRECTIONS FOR rbxi RDIFF-BACKUP/RSYNC SCRIPT ############
 #########################################################################
 ####  Name: rbxi-readme.txt
-####  Version: 2.3.1
+####  Version: 2.4.0
 #########################################################################
 
 rbxi script is designed to only require a single setup, one time.
@@ -199,6 +199,48 @@ backup drive or directory is mounted somewhere else than in /media.
 You don't want to create backups of your backups after all!
 
 #########################################################################
+### using rsync to or from remote machines:
+-------------------------------------------------------------------------
+
+For default job, simply set, if the remote machine is the backup destination,
+ie, you are backing up your local machine TO the remote machine:
+
+BACKUP_DIRECTORY_RS='username@remotemachine:/path/on/remote/machine/to/backup/directory'
+
+NOTE: you do NOT need to use:
+BACKUP_SUB_DIR_RS= can be blank in this case, unless you want to have it point somewhere.
+
+Then set the backup DIR name:
+DATA_1_DIR='machine-1'
+
+And that's it.
+
+For backing up REMOTE directories TO your local machine, you do it the other way:
+DATA_1_PATH='user@remotemachine:/path/to/directory/TO-backup/'
+
+Note that you must also set:
+DATA_1_DIR='backup-name'
+unless you use the -C clone option, in that case:
+
+BACKUP_DIRECTORY_RS='/media/backup'
+BACKUP_SUB_DIR_RS='/backup-rs' #if you needed a subdirectory
+
+and then
+DATA_1_PATH='user@remotemachine:/path/to/directory/TO-backup/'
+DATA_1_DIR=''
+
+Then you'd set the other directories to NOT backup  using either -S skip flags
+or hard coding it with SKIP flags in the values file.
+B_SKIP_DATA_X...
+
+And that's it.
+
+This isn't super easy to understand, and it takes some trial and error to get it right.
+
+Whatever you do, MAKE SURE TO USE THE --dry-run UNTIL YOU ARE SURE THE BACKUP IS WORKING
+AS EXPECTED, OTHERWISE THE RESULTS COULD BE DANGEROUS!
+
+#########################################################################
 ### EXCLUDE FILE INFORMATION
 -------------------------------------------------------------------------
 The idea of exclude files is very simple, but there are some things to watch
@@ -376,8 +418,10 @@ RDIFF_EXTRA_OPTIONS=' --terminal-verbosity 5 '
 RDIFF_REMOVE_TIME='60D'
 
 ########################################################################
-#### BACKUP DIRECTORY PATHS AND INFORMATION ############################
+#### BACKUP (DESTINATION) DIRECTORY PATHS AND INFORMATION ##############
 ########################################################################
+
+Remote machines must be in this form: username@machine:/path/to/backup/destination
 
 BACKUP_DIRECTORY='/media/usbdisk'
 BACKUP_DIRECTORY_1=''
@@ -416,6 +460,14 @@ so if you want to do that don't look here for help or advice.
 Do not use the /dev/sda1 type names, use the mounted name, like /media/sda1
 
 .........................................................................
+
+Primary backup job directories, these will be located inside of the BACKUP_DIRECTORY
+I strongly recommend you use these, because that can help avoid accidently writing the
+backup to a directory that did not get mounted, for example: /media/backup prior to
+mounting the actual drive  to /media/backup. This is an easy mistake to make.
+DO NOT END the destination directory names below with a '/'
+START them with a /
+
 BACKUP_SUB_DIR='/backup'
 BACKUP_SUB_DIR_1=''
 BACKUP_SUB_DIR_2=''
@@ -442,28 +494,21 @@ BACKUP_SUB_DIR_8_RS=''
 BACKUP_SUB_DIR_9_RS=''
 BACKUP_SUB_DIR_10_RS=''
 
-This is the actual directory name of where the backup will go. The way this script works
-is that it will alternate by default between 2 backup directories within your backup
-partition or drive.
+This is the actual directory name of where the backup will go, inside the primary,
+generally mounted, or remote ssh/rsh drive.
 
-You do not need to create these directories, the script will do it automatically.
+rbxi will test all local directories to see if they exist, and if they don't, will
+exit with errors.
 
-The only requirement is that the directory name does not include a number as its last
-digit, the script creates that number by itself.
-
-In the above case, for example, the script will create a directory named backup
-located in /media/usbdisk, assuming the default primary partition name is not changed.
-If you changed the above value to BACKUP_LOCATION='/my-backups' the script would create
-/media/usbdisk/my-backups.
-
-########################################################################
-#### SCRIPT BACKUP DESTINATION SUB DIRECTORIES #########################
-########################################################################
+####--------------------------------------------------------------------
+#### BACKUP DESTINATION SUB DIRECTORIES --------------------------------
+####--------------------------------------------------------------------
 
 Do not begin any of the following 4 directory names with a /, just put the name itself
-you want rdiff-backup to create for that particular backup.
+you want rdiff-backup/rsync to create for that particular backup. You do not need to manually
+create these sub-directories, rsync or rdiff-backup do it automatically.
 
-Important: if any one of these 4 is left blank, no backup of that component will be created.
+Important: if any one of these is left blank, no backup of that component will be created.
 .........................................................................
 HOME_DIR='home'
 
@@ -479,6 +524,8 @@ These are optional backup subdirectories, if these are used the script will back
 as well as / and /home autumatically.
 Blank '' means the script does not try to back that item up
 This is the backup sub directory name, not the actual data file path
+Remote machines must be in this form: username@machine:/path/to/backup/source
+
 DATA_1_DIR=''
 DATA_2_DIR=''
 DATA_3_DIR=''
@@ -493,13 +540,14 @@ DATA_10_DIR=''
 If used, these are data directory names. Default is blank.
 
 ########################################################################
-#### SCRIPT BACKUP DIRECTORY OUTPUT DESCRIPTIONS #######################
-#####################################################################
+#### SCRIPT BACKUP OUTPUT DESCRIPTIONS #################################
+########################################################################
+
 These variables are simply what the script will print out to you when it runs.
 They do not affect what actually is backed up.
 .........................................................................
-DATA_1_DESC='' # for example: DATA_1_DESC=' web'
-DATA_2_DESC='' # for example: DATA_2_DESC=' email'
+DATA_1_DESC='' # for example: DATA_1_DESC='web'
+DATA_2_DESC='' # for example: DATA_2_DESC='email'
 DATA_3_DESC=''
 DATA_4_DESC=''
 DATA_5_DESC=''
@@ -509,8 +557,9 @@ DATA_8_DESC=''
 DATA_9_DESC=''
 DATA_10_DESC=''
 
-This is a one or more word description of what is being backed up. Begin it with
-a space so it prints out nicely, like this: DATA_1_DESC=' my emails'
+This is a one or more word description of what is being backed up.
+Like this: DATA_1_DESC='my emails'. This is what rbxi will print out
+to you as it backs up that directory.
 
 This is for DATA_x_DIR and DATA_x_PATH
 
@@ -521,14 +570,14 @@ This just tells you which actual physical partition root is. Change to
 your own setup. This is not a path, it's just information for you.
 
 ########################################################################
-#### SYSTEM BACKUP PATH INFORMATION  ###################################
-#######################################################################
+#### SYSTEM BACKUP SOURCE PATH INFORMATION #############################
+########################################################################
 
 These are the actual paths to be used for the backups. Whatever path  you
 enter here is what will get backed up.
 
 Note: if you leave off the ending /, rsync will create a directory of the last name in
-the path, which you probably don't want.
+the path, which you probably don't want, so make sure to end these paths with /.
 
 All xx_PATH directories are the SOURCE directory, not not the destination.
 .........................................................................
@@ -563,7 +612,6 @@ would be
 /media/hda2/sys/*
 and so on
 
-Normal useage: do not change
 .........................................................................
 DATA_1_PATH=''
 DATA_2_PATH=''
@@ -577,7 +625,7 @@ DATA_9_PATH=''
 DATA_10_PATH=''
 
 If you are creating more than the default / and /home backups, use this. This
-must correspond to the DATA_1_PATH item above. Set to path of item you want backed
+must correspond to the DATA_XX_DIR item above. Set to path of item you want backed
 up separately.
 
 Note: normally, you will exclude this in either /home or / depending on where the
@@ -588,7 +636,9 @@ To backup the directory name but not it's contents, do this:
 
 in the exclude file.
 
-If DATA_1_PATH is blank, this will not get backed up.
+If DATA_XX_DIR is blank, this will not get backed up unless you are using the -C,
+Clone, option. In all cases however, if you want the backup to occur, the PATHs
+here must be real and exist on your system if it is a local path.
 
 ########################################################################
 #### PARTITION MOUNT/UMOUNT ############################################

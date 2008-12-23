@@ -1,8 +1,8 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi-values
-####  Version: 2.3.1
-####  Date: 21 December 2008
+####  Version: 2.4.0
+####  Date: 23 December 2008
 ########################################################################
 
 ########################################################################
@@ -18,7 +18,7 @@ BACKUP_APP='rsync'
 RDIFF_PATH='rdiff-backup'
 RSYNC_PATH='rsync'
 
-# for remote, via ssh, include the ssh option
+# If you know your preferred options, just put them in here.
 # ie: RSYNC_EXTRA_OPTIONS=' --rsh=ssh'
 # RSYNC_EXTRA_OPTIONS=' --dry-run -v ' # for verbose, testing only, no actual backup
 # only set if it's a remote machine, otherwise make null: RSYNC_EXTRA_OPTIONS=''
@@ -33,7 +33,7 @@ RDIFF_EXTRA_OPTIONS=' --terminal-verbosity 5 '
 RDIFF_REMOVE_TIME='60D'
 
 ########################################################################
-#### BACKUP DIRECTORY PATHS AND INFORMATION ############################
+#### BACKUP (DESTINATION) DIRECTORY PATHS AND INFORMATION ##############
 ########################################################################
 #    << CHANGE TO YOUR BACKUP LOCATION PATHS >>
 #
@@ -42,6 +42,7 @@ RDIFF_REMOVE_TIME='60D'
 # REMEMBER, DO NOT BACKUP THE BACKUP DIRECTORY, BLOCK IT IN THE EXCLUDE FILE LIST
 # DO NOT END the destination directory names below with a '/'
 # DO START them with a '/'
+# remote machines must be in this form: username@machine:/path/to/backup/destination
 # primary rdiff-backup directory (sample)
 BACKUP_DIRECTORY='/media/esata'
 BACKUP_DIRECTORY_1=''
@@ -70,9 +71,11 @@ BACKUP_DIRECTORY_9_RS=''
 BACKUP_DIRECTORY_10_RS=''
 
 # Primary backup job directories, these will be located inside of the BACKUP_DIRECTORY
-# You do not need to create these primary backup directories, the script will do it.
+# I strongly recommend you use these, because that can help avoid accidently writing the
+# backup to a directory that did not get mounted, for example: /media/backup prior to
+# mounting the actual drive  to /media/backup. This is an easy mistake to make.
 # DO NOT END the destination directory names below with a '/'
-# DO START them with a /
+# START them with a /
 # rdiff-backup sub directory name (sample):):
 BACKUP_SUB_DIR='/backup'
 BACKUP_SUB_DIR_1=''
@@ -99,15 +102,15 @@ BACKUP_SUB_DIR_8_RS=''
 BACKUP_SUB_DIR_9_RS=''
 BACKUP_SUB_DIR_10_RS=''
 
-########################################################################
-#### SCRIPT BACKUP DESTINATION SUB DIRECTORIES #########################
-########################################################################
+####--------------------------------------------------------------------
+#### BACKUP DESTINATION SUB DIRECTORIES --------------------------------
+####--------------------------------------------------------------------
 # << CHANGE TO MEET YOUR NEEDS >>
 
 # specific main backup subdirectory names, eg: /media/usbdisk/bu-2/home and so on
 # NOTE: if either of these is left blank, the script will not back up that item unless
 # you override it with a -C (clone) option, which also sets these to blank anyway, except home.
-# You do not need to create the following subdirectories, rdiff-backup will create them
+# You do not need to create the following subdirectories, rsync/rdiff-backup will create them
 # automatically using the names you give here
 HOME_DIR='home'
 ROOT_DIR='root-hda1'
@@ -128,12 +131,13 @@ DATA_9_DIR=''
 DATA_10_DIR=''
 
 ########################################################################
-#### SCRIPT BACKUP DIRECTORY OUTPUT DESCRIPTIONS #######################
+#### SCRIPT BACKUP OUTPUT DESCRIPTIONS #################################
 ########################################################################
+
 # << CHANGE TO YOUR PREFERRED OUTPUT TEXT FOR EXTRA DATA 1/2 BACKUPS >>
 #
-# these should match with the XXX_DIR above, and just define what output
-# the script shows as it's backing up each directory.
+# these should match with the XXX_DIR/XXX_PATH above and below, and just define
+# what output the script prints out to you as it's backing up each direcy.
 DATA_1_DESC='' # for example: DATA_1_DESC='web'
 DATA_2_DESC='' # for example: DATA_2_DESC='email'
 DATA_3_DESC=''
@@ -150,7 +154,7 @@ DATA_10_DESC=''
 ROOT_DESC='/dev/hda1'
 
 ########################################################################
-#### SYSTEM BACKUP PATH INFORMATION  ###################################
+#### SYSTEM BACKUP SOURCE PATH INFORMATION #############################
 ########################################################################
 # << CHANGE TO YOUR SYSTEM PATHS FOR HOME / + EXTRA BACKUP PATHS IF NEEDED >>
 
@@ -161,9 +165,15 @@ ROOT_DESC='/dev/hda1'
 HOME_PATH='/home/'
 ROOT_PATH='/'
 
-# these two are optional extra backups, set to absolute path if you are using them
-# Correspond to DATA_x, for example: /home/username/data
+# these are optional extra backups, set to absolute path if you are using them
+# Correspond to BU_DATA_x, for example: /home/username/data
 # This is the actual file path in your system
+#
+# If the above XXX_DIR items are blank, rbxi will not back these directories up
+# unless you use a specific C override, or use -A <number>
+# In all cases, however, these paths must be real and must exist on your system
+# if is is a local path.
+# remote machines must be in this form: username@machine:/path/to/backup/source
 DATA_1_PATH=''
 DATA_2_PATH=''
 DATA_3_PATH=''
