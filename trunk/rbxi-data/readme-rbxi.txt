@@ -2,7 +2,7 @@
 ####### README DIRECTIONS FOR rbxi RDIFF-BACKUP/RSYNC SCRIPT ############
 #########################################################################
 ####  Name: rbxi-readme.txt
-####  Version: 2.4.0
+####  Version: 2.4.1
 #########################################################################
 
 rbxi script is designed to only require a single setup, one time.

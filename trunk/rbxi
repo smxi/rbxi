@@ -1,8 +1,8 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi
-####  Version: 2.4.0
-####  Date: 23 December 2008
+####  Version: 2.4.1
+####  Date: 26 December 2008
 ####  Copyright (C) Harald Hope 2006-9
 ####
 ####  This program is free software; you can redistribute it and/or modify it under
@@ -417,7 +417,7 @@ error_handler()
 			;;
 		8)	error_message="the self-updater failed, wget exited with error: ${C}$2${W}.\nYou probably need to be root.\nHint, to make for easy updates without being root, do: chown <user name> ${C}$SCRIPT_PATH/$SCRIPT_NAME"
 			;;
-		9)	error_message="missing the required script directory: ${C}$2"
+		9)	error_message="unset"
 			;;
 		10)
 			error_message="the alt download url you provided: ${C}$2${W}\nappears to be wrong, download aborted. Please note, the url\nneeds to end in ${C}/${W}, without ${C}$SCRIPT_NAME${W}, like: ${C}http://yoursite.com/downloads/"
@@ -816,14 +816,8 @@ check_is_root()
 
 check_startup_stuff()
 {
-	local localBackupDir=$( grep '^/' <<< $BACKUP_DIRECTORY | grep -v '@' )
-
 	check_is_root
 	create_etc_configs
-	# check that it's a local directory, and that it doesn't exist
-	if [ -n "$localBackupDir" -a ! -d "$BACKUP_DIRECTORY" ];then
-		error_handler 9 $BACKUP_DIRECTORY
-	fi
 	check_bu_app_installed
 	if [ "$B_CLEAN_OLDER" == 'true' -a "$B_DELETE_BACKUP" == 'true' ];then
 		error_handler 15
