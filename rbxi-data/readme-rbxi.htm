@@ -1,428 +1,785 @@
-#########################################################################
-####### README DIRECTIONS FOR rbxi RDIFF-BACKUP/RSYNC SCRIPT ############
-#########################################################################
-####  Name: rbxi-readme.txt
-####  Version: 2.4.1
-#########################################################################
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN"
+   "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<title>rbxi :: readme :: setup instructions</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<link rel="stylesheet" href="/var/www/m/ratboy/smxi-main/smxi/docs/smxi-docs.css" type="text/css">
+<link rel="shortcut icon" href="http://smxi.org/inc/favicon.ico">
+</head>
+<body id="top">
+<div id="maincontainer">
 
+<h1>Read-me for Setting Up rbxi</h1>
+<pre>
+Filename: rbxi-readme.htm
+Version: 2.5.0
+</pre>
+
+<ul>
+	<li><a href="#rbxi-introduction">Introduction</a> :: Brief overview of the script and readme.</li>
+	<li><a href="#rbxi-package-contents">Bzip Package Contents</a> :: List of the files and directories contained in rbxi.tar.bz2 download file.</li>
+	<li><a href="#rbxi-options">Script Options</a> :: parameters and options for rbxi, with explanations of each.</li>
+	<li><a href="#rbxi-backup-formatting">Backup Partition Formatting</a> :: Some notes on how to format your backup partitions.</li>
+	<li><a href="#rbxi-rsync-remote">Using rsync To or From Remote Machines</a> :: It takes a bit of a practice to get rysnc to backup to or from remote machines.</li>
+	<li><a href="#rbxi-excludes">Exclude File Information</a> :: Information on how to setup and configure rsync and rdiff-backup exclude files, and related syntax matters.</li>
+	<li>
+	<a href="#rbxi-values-setup">How to Setup rbxi-values Variables and Data</a> :: This is the most important part of rbxi, it's what will actually make your backups do what you want them to do. Covers the following:
+		<ul>
+			<li><a href="#rbxi-values-main-script">Path Variables in Main Script</a> - You should almost never need to change these.</li>
+			<li>
+				<a href="#rbxi-values-user-variables">User Specific Variables</a> -  Change as Required. This is REQUIRED for rbxi to run on your system. This is where you actually create and set the backup job, that is.
+				<ul>
+					<li><a href="#rbxi-values-app-paths">Application Paths and Data</a></li>
+					<li><a href="#rbxi-values-extra-args">Rsync/Rdiff-backup Extra Arguments</a> - Add optional arguments to send to the backup application.</li>
+					<li><a href="#rbxi-values-mount-directory">Primary Destination Directory for Backup</a></li>
+					<li><a href="#rbxi-values-primary-backup-directory">Primary Backup Job Directories in Destination Directory</a></li>
+					<li><a href="#rbxi-values-backup-destination-subdirectory">Backup Destination Sub Directories</a></li>
+					<li><a href="#rbxi-values-directory-output-descriptions">Script Backup Directory Output Descriptions</a></li>
+					<li><a href="#rbxi-values-backup-source-paths">Backup Source Paths</a></li>
+					<li><a href="#rbxi-values-mount-umount">Mount / Umount Data</a> - Set mount/umount commands.</li>
+					<li><a href="#rbxi-values-backup-jobs">Backup Job Preset Section</a></li>
+					<li><a href="#rbxi-values-clean-delete">Clean Delete Backup Skip Section</a></li>
+					<li><a href="#rbxi-values-misc-options">Miscellaneous Script Options Section</a></li>
+					<li><a href="#rbxi-values-final-step">Final Configuration Step</a> - rbxi will not run at all if you do not complete this final step.</li>
+				</ul>
+			</li>
+		</ul>
+	</li>
+	<li><a href="#rbxi-static-variables">Static Variables</a> :: These are core rbxi variables, and shouldn't require any changes in general.</li>
+	<li><a href="#rbxi-functions">Rbxi Functions</a> :: You would not change these in general unless you like hacking on scripts.</li>
+</ul>
+
+
+<h2 id="rbxi-introdution">Introduction to rbxi</h2>
+
+<p>
 rbxi script is designed to only require a single setup, one time.
 Any updates to the script should only be new features, which if your system is the
 way you want, you should not need. But feel free to check the script homepage
 now and then to see if a new feature might be implemented that would be useful
 to you.
-
+</p>
+<p>
 Please do not change anything in the FUNCTIONS section unless you
 are reasonably comfortable with shell scripting. If you do change something and you
 break the script, I will not give any support to you, unless it's an interesting problem.
+</p>
+<ul>
+	<li>Script Bzip File Download URL: <a href="http://smxi.org/rb">http://smxi.org/rb</a></li>
+	<li>Install Directions: <a href="http://smxi.org/install.htm#rbxi">http://smxi.org/install.htm#rbxi</a></li>
+	<li>Script Home page: <a href="http://techpatterns.com/forums/about831.html">http://techpatterns.com/forums/about831.html</a></li>
+</ul>
 
-#########################################################################
-### Script Bzip File Download URL: http://smxi.org/rb
-### Script Home page: http://techpatterns.com/forums/about831.html
--------------------------------------------------------------------------
+<h3>Required Programs to Run rbxi</h3>
 
-#########################################################################
-### rbxi.tar.bz2 PACKAGE CONTENTS
--------------------------------------------------------------------------
-This bzipped package should contain the following inside the directory called bu:
-
-1. rbxi
-This is the main program file. Make sure to use chmod +x rbxi to make it executable.
-
-2. rbxi-data/excludes-root.txt (for rdiff-backup)
-   rbxi-data/excludes-root-rsync.txt (for rsync)
-These have the standard root excludes. Do not delete any of these except for:
-/var/cache/apt/archives/*
-And only delete that if you want to backup your deb archives.
-
-2. # for rdiff-backup
-	rbxi-data/excludes-home.txt
-   rbxi-data/excludes-data-<1-10>.txt
-   # and for rsync
-   rbxi-data/excludes-home-rsync.txt
-   rbxi-data/excludes-data-<1-10>-rsync.txt
-
-These are blank files. Use them to add more excludes if required to your backup.
-
-3. rbxi-data/rbxi-values
-This file contains all your user variables, use this to create your values
-for your backup. This replaces the old 1.x method of having these values on
-the actual rbxi file, so you can now easily upgrade rbxi without having to
-update or change anything.
-
-4. rbxi-data/readme-rbxi.txt
-This readme file.
-
-#########################################################################
-### Required programs to run rbxi
--------------------------------------------------------------------------
-
-The only currently required program, aside from rsync or rdiff-backup,  you need
-for rbxi to run is: lsof
-
+<p>
+The only currently required program, aside from <strong>rsync</strong> or <strong>rdiff-backup</strong>,  you need
+for rbxi to run is: <strong>lsof</strong>
+</p>
+<p>
 All other tools should be standard for bash.
-
-To see if you have lsof, simply run this command:
+</p>
+<p>
+To see if you have <strong>lsof</strong>, simply run this command:
+</p>
+<pre>
 which lsof
+</pre>
+<p>
 If it show the path, you have it.
+</p>
 
-#########################################################################
-### PRIMARY rbxi functions and features.
--------------------------------------------------------------------------
-rbxi SCRIPT SETUP
-You must customize the USER VARIABLE section to fit your system and requirements
+<h3>rbxi Script Setup</h3>
+
+<p>
+You must customize the USER VARIABLE section and the rbxi excludes to fit your system and requirements
 before running this script. For most users, that should be all that is required.
+</p>
+<p>
+See the <a href="#rbxi-values-setup">rbxi-values setup section</a> and <a href="#rbxi-excludes">rbxi excludes</a> on how to do that.
+</p>
 
-See the section below on how to do that.
--------------------------------------------------------------------------
-SCRIPT OPTIONS [ like rbxi -s ]
-The script can be started with a variety of different options:
+<p class="small">
+<a href="#top">top</a>
+</p>
 
-ADD/SKIP/OVERRIDE COMPONENTS - -J PRESET VALUES
+<h2 id="rbxi-package-contents">rbxi.tar.bz2 Package Contents</h2>
+
+<p>
+This bzipped package should contain the following inside the directory called bu:
+</p>
+<ol>
+	<li>
+<pre>
+rbxi
+</pre>
+		<p>
+		This is the main program file. Make sure to use
+		</p>
+<pre>
+chmod +x rbxi
+</pre>
+		<p>
+		to make it executable.
+		</p>
+	</li>
+
+	<li>
+<pre>
+rbxi-data/excludes-root.txt (for rdiff-backup)
+rbxi-data/excludes-root-rsync.txt (for rsync)
+</pre>
+		<p>
+		These have the standard root excludes. Do not delete any of these except for:
+		</p>
+<pre>
+/var/cache/apt/archives/*
+</pre>
+		<p>
+		And only delete that if you want to backup your deb archives.
+		</p>
+	</li>
+
+	<li>
+<pre>
+# for rdiff-backup
+rbxi-data/excludes-home.txt
+rbxi-data/excludes-data-<1-10>.txt
+# and for rsync
+rbxi-data/excludes-home-rsync.txt
+rbxi-data/excludes-data-<1-10>-rsync.txt
+</pre>
+		<p>
+		These are blank files. Use them to add more excludes if required to your backup.
+		</p>
+	</li>
+
+	<li>
+<pre>
+rbxi-data/rbxi-values
+</pre>
+		<p>
+		This file contains all your user variables, use this to create your values
+		for your backup. This replaces the old 1.x method of having these values on
+		the actual rbxi file, so you can now easily upgrade rbxi without having to
+		update or change anything.
+		</p>
+		<p>
+		Note: you can create any number of these rbxi-values files, and load
+		alternate values files by using the -V option. See rbxi -h for details.
+		File must be in rbxi-data, and the name must be rbxi-values-&lt;anything>
+		The value for -V must be &lt;anything>, and the file will be tested for.
+		</p>
+	</li>
+
+	<li>
+<pre>
+rbxi-data/readme-rbxi.htm
+</pre>
+		<p>
+		This HTML read-me file should help you set up rbxi. Please make sure to read it before
+		giving up on the setup, rbxi requires some end user learning to really work as expected.
+		</p>
+	</li>
+</ol>
+<p>
+
+<p class="small">
+<a href="#top">top</a>
+</p>
+
+<h2 id="rbxi-options">Script Options and Parameters</h2>
+
+<p>
+The script can be started with a variety of different options, and the same options can be used to create <a href="#rbxi-values-backup-jobs">backup Jobs (-J)</a>.
+</p>
+
+<h3>Add/Skip Override Components and -J (Job) Preset Values</h3>
+
+<pre>
 -A Add backup component. Overrides user set B_SKIP_DATA.. (d|h|hr|1-10)
    d - add all DATA; h - add HOME; r - add ROOT; add DATA 1-10
-   Normal use is with -J option set to override -S rbxi-values settings for SKIP variables.
+   Normal use is with -J option set to override -S rbxi-values settings
+   for SKIP variables.
 -B Change default backup directory (1-10).
--C (rsync only) Clone root/home. Skips all data backups. Moves files directly to mounted location
-   Sets the main mount subdirectory to , then transfers files directly into that directory.
+-C (rsync only) Clone root/home. Skips all data backups. Moves files
+	directly to mounted location. Sets the main mount subdirectory too,
+	then transfers files directly into that directory.
    Takes parameters: (h|r|1-10). Clone root, home, or a data direcory.
 -D Change default backup sub directory (1-10)
--M use alternate mount/umount set (1-10) - these are set in rbxi-values. They can be null, so make
-   sure you have the right number for your selection.
+-M use alternate mount/umount set (1-10) - these are set in rbxi-values.
+   They can be null, so make sure you have the right number for your selection.
 -o [rb|rs] Override default backup application: use rsync/rdiff-backu
 -S Skip backup component (d|h|hr|1-10)
    d - skip all DATA; h - skip HOME; r - skip ROOT; skip DATA 1-10
-
+</pre>
+<p>
 In general, avoid using A, D, M, S unless you are creating a backup job -J, or if you want
 temporarily skip (-S) or add (-A) a specific directory.
-
+</p>
+<p>
 -S and -A can be used repeatedly, like so: -S 2 -S 5 -S 9
+</p>
+<p>
 Remember, -A should only be used to override SKIP... that has been set in rbxi-values.
+</p>
+<p>
 -C overrides -A which overrides -S. -C will only clone the specific directory you set,
 directly to the destination directory, and switches off all other backup directories.
+</p>
+<p>
 -C overrides -D, or default backup subdirectory, and sets it to null.
+</p>
+<p>
 -D overrides default main mount backup directory, and uses that for -M
+</p>
 
-AUTO RUN OPTIONS
--b	Runs the backup without any interactive questions. Automatically, that is.
-	-b will simply create a backup based on the current month, assign it to the
+<h3>Auto Run Options</h3>
+
+<pre>
+-b Runs the backup without any interactive questions. Automatically, that is.
+   -b will simply create a backup based on the current month, assign it to the
    correct primary backup directory, then execute the backup.
--c Automatic backup, clean older files, for non-interactive. Cleans and runs normal backup.
--d	First deletes the old backups, then runs the backup non-interactively as with -b.
-	Caution: all your previous backups from that backup directory will be eliminated
-	if you use this. Permanently.
-
+-c Automatic backup, clean older files, for non-interactive. Cleans and runs
+   normal backup.
+-d First deletes the old backups, then runs the backup non-interactively
+   as with -b.
+   Caution: all your previous backups from that backup directory will be
+   eliminated if you use this. Permanently.
+</pre>
+<p>
 -b, -c, and -d are also well suited for running the backup with a cron job, automatically, that is.
+</p>
 
-JOB OPTION
+<h3>Job Option</h3>
+
+<pre>
 -J Start preset backup job (1-10)
-
+</pre>
+<p>
 Create preset jobs, 1-10, in rbxi-values, using script arguments. Use presets like -A, -B, -o,
 -D to create a custom job for future use.
+</p>
 
-# MISCELLANEOUS OPTIONS
+<h3>Miscellaneous Options</h3>
+
+<pre>
 -h The help menu, these options.
 
--L Create symbolic link in /usr/local/bin to rbxi. You must be root to use this. It will check
-   for the link and create it if it's missing.
+-L Create symbolic link in /usr/local/bin to rbxi. You must be root to use this.
+   It will check for the link and create it if it's missing.
 
--s	Runs the backup using spinning wheel progress indicators.
-	Warning: in order to do this, the script puts the actual backup jobs
-	in the background, so you can't kill them the normal way, with ctrl+c
-	if you want to stop the backup. Keep that in mind.
+-s Runs the backup using spinning wheel progress indicators.
+   Warning: in order to do this, the script puts the actual backup jobs
+   in the background, so you can't kill them the normal way, with ctrl+c
+   if you want to stop the backup. Keep that in mind.
 
-	-s is useful, besides being eye candy, for letting you know that the script is
-	actually doing something while it sits there working on your deletions or backups.
+   -s is useful, besides being eye candy, for letting you know that the
+   script is actually doing something while it sits there working on your
+   deletions or backups.
 
--U Update script manually from svn server. It will update it to where-ever you have it installed.
+-U Update script manually from svn server. It will update it to where-ever
+   you have it installed.
 
--v Show script version and last used information. Also shows last time you did a backup
-   and which backup directory was used. This should help people like me who can't remember.
+-v Show script version and last used information. Also shows last time you
+   did a backup and which backup directory was used. This should help people
+   like me who can't remember.
 
-MOUNT/UMOUNT
+-V Use alternate rbxi-values file. Syntax: rbxi-values-&lt;whatever you want>
+   File must be located in rbxi-data, and must have the syntax of:
+   rbxi-values-&lt;something>
+</pre>
+
+<h3>Mount/Umount</h3>
+
+<p>
 If the device is automounted, the script will check to make sure it's path is present, and
 if the script uses mount/unmount option, that contains a test as well for failed mounts.
--m Skip the mounting option. If present, the script will not use your preset mount/umount
-	values, and will not try to mount anything. Only use if you have a good reason to do so.
+</p>
+<pre>
+   -m Skip the mounting option. If present, the script will not use your
+   preset mount/umount values, and will not try to mount anything. Only use
+   if you have a good reason to do so.
+</pre>
 
--------------------------------------------------------------------------
-BACKUP PARTITION FORMATTING:
----------------------------
+<p class="small">
+<a href="#top">top</a>
+</p>
+
+<h2 id="rbxi-backup-formatting">Backup Partition Formatting</h2>
+
+<p>
 USING FAT OR FAT32 FORMATTED DRIVES MAY DESTROY YOUR SYSTEMS INTEGRITY ON RESTORE OPERATIONS!
-
+</p>
+<p>
 This is because fat file systems do not allow any advanced permissions, which all unix systems
 rely on to maintain security and user privileges. Also fat32 has a max file size of about
 4 gigabytes.
-
+</p>
+<p>
 In order to preserve your file ownership and permissions, you must backup to a reasonably
 robust file system. I recommend either ext2 or ext3 if it's an external drive, and whatever
 you like internally as long as it's not a FAT type system, which has no support for advanced
 file ownership or permissions.
+</p>
+<p>
+Recent developments with reiserfs (like Hans Reiser's recent conviction for murder, as well as SUSE dropping all but maintenance support for Reiserfs) suggest that reiser file systems are not a good option for long term data storage, unfortunately.
+</p>
+<p>
 
-Recent developments with reiserfs suggest that reiser file systems are not a good option
-for long term data storage, unfortunately.
+<p class="small">
+<a href="#top">top</a>
+</p>
 
--------------------------------------------------------------------------
-SCRIPT USEAGE:
+<h2>Script Usage</h2>
+
+<p>
 Script must be run as root, the contents of rbxi.tar.bz2 should all have been unzipped
 into the same directory. It doesn't matter where you put those files though, as long
 as you keep them together.
-
+</p>
+<p>
 Make sure to have your backup drive or partition mounted before you start script unless
 you are using the auto mount/unmount options in the script. If the drive or partition is not
 present, script exits with an error telling you this.
-
+</p>
+<p>
 For normal useage, when you run the script, it will check root/backup partition, then ask
 you if you want to run the standard backup, which either creates a new, or adds to an existing,
 backup directory.
-
+</p>
+<p>
 If you select the delete and backup option, the script will ask you if you are sure
 you want to do that.
-
+</p>
+<p>
 Once you set the primary variable values as indicated below, you shouldn't need
 to change this script much, except mayby adding some exclude items to the exclude files,
 or possibly adding or removing a backup option.
+</p>
 
--------------------------------------------------------------------------
+<h3>Rdiff-backup and Rsync Man Files</h3>
+
+<p>
 SEE THE man FILES FOR MORE INFORMATION ON HOW TO USE rdiff-backup/rsync FEATURES:
 man rdiff-backup OR man rsync
-Unlike most man files, these are filled with clear explanations and examples, and can
+</p>
+<p>
+Unlike most man files, the rdiff-backup and rysnc man files are filled with clear explanations and examples, and can
 show you how to do pretty much anything you can imagine.
+</p>
 
--------------------------------------------------------------------------
-THINGS TO BE CAREFUL ABOUT WHEN RUNNING A BACKUP:
+<h3>Things to be Careful About When Running a Backup</h3>
+
+<p>
 Close anything that might change files while you backup, like your email program,
 irc chat, or anything else that might change while you are doing your backup.
-
+</p>
+<p>
 Remember to add the path to the backup partition to the exclude lists if your
 backup drive or directory is mounted somewhere else than in /media.
-
+</p>
+<p>
 You don't want to create backups of your backups after all!
+</p>
 
-#########################################################################
-### using rsync to or from remote machines:
--------------------------------------------------------------------------
+<p class="small">
+<a href="#top">top</a>
+</p>
 
+<h2 id="rbxi-rsync-remote">Using rsync TO or FROM Remote Machines</h2>
+
+<h3>Backing Up TO Remote Machines</h3>
+
+<p>
 For default job, simply set, if the remote machine is the backup destination,
 ie, you are backing up your local machine TO the remote machine:
-
+</p>
+<pre>
 BACKUP_DIRECTORY_RS='username@remotemachine:/path/on/remote/machine/to/backup/directory'
-
+</pre>
+<p>
 NOTE: you do NOT need to use:
+</p>
+<pre>
 BACKUP_SUB_DIR_RS= can be blank in this case, unless you want to have it point somewhere.
-
+</pre>
+<p>
 Then set the backup DIR name:
+</p>
+<pre>
 DATA_1_DIR='machine-1'
-
+</pre>
+<p>
 And that's it.
+</p>
 
+<h3>Backing Up FROM Remote Machines</h3>
+
+<p>
 For backing up REMOTE directories TO your local machine, you do it the other way:
+</p>
+<pre>
 DATA_1_PATH='user@remotemachine:/path/to/directory/TO-backup/'
-
+</pre>
+<p>
 Note that you must also set:
+</p>
+<pre>
 DATA_1_DIR='backup-name'
+</pre>
+<p>
 unless you use the -C clone option, in that case:
-
+</p>
+<pre>
 BACKUP_DIRECTORY_RS='/media/backup'
 BACKUP_SUB_DIR_RS='/backup-rs' #if you needed a subdirectory
-
+</pre>
+<p>
 and then
+</p>
+<pre>
 DATA_1_PATH='user@remotemachine:/path/to/directory/TO-backup/'
 DATA_1_DIR=''
-
+</pre>
+<p>
 Then you'd set the other directories to NOT backup  using either -S skip flags
 or hard coding it with SKIP flags in the values file.
+</p>
+<pre>
 B_SKIP_DATA_X...
-
+</pre>
+<p>
 And that's it.
+</p>
 
+<h3>Learning the Ins and Outs of Remote Backup</h3>
+
+<p>
 This isn't super easy to understand, and it takes some trial and error to get it right.
-
-Whatever you do, MAKE SURE TO USE THE --dry-run UNTIL YOU ARE SURE THE BACKUP IS WORKING
+</p>
+<p>
+Whatever you do, MAKE SURE TO USE THE <strong>--dry-run</strong> OPTION UNTIL YOU ARE SURE THE BACKUP IS WORKING
 AS EXPECTED, OTHERWISE THE RESULTS COULD BE DANGEROUS!
+</p>
 
-#########################################################################
-### EXCLUDE FILE INFORMATION
--------------------------------------------------------------------------
+<p class="small">
+<a href="#top">top</a>
+</p>
+
+<p>
+
+<h2 id="rbxi-excludes">Exclude File Information</h2>
+
+<p>
 The idea of exclude files is very simple, but there are some things to watch
 out for.
--------------------------------------------------------------------------
-BACKUP FROM OUTSIDE OF OS
-.........................................................................
+</p>
+
+<h3>Main Points on Using Excludes</h3>
+
+<p>
+The main syntax you need to understand for creating an exclude list is this:
+</p>
+<ol>
+	<li>
+	<strong>/some/directory</strong> - Excludes any file or directory called: directory in <strong>/some</strong>
+	and also excludes any directory or file contained in that.
+	</li>
+
+	<li>
+	<strong>/some/directory/*</strong> - Backs up the directory <strong>/some/directory</strong>, but not its contents.
+	</li>
+
+	<li>
+	This sequence [ note the <strong>+</strong> with a space after it preceding <strong>/some/directory/main</strong> ]:
+<pre>
++ /some/directory/main
+/some/directory
+</pre>
+	</li>
+</ol>
+
+<p>
+will backup the directory <strong>/some/directory/main</strong> and its contents, but will not back
+up anything else in <strong>/some/directory</strong>.
+</p>
+<p>
+It is important to understand that rdiff-backup/rsync first accepts the + items, which means
+include this in the backup, then after that you add the normal exclude case. The order
+is important, if you put the include case after, it won't get included, if it's before
+it will get included.
+</p>
+<p>
+So when you have a list and you want to include one directory in a parent directory that
+is excluded, the include item, with + /some/path must come first.
+</p>
+<p>
+For more information, read: man rdiff-backup or man rsync
+</p>
+
+<h3>Backup From Outside the Running Operating System</h3>
+
+<p>
 First, if you running the backup from outside the operating system that is
 being backed up, the exclude file paths must reflect that.
-
-So you need to change for example a /sys/* in /dev/hda2 in roots-excludes.txt
-that is currently mounted in /media/hda2 to:
-/media/hda2/sys/*
-
+</p>
+<p>
+So you need to change for example a <strong>/sys/*</strong> in <strong>/dev/hda2</strong> in <strong>roots-excludes.txt</strong>
+that is currently mounted in <strong>/media/hda2</strong> to: <strong>/media/hda2/sys/*</strong>
+</p>
+<p>
 However, this script is designed to allow smooth, complete backups from inside
 your operating system, so you should rarely need this change. It's much easier
 after all running the backup from in the OS than having to reboot into another one.
+</p>
 
--------------------------------------------------------------------------
-EXCLUDE LIST SYNTAX
-.........................................................................
-NOTE: for rsync, you need to use ** for recursive rules, not *. rdiff-backup is picky
-about this, rsync works as you'd expect: ** is anything including /, * is a directory/file.
+<h3>Exclude File Syntax</h3>
+
+<p>
+NOTE: for rsync, you need to use <strong>**</strong> for recursive rules, not <strong>*</strong>. rdiff-backup is picky
+about this, rsync works as you'd expect: <strong>**</strong> is anything including <strong>/</strong>, <strong>*</strong> is a directory/file.
+</p>
+<p>
 rdiff-backup basically only supports this:
+</p>
+<pre>
 **/usr/* will include/exclude all directories with /usr/ in their path, period
 /usr/** will include/exclude everythiung in /usr
 /usr/* will include/exclude files/directories one level below usr
 /usr/ will include/exclude /usr if the directory has content, and not if it's empty
 /usr will include/exclude /usr
+</pre>
 
--------------------------------------------------------------------------
-rsync specific exclude path information
-.........................................................................
+<h3>Rsync Specific Exclude Path Information</h3>
+
+<p>
 For any non root backups, you need to understand that rsync starts the exclude/include path
 not absolutely, but relative to the path of the thing being backed up, so for example you
 would NOT use:
+</p>
+<pre>
 /home/fred/.qt
+</pre>
+<p>
 to exclude fred/.qt in the /home backup, but would rather use:
+</p>
+<pre>
 /fred/.qt
+</pre>
+<p>
 or better
+</p>
+<pre>
 /*/.qt
+</pre>
+<p>
 which would exclude all users in /home
+</p>
+<p>
+<strong>*</strong>/ only stays within the directory it's in, but <strong>**</strong> includes <strong>/</strong> as a super wildcard, so,
+again, say, for <strong>/home</strong>:
+</p>
+<pre>
+**/.qt
+</pre>
+<p>
+would exclude <strong>/home/fred/.qt</strong> AND <strong>/home/fred/blogs/.qt</strong>, but
+</p>
+<pre>
+/*/.qt
+</pre>
+<p>
+would exclude only <strong>/home/usernames/.qt</strong>
+</p>
 
-* only stays within the directory it's in, but ** includes / as a super wildcard, so,
-again, say, for /home,
+<h4>Things to be Aware Of</h4>
 
-**/.qt would exclude /home/fred/.qt AND /home/fred/blogs/.qt
-but
-/*/.qt would exclude only /home/usernames/.qt
-
-All rules not starting with ** must start with /, otherwise you get an error.
-
-Rules can contain either ** or *, but with **  especially, make sure to test it
-well before you stay with it.
-
+<p>
+All rules not starting with <strong>**</strong> must start with <strong>/</strong>, otherwise you get an error.
+</p>
+<p>
+Rules can contain either <strong>** </strong>or <strong>*</strong>, but with <strong>**</strong>  especially, make sure to test it well before you stay with it.
+</p>
+<p>
 I like to start excludes with:
+</p>
+<pre>
 - /*/.qt
+</pre>
+<p>
 and include rules with
+</p>
+<pre>
 + /*/.qt
-Just to make it clear, but in the excludes files, the - is optional.
+</pre>
+<p>
+Just to make it clear, but in the excludes files, the <strong>-</strong> is optional.
+</p>
+<p>
+When you use either <strong>-</strong> or <strong>+</strong>, they must be followed by a space then the rule.
+</p>
 
-When you use either - or +, they must be followed by a space then the rule.
--------------------------------------------------------------------------
-rdiff-backup specific exclude path information
-.........................................................................
-paths work as expected, for example
+<h3>Rdiff-backup Specific Exclude Path Information</h3>
+
+<p>
+Paths work as expected, for example
+</p>
+<pre>
 - /home/username/.qt
+</pre>
+<p>
 will exclude that directory in /home
-
+</p>
+<p>
 Everything else above applies however except for the path oddities.
+</p>
+<p>
 
--------------------------------------------------------------------------
-Main comments on excludes.
-.........................................................................
+<p class="small">
+<a href="#top">top</a>
+</p>
 
-The main syntax you need to understand for creating an exclude list is this:
-1. /some/directory - Excludes any file or directory called: directory in /some
-  and also excludes any directory or file contained in that.
-2. /some/directory/* - Backs up the directory /some/directory, but not its contents.
-3. This sequence [ note the + with a space after it preceding /some/directory/main ]:
-+ /some/directory/main
-/some/directory
-will backup the directory /some/directory/main and its contents, but will not back
-up anything else in /some/directory.
+<h2 id="rbxi-values-setup">How to Setup rbxi-values Variables and Data</h2>
 
-It is important to understand that rdiff-backup/rsync first accepts the + items, which means
-include this in the backup, then after that you add the normal exclude case. The order
-is important, if you put the include case after, it won't get included, if it's before
-it will get included.
-
-So when you have a list and you want to include one directory in a parent directory that
-is excluded, the include item, with + /some/path must come first.
-
-For more information, read: man rdiff-backup or man rsync
-
-#########################################################################
-### HOW TO SETUP rbxi VARIABLES
--------------------------------------------------------------------------
+<p>
 You will need to set the paths in rbxi USER SPECIFIC VARIABLES section, using
-the file rbxi-data/rbxi-values. That overrides anything in the main script, and
+the file <strong>rbxi-data/rbxi-values</strong>. That overrides anything in the main script, and
 if you update rbxi, you will not need to change anything at all.
-
+</p>
+<p>
 I will run down the variables one by one to explain how to set them correctly.
-=========================================================================
-PATH VARIABLES IN MAIN SCRIPT:
-=========================================================================
-Only set these in the main script if things will not work any other way.
+</p>
 
+<h3 id="rbxi-values-main-script">Path Variables in Main Script</h3>
+
+<p>
+Only set these in the main script if things will not work any other way.
+</p>
+<p>
 You have to reset these every time the script updates.
-.........................................................................
+</p>
+
+<pre>
 # set this as absolute path for cron jobs if you need to, you'll have to
 # update this manually every time you update the script:
 LSOF='lsof'
 
-.........................................................................
 # http://forums.macosxhints.com/archive/index.php/t-73839.html
 # note, no other method works reliably to get the true script path, not dirname $0.
-if type $LSOF &>/dev/null;then
+if type $LSOF &amp;>/dev/null;then
 	SCRIPT_PATH=$( dirname $( $LSOF -p $$ | grep 'REG' | grep -oE "/.*$(basename $0)$" ) )
 # checking if the dirname method works
 elif [ -d $( dirname $0 )/rbxi-data ];then
 	SCRIPT_PATH=$( dirname $0 )
 fi
 
-# in worst cases, you can manually set the script directory path here, uncomment and make the path
-# explicit. Must not end with /, and must be the full path of the rbxi directory rbxi came with.
-# you'll have to update this manually every time you update the script:
+# in worst cases, you can manually set the script directory path here, uncomment
+# and make the path explicit. Must not end with /, and must be the full path of
+# the rbxi directory rbxi came with.
+# You'll have to update this manually every time you update the script:
 # example:  SCRIPT_PATH='/home/fred/scripts/rbxi'
 # SCRIPT_PATH=''
+</pre>
 
-=========================================================================
-USER SPECIFIC VARIABLES - CHANGE AS REQUIRED:
-=========================================================================
+<p class="small">
+<a href="#top">top</a>
+</p>
+
+<h3 id="rbxi-values-user-variables">User Specific Variables - Change as Required</h3>
+
+<p>
 These should be the only variables you need to change. I will go down the list
 and explain what each group is and how to change it for your system and needs.
-
+</p>
+<p>
 Please note: some of these have default values already, make sure that the defaults
 match your backup needs if you leave them unchanged.
+</p>
+<p>
 
+<h4 id="rbxi-values-app-paths">Application Paths and Data</h4>
+
+<pre>
 ########################################################################
 #### RSYNC/RDIFF-BACKUP DATA, REQUIRED APPLICATION PATHS ###############
 ########################################################################
 
-.........................................................................
 BACKUP_APP='rsync'
+</pre>
 
+<p>
 Set to either rdiff-backup or rsync. Can be overridden with r/R option. Default is rsync.
-
+</p>
+<p>
 Change these to the true system paths if you are going to run this as a cron job
-like so: RDIFF_PATH='/usr/bin/rdiff-backup'
-or this: RSYNC_PATH='/usr/bin/rsync'
+like so:
+</p>
+<pre>
+RDIFF_PATH='/usr/bin/rdiff-backup'
+</pre>
+<p>
+or this:
+</p>
+<pre>
+RSYNC_PATH='/usr/bin/rsync'
+</pre>
+<p>
 Use'which rdiff-backup' OR 'which rsync' (no quotes) to find the true path.
+</p>
+<pre>
 RDIFF_PATH='rdiff-backup'
 RSYNC_PATH='rsync'
+</pre>
 
-.........................................................................
-RSYNC/RDIFF-BACKUP EXTRA ARGUMENTS
+<p class="small">
+<a href="#top">top</a>
+</p>
 
-For remote, via ssh, include the ssh option
-ie: RSYNC_EXTRA_OPTIONS=' --rsh=ssh '
+<h4 id="rbxi-values-extra-args">Rsync/Rdiff-backup Extra Arguments</h4>
 
-ie: RDIFF_EXTRA_OPTIONS=' --terminal-verbosity 5 '
-Only set if you want custom options for either rdiff-backup or rsync,
-otherwise make null: RSYNC_EXTRA_OPTIONS=''
-Defaults are below, to let you see what's going on at least the first time.
-Once rsync works, remove the --dry-run and the backup will actually occur.
+<pre>
+# For remote, via ssh, include the ssh option
+# ie: RSYNC_EXTRA_OPTIONS=' --rsh=ssh '
+
+# ie: RDIFF_EXTRA_OPTIONS=' --terminal-verbosity 5 '
+# Only set if you want custom options for either rdiff-backup or rsync,
+# otherwise make null: RSYNC_EXTRA_OPTIONS=''
+# Defaults are below, to let you see what's going on at least the first time.
+# Once rsync works, remove the --dry-run and the backup will actually occur.
 RSYNC_EXTRA_OPTIONS=' --dry-run -v '
 RDIFF_EXTRA_OPTIONS=' --terminal-verbosity 5 '
 
 # see man rdiff-backup for proper syntax for time. This is set to remove older
 # than 60 days incremental backupsThe time  interval  is  an integer followed
-# by the character s, m, h, D, W, M, or Y, indicating seconds, minutes, hours, days,
-# weeks, months, or years respectively, or a number of these concatenated.
-# For example, 32m  means  32  minutes, and  3W2D10h7s  means 3 weeks, 2 days, 10 hours, and 7 seconds.
+# by the character s, m, h, D, W, M, or Y, indicating seconds, minutes,
+# hours, days, weeks, months, or years respectively, or a number of these
+# concatenated.
+# For example, 32m  means  32  minutes, and  3W2D10h7s means
+# 3 weeks, 2 days, 10 hours, and 7 seconds.
 RDIFF_REMOVE_TIME='60D'
+</pre>
 
+<p class="small">
+<a href="#top">top</a>
+</p>
+
+<h4 id="rbxi-values-mount-directory">Primary Destination Directory for Backup</h4>
+
+<pre>
 ########################################################################
 #### BACKUP (DESTINATION) DIRECTORY PATHS AND INFORMATION ##############
 ########################################################################
+</pre>
 
-Remote machines must be in this form: username@machine:/path/to/backup/destination
-
+<p>
+This is your backup mount location, the mount name that you have created for your backup drive or network mount.
+</p>
+<p>
+Remote machines must be in this form: <strong>username@machine:/path/to/backup/destination</strong>
+</p>
+<pre>
 BACKUP_DIRECTORY='/media/usbdisk'
 BACKUP_DIRECTORY_1=''
 BACKUP_DIRECTORY_2=''
@@ -434,9 +791,12 @@ BACKUP_DIRECTORY_7=''
 BACKUP_DIRECTORY_8=''
 BACKUP_DIRECTORY_9=''
 BACKUP_DIRECTORY_10=''
-
+</pre>
+<p>
 If you are using rsync, and want a different backup directory, set this to different,
 otherwise make it the same as above.
+</p>
+<pre>
 BACKUP_DIRECTORY_RS='/media/usbdisk'
 BACKUP_DIRECTORY_1_RS=''
 BACKUP_DIRECTORY_2_RS=''
@@ -448,26 +808,41 @@ BACKUP_DIRECTORY_7_RS=''
 BACKUP_DIRECTORY_8_RS=''
 BACKUP_DIRECTORY_9_RS=''
 BACKUP_DIRECTORY_10_RS=''
-
+</pre>
+<p>
 This is the mounted location of your backup disk or partition. The default assumes
 that it is a external drive with the label of 'usbdisk'. Change to your requirements.
 Please make sure this does not end with a /, but just the actual partition mount directory
 name.
-
+</p>
+<p>
 NOTE: it is extremely bad practice to backup to the same partition that is being backed up
 so if you want to do that don't look here for help or advice.
-
+</p>
+<p>
 Do not use the /dev/sda1 type names, use the mounted name, like /media/sda1
+</p>
 
-.........................................................................
+<p class="small">
+<a href="#top">top</a>
+</p>
 
+<h4 id="rbxi-values-primary-backup-directory">Primary Backup Job Directories in Destination Directory</h4>
+
+<p>
 Primary backup job directories, these will be located inside of the BACKUP_DIRECTORY
 I strongly recommend you use these, because that can help avoid accidently writing the
 backup to a directory that did not get mounted, for example: /media/backup prior to
 mounting the actual drive  to /media/backup. This is an easy mistake to make.
+</p>
+<p>
+These directories will be found INSIDE your primary mount directory, in the Network or Local drive mount directory, that is. In other words, these directories will be in the mounted backup partition or network drive.
+</p>
+<p>
 DO NOT END the destination directory names below with a '/'
 START them with a /
-
+</p>
+<pre>
 BACKUP_SUB_DIR='/backup'
 BACKUP_SUB_DIR_1=''
 BACKUP_SUB_DIR_2=''
@@ -479,9 +854,12 @@ BACKUP_SUB_DIR_7=''
 BACKUP_SUB_DIR_8=''
 BACKUP_SUB_DIR_9=''
 BACKUP_SUB_DIR_10=''
-
+</pre>
+<p>
 If you are using rsync, set this path to the actual sub directory used in the main backup
 directory.
+</p>
+<pre>
 BACKUP_SUB_DIR_RS='/backup-rs'
 BACKUP_SUB_DIR_1_RS=''
 BACKUP_SUB_DIR_2_RS=''
@@ -493,39 +871,65 @@ BACKUP_SUB_DIR_7_RS=''
 BACKUP_SUB_DIR_8_RS=''
 BACKUP_SUB_DIR_9_RS=''
 BACKUP_SUB_DIR_10_RS=''
-
+</pre>
+<p>
 This is the actual directory name of where the backup will go, inside the primary,
 generally mounted, or remote ssh/rsh drive.
-
+</p>
+<p>
 rbxi will test all local directories to see if they exist, and if they don't, will
 exit with errors.
+</p>
 
-####--------------------------------------------------------------------
-#### BACKUP DESTINATION SUB DIRECTORIES --------------------------------
-####--------------------------------------------------------------------
+<p class="small">
+<a href="#top">top</a>
+</p>
 
+<h4 id="rbxi-values-backup-destination-subdirectory">Backup Destination Sub Directories</h4>
+
+<pre>
+####--------------------------------------------------------------------
+#### BACKUP JOB DESTINATION SUB DIRECTORIES ----------------------------
+####--------------------------------------------------------------------
+</pre>
+
+<p>
+These directory names are the names your backup job will create for each part you want to run, like home, root, data directories. rsync/rdiff-backup will create these as needed.
+</p>
+
+<p>
 Do not begin any of the following 4 directory names with a /, just put the name itself
 you want rdiff-backup/rsync to create for that particular backup. You do not need to manually
 create these sub-directories, rsync or rdiff-backup do it automatically.
-
+</p>
+<p>
 Important: if any one of these is left blank, no backup of that component will be created.
-.........................................................................
+</p>
+<pre>
 HOME_DIR='home'
-
+</pre>
+<p>
 This is the name of the directory that your /home partition will get backed up to inside of
 the above primary backup directories.
-.........................................................................
+</p>
+<pre>
 ROOT_DIR='root-hda1'
-
+</pre>
+<p>
 This is the name of the directory that your / [root] partition will get backed up to inside
 of the above primary backup directories.
-.........................................................................
+</p>
+<p>
 These are optional backup subdirectories, if these are used the script will backup these
 as well as / and /home autumatically.
-Blank '' means the script does not try to back that item up
-This is the backup sub directory name, not the actual data file path
+</p>
+<p>
+Blank '' means the script does not try to back that item up. This is the backup sub directory name, not the actual data file path
+</p>
+<p>
 Remote machines must be in this form: username@machine:/path/to/backup/source
-
+</p>
+<pre>
 DATA_1_DIR=''
 DATA_2_DIR=''
 DATA_3_DIR=''
@@ -536,16 +940,29 @@ DATA_7_DIR=''
 DATA_8_DIR=''
 DATA_9_DIR=''
 DATA_10_DIR=''
-
+</pre>
+<p>
 If used, these are data directory names. Default is blank.
+</p>
 
+<p class="small">
+<a href="#top">top</a>
+</p>
+
+<h4 id="rbxi-values-directory-output-descriptions">Script Backup Directory Output Descriptions</h4>
+
+<pre>
 ########################################################################
 #### SCRIPT BACKUP OUTPUT DESCRIPTIONS #################################
 ########################################################################
+</pre>
 
+<p>
 These variables are simply what the script will print out to you when it runs.
 They do not affect what actually is backed up.
-.........................................................................
+</p>
+
+<pre>
 DATA_1_DESC='' # for example: DATA_1_DESC='web'
 DATA_2_DESC='' # for example: DATA_2_DESC='email'
 DATA_3_DESC=''
@@ -556,63 +973,107 @@ DATA_7_DESC=''
 DATA_8_DESC=''
 DATA_9_DESC=''
 DATA_10_DESC=''
-
+</pre>
+<p>
 This is a one or more word description of what is being backed up.
 Like this: DATA_1_DESC='my emails'. This is what rbxi will print out
 to you as it backs up that directory.
-
+</p>
+<p>
 This is for DATA_x_DIR and DATA_x_PATH
-
-.........................................................................
+</p>
+<pre>
 ROOT_DESC='/dev/hda1'
-
+</pre>
+<p>
 This just tells you which actual physical partition root is. Change to
 your own setup. This is not a path, it's just information for you.
+</p>
 
+<p class="small">
+<a href="#top">top</a>
+</p>
+
+<h4 id="rbxi-values-backup-source-paths">Backup Source Paths</h4>
+
+<pre>
 ########################################################################
 #### SYSTEM BACKUP SOURCE PATH INFORMATION #############################
 ########################################################################
+</pre>
 
+<p>
 These are the actual paths to be used for the backups. Whatever path  you
 enter here is what will get backed up.
-
+</p>
+<p>
 Note: if you leave off the ending /, rsync will create a directory of the last name in
 the path, which you probably don't want, so make sure to end these paths with /.
-
+</p>
+<p>
 All xx_PATH directories are the SOURCE directory, not not the destination.
-.........................................................................
-HOME_PATH='/home/'
+</p>
 
+<pre>
+HOME_PATH='/home/'
+</pre>
+<p>
 Only change this if you are running the backup from outside of the Operating
 system that is being backed up. For example, if /home is on /dev/sda3, then
 you'd change this to /media/sda3 if you were backing up from example a live cd.
-
+</p>
+<p>
 SPECIAL NOTE: If you are using any /home excludes, and if you are running the
 backup from outside of the operating system/ home partition you are backing up,
 you must change the paths in home-excludes.txt to reflect this actual path, for
 example:
+</p>
+<pre>
 /home/username/somedata/*
+</pre>
+<p>
 would become
-/media/hda3/username/somedata/* [assuming that your home directory is mounted
-in a separate partition that is. This path must be the unmounted true path to
-the /home you are backing up when it's run from outside the OS.
-
+</p>
+<pre>
+/media/hda3/username/somedata/*
+</pre>
+<p>
+[assuming that your home directory is mounted in a separate partition that is. This path must be the unmounted true path to the /home you are backing up when it's run from outside the OS.
+</p>
+<p>
 Normal useage: do not change
-.........................................................................
+</p>
+
+<h5>Root Path</h5>
+
+<pre>
 ROOT_PATH='/'
-
+</pre>
+<p>
 If backing up from within OS, do not change. If from outside, same as above.
-
+</p>
+<p>
 SPECIAL NOTE: If you run the script from outside the operating system to be
 backed up, you will need to change the root-excludes.txt paths to reflect that.
 for exampple, say / in this case is on /dev/hda2, and the partition is mounted
 in /media/hda2:
+</p>
+<pre>
 /sys/*
+</pre>
+<p>
 would be
+</p>
+<pre>
 /media/hda2/sys/*
+</pre>
+<p>
 and so on
+</p>
 
-.........................................................................
+<h5>Data Paths</h5>
+
+<pre>
 DATA_1_PATH=''
 DATA_2_PATH=''
 DATA_3_PATH=''
@@ -623,50 +1084,77 @@ DATA_7_PATH=''
 DATA_8_PATH=''
 DATA_9_PATH=''
 DATA_10_PATH=''
-
+</pre>
+<p>
 If you are creating more than the default / and /home backups, use this. This
 must correspond to the DATA_XX_DIR item above. Set to path of item you want backed
 up separately.
-
+</p>
+<p>
 Note: normally, you will exclude this in either /home or / depending on where the
 data is mounted. Just add this path to the relevant home-excludes.txt or root-excludes.txt
 To backup the directory name but not it's contents, do this:
-
+</p>
+<pre>
 /data/*
-
+</pre>
+<p>
 in the exclude file.
-
+</p>
+<p>
 If DATA_XX_DIR is blank, this will not get backed up unless you are using the -C,
 Clone, option. In all cases however, if you want the backup to occur, the PATHs
 here must be real and exist on your system if it is a local path.
+</p>
 
+<p class="small">
+<a href="#top">top</a>
+</p>
+
+<h4 id="rbxi-values-mount-umount">Mount / Umount Data</h4>
+
+<pre>
 ########################################################################
 #### PARTITION MOUNT/UMOUNT ############################################
 ########################################################################
-
+</pre>
+<p>
 Note that MOUNT/UNMOUNT 1-10 are triggered by the -M option, and that
 $BACKUP_DIRECTORY will be set dynamically from rdiff/rsync BACKUP_DIRECTORY set in rbxi
 based on the values you used in the config file.
-
+</p>
+<p>
 If you want the script to automatically mount/umount your backup drive / partition,
 use this. If you don't want this, just leave the variables with a blank value.
-
+</p>
+<p>
 For cron jobs, put the full system path to mount/umount in the command.
+</p>
+<pre>
 MOUNT_BU_DISK='/usr/bin/mount -L backup-disk-1 $BACKUP_DIRECTORY'
 UNMOUNT_BU_DISK='/usr/bin/umount $BACKUP_DIRECTORY'
+</pre>
+<p>
 Use'which mount' OR 'which umount' (no quotes) to find the true path.
-
+</p>
+<p>
 EXCEPTION: if you want to use a custom DIRECTORY from above, do it like this:
+</p>
+<pre>
 MOUNT_BU_DISK="mount -L backup-disk-1 $BACKUP_DIRECTORY_3"
 UNMOUNT_BU_DISK="umount $BACKUP_DIRECTORY_3"
+</pre>
+<p>
 This will then use the directory you list. This requires double quotes, "", not single, ''.
 Of course you can also just hard code in the entire thing if you want, but it's easier to
 avoid errors if you just type it in time I find.
-
-If you are just needing to change the BACKUP_DIRECTORY, just use -B <bu directory number>
+</p>
+<p>
+If you are just needing to change the BACKUP_DIRECTORY, just use -B &lt;bu directory number>
 instead and rbxi will change that automatically for you, but if you need to put actually
 different mount/umount information, then use an alternate MOUNT/UNMOUNT number
-.........................................................................
+</p>
+<pre>
 MOUNT_BU_DISK='mount -L backup-disk-1 $BACKUP_DIRECTORY'
 UNMOUNT_BU_DISK='umount $BACKUP_DIRECTORY'
 MOUNT_BU_DISK_1=''
@@ -689,50 +1177,110 @@ MOUNT_BU_DISK_9=''
 UNMOUNT_BU_DISK_9=''
 MOUNT_BU_DISK_10=''
 UNMOUNT_BU_DISK_10=''
+</pre>
 
-.........................................................................
+<p>
 Otherwise, set the full command for mount/umount like these samples. I recommend using
 either UUID or LABEL mounting to make sure the disk is correctly mounted, since /dev/sdd can
 change depending on what you have plugged into your system at that moment.
+</p>
 
+<h5>Mount Command Examples</h5>
+<p>
 For these examples, the disk has the following:
+</p>
+<pre>
 label:		backup-disk-1
 uuid:			b833d2c1-b824-4d93-a8c9-74e84226rc9c
 standard:	/dev/sdc1
+</pre>
 
-- for LABEL mounting:
+<p>
+For LABEL mounting:
+</p>
+<pre>
 MOUNT_BU_DISK="mount -L backup-disk-1 $BACKUP_DIRECTORY"
-
-- for UUID mounting
+</pre>
+<p>
+For UUID mounting
+</p>
+<pre>
 MOUNT_BU_DISK="mount -U b833d2c1-b824-4d93-a8c9-74e84226rc9c $BACKUP_DIRECTORY"
-
-- for standard mounting:
+</pre>
+<p>
+For standard mounting:
+</p>
+<pre>
 MOUNT_BU_DISK="mount /dev/sdc1 $BACKUP_DIRECTORY"
-
-- for network disk mounting
+</pre>
+<p>
+For network disk mounting
+</p>
+<pre>
 MOUNT_BU_DISK="mount backupmachine:/dev/sdc1 $BACKUP_DIRECTORY"
-.........................................................................
-- Unmounting command, should not need to be changed:
+</pre>
+<p>
+Unmounting command, should not need to be changed:
+</p>
+<p>
 UNMOUNT_BU_DISK="umount $BACKUP_DIRECTORY"
+</p>
 
-.........................................................................
-Complex Example,  mount/umount 2 drives, source and destination, echoes success messages after each operation:
-MOUNT_BU_DISK_10='mount -L audio-bu-1 $BACKUP_DIRECTORY && echo "Mounted backup directory $BACKUP_DIRECTORY..." && mount musicbox:/home/username/mm $DATA_10_PATH && echo "mounted source directory $DATA_10_PATH..."'
-UNMOUNT_BU_DISK_10='umount $BACKUP_DIRECTORY && echo "Unmounted $BACKUP_DIRECTORY..." && umount $DATA_10_PATH && echo "Unmounted $DATA_10_PATH"'
+<h5>
+Complex Example
+</h5>
 
+<p>
+This will mount/umount 2 drives, source and destination, and echoes success messages after each operation.
+</p>
+<pre>
+MOUNT_BU_DISK_10='mount -L audio-bu-1 $BACKUP_DIRECTORY &amp;&amp; \
+echo "Mounted backup directory $BACKUP_DIRECTORY..." &amp;&amp; \
+mount musicbox:/home/username/mm $DATA_10_PATH &amp;&amp; \
+echo "mounted source directory $DATA_10_PATH..."'
+UNMOUNT_BU_DISK_10='umount $BACKUP_DIRECTORY &amp;&amp; \
+echo "Unmounted $BACKUP_DIRECTORY..." &amp;&amp; \
+umount $DATA_10_PATH &amp;&amp; \
+echo "Unmounted $DATA_10_PATH"'
+</pre>
+
+<p class="small">
+<a href="#top">top</a>
+</p>
+
+<h4 id="rbxi-values-backup-jobs">Backup Job Preset Section</h4>
+
+<pre>
 ########################################################################
 #### JOB PRESETS #######################################################
 ########################################################################
-
-# set with whatever arguments you want to start script with, script will restart with those options
-# automatically, then run whatever job you set.
-# Jobs consist of <job name> plus ':' plus <sets of rbxi options>
-# sample: BACKUP_JOB_1='system-b-bu: -M 3 -S rh ' - this would use mount/umount 3, and skip home/root backup
-# sample: BACKUP_JOB_2='system-c-bu: -M 2 -S rh -A 8' - this would use mount/umount 2, skip home/root backup
-# and Add the normally turned off DATA_8
-#
-# This is triggered by the -J <1-10> option.
-# syntax: 'job-display-name: <job options>'
+</pre>
+<p>
+Set with whatever arguments you want to start script with, script will restart with those options
+automatically, then run whatever job you set.
+</p>
+<p>
+Jobs consist of &lt;job name> plus ':' plus &lt;sets of rbxi options>
+</p>
+<p>
+This would use mount/umount 3, and skip home/root backup:
+</p>
+<pre>
+BACKUP_JOB_1='system-b-bu: -M 3 -S rh '
+</pre>
+<p>
+This would use mount/umount 2, skip home/root backup and Add the normally turned off DATA_8:
+</p>
+<pre>
+BACKUP_JOB_2='system-c-bu: -M 2 -S rh -A 8'
+</pre>
+<p>
+This is triggered by the -J <1-10> option.
+</p>
+<pre>
+syntax: BACKUP_JOB_2='job-display-name: &lt;job options>'
+</pre>
+<pre>
 BACKUP_JOB_1=':'
 BACKUP_JOB_2=':'
 BACKUP_JOB_3=':'
@@ -743,31 +1291,52 @@ BACKUP_JOB_7=':'
 BACKUP_JOB_8=':'
 BACKUP_JOB_9=':'
 BACKUP_JOB_10=':'
+</pre>
 
-.........................................................................
-EXAMPLES:
+<h5>Backup Job Examples</h5>
+
+<pre>
 BACKUP_JOB_9=' -C 9 -B 10 -M 9 '
+</pre>
+<p>
 This sets Clone job 9, using main backup destination directory 10, using Mount / Umount
 set 9
-
+</p>
+<pre>
 BACKUP_JOB_10=' -c -B 2 -D 2 -M 2 '
+</pre>
+<p>
 This sets standard delete obsolete, autorun backup, using main backup destination directory 2,
 with backup destination sub directory 2, using Mount / Umount set 2.
+</p>
 
+<p class="small">
+<a href="#top">top</a>
+</p>
+
+<h4 id="rbxi-values-clean-delete">Clean Delete Backup Skip Section</h4>
+
+<pre>
 ########################################################################
 #### CLEAN / DELETE / BACKUP / SKIP ####################################
 ########################################################################
-
+</pre>
+<p>
 These are for options, used in case of cron or option run backups/deletes
 if you want to hard set any option just set the variable to true.
 trigger rdiff/rsync cleeanup, either older than x, or remove deleted files
+</p>
+<pre>
 B_CLEAN_OLDER='false' # -c :clean old backup files, then do backup
 B_DELETE_BACKUP='false' # -d :delete old backup, then do backup
 B_DO_BACKUP='false' # -b :automatic backup
+</pre>
+<p>
+Skip home/root/data can be overridden by -A &lt;r|h|number> when you are creating
+a separate job (-J &lt;number>).
+</p>
 
-.........................................................................
-Skip home/root/data can be overridden by -A <r|h|number> when you are creating
-a separate job (-J <number>).
+<pre>
 B_SKIP_DATA_FULL='false' # -C [..] or -S d - skips all data partition backups
 B_SKIP_DATA_1='false' # -S 1
 B_SKIP_DATA_2='false' # -S 2
@@ -781,25 +1350,42 @@ B_SKIP_DATA_9='false' # -S 9
 B_SKIP_DATA_10='false' # -S 10
 B_SKIP_HOME='false' # -S h
 B_SKIP_ROOT='false' # -S r
+</pre>
 
+<p class="small">
+<a href="#top">top</a>
+</p>
+
+<h4 id="rbxi-values-misc-options">Miscellaneous Script Options Section</h4>
+
+<pre>
 ########################################################################
 #### MISCELLANEOUS SCRIPT OPTIONS ######################################
 ########################################################################
+</pre>
 
-Miscellaneous script booleans
+<h5>Miscellaneous Script Booleans (true/false)</h5>
+
+<p>
+<pre>
 B_LOGGING='false' # -L : use logging true/false
 B_SKIP_MOUNT='false' # -m :do not mount backup drive, or umount it
 B_SPINNING_WHEEL='false' # -s :use spinning wheel option
 B_TESTING_1='false' # -! 1 :testing flag 1
 B_TESTING_2='false' # -! 2 :testing flag 2
-
-.........................................................................
+</pre>
+<p>
 If you want rbxi to notify you of newer versions when it runs, set to true.
 Default is false, no checking for latest versions.
+</p>
+<p>
+<pre>
 B_UPDATE_NOTIFIER='false'
+</pre>
 
-.........................................................................
-Script color scheme:
+<h5>Script Color Schemes</h5>
+
+<pre>
 0 - no colors
 1 - default, for dark on light or light on dark, red warning/error, simple highlights
 2 - fancy dark on light, red warning/error, more colors for questions, highlights
@@ -808,51 +1394,80 @@ Script color scheme:
 5 - smxi style, for light on dark, green text, otherwise same as 3
 Try each one and see which works best for your terminal colors using -j <0-5>, then set it here.
 COLOR_SCHEME='1' # -j [0-5]
+</pre>
 
-.........................................................................
+<h5>Sleep Times</h5>
+
+<p>
 These sleep times are all in seconds.
+</p>
+<pre>
 SLEEP_TIME_SPINNER='0.5'
-
+</pre>
+<p>
 If you started the script with the -s option, a small spinning wheel will
 run as each part of the operation is carried out. This lets you know
 that something is happening, that is.
-
+</p>
+<p>
 I found that setting this to a lower number tended to boost the cpu useage, but
 you can play with it to see for yourself. Anything less then 0.1 would be
 pointless. I find that 0.5 is fine, and doesn't consume much cpu. The lower the
 number, the faster the wheel spins.
-
+</p>
+<pre>
 SLEEP_TIME_BACKUP='3'
-
+</pre>
+<p>
 Time between backup operations, make integer, number of seconds
+</p>
+<pre>
 SLEEP_TIME_BACKUP='3'
+</pre>
+<p>
 Time forced exit allows for disk write syncs before umount occurs. If umount
 fails with busy error on forced or premature exit, set this integer to be higher.
+</p>
+<pre>
 SLEEP_TIME_UMOUNT='5'
+</pre>
+<p>
 
+<p class="small">
+<a href="#top">top</a>
+</p>
+
+<h4 id="rbxi-values-final-step">Final Configuration Step</h4>
+
+<pre>
 ########################################################################
 #### FINAL STEP - DO NOT SKIP! #########################################
 ########################################################################
-
+</pre>
+<p>
 And last but not least, set this to 'true' once you are done updating all the variables here.
 Failure to do this will make rbxi exit without running, since you can't run it without having
 completed the user variables in the file: rbxi-data/rbxi-values
+</p>
+<pre>
 B_VARIABLES_SET='false'
+</pre>
 
-########################################################################
-#### END - USER DEFINED VARIABLES ######################################
-########################################################################
+<p class="small">
+<a href="#top">top</a>
+</p>
 
-#########################################################################
-### STATIC VARIABLES, SHOULD NOT REQUIRE CHANGES
-=========================================================================
+<h2 id="rbxi-static-variables">Static Variables :: Should Not Require Changes</h2>
 
+<p>
 These variables should not be changed unless you have some particularly good
 reason to do that, such as needing to reset the script or lsof path.
-.........................................................................
-
+</p>
+<p>
 Do not change any of these, these are simply initializing variables.
+</p>
 
+<pre>
 #### INITIALIZE VARIABLES TO BE SET ELSEWHERE
 B_CLONE_HOME='false'
 B_CLONE_ROOT='false'
@@ -901,22 +1516,40 @@ BACKUP_JOB_NU='none'
 DELETION_TEXT=''
 GET_PID=''
 RSYNC_DELETE=''
+</pre>
 
-#########################################################################
-### FUNCTIONS - PLEASE ONLY CHANGE IF YOU CAN DO SOME BASH SCRIPTING
-=========================================================================
+<p class="small">
+<a href="#top">top</a>
+</p>
 
-=========================================================================
-run_backup_components
-............................
-The only thing I could see any user wanting to change here would be adding
-more primary backups. That's fairly trivial, just create the user variables for data_3, data_4
-etc, then add more if that exists items like you see there.
+<h2 id="rbxi-functions">Rbxi Functions</h2>
 
-There is no need to remove anything here by default, since if the primary backup directory
-name is blank, that backup won't run.
+<p>
+<strong>PLEASE ONLY CHANGE IF YOU CAN DO SOME BASH SCRIPTING</strong>
+</p>
 
+<ul>
+	<li>
+		<pre>run_backup_components</pre>
 
-#########################################################################
-### OK, THAT'S IT, HAVE FUN!
--------------------------------------------------------------------------
+		<p>
+		The only thing I could see any user wanting to change here would be adding
+		more primary backups. That's fairly trivial, just create the user variables for data_3, data_4
+		etc, then add more if that exists items like you see there.
+		</p>
+		<p>
+		There is no need to remove anything here by default, since if the primary backup directory
+		name is blank, that backup won't run.
+		</p>
+	</li>
+</ul>
+
+<p class="small">
+<a href="#top">top</a>
+</p>
+
+<h2>OK, THAT'S IT, HAVE FUN!</h2>
+
+</div>
+</body>
+</html>
