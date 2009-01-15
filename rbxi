@@ -1,8 +1,8 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi
-####  Version: 2.4.1
-####  Date: 26 December 2008
+####  Version: 2.5.0
+####  Date: 15 January 2009
 ####  Copyright (C) Harald Hope 2006-9
 ####
 ####  This program is free software; you can redistribute it and/or modify it under
@@ -212,6 +212,8 @@ print_usage()
 	echo '   d - skip all DATA; h - skip HOME; r - skip ROOT; skip DATA 1-10'
 	echo '-U Update script manually from svn server.'
 	echo '-v Show script version and last used information.'
+	echo '-V Use alternate rbxi-values file. Syntax: rbxi-values-<whatever you want>'
+	echo '   File must be located in rbxi-data, and must have the syntax of: rbxi-values-<something>'
 	echo '-h This help menu'
 	echo
 	echo 'In general, avoid using A, D, M, S unless you are creating a backup job -J, or if you want'
@@ -235,7 +237,7 @@ get_options()
 	local opt='' setDirectory='' setSubDir='' setMount=''
 	local setFullAdds='' setFullSkips='' setCloneData=''
 
-	while getopts :A:bB:cC:dD:hj:J:LmM:o:rsS:Uvz:!: opt
+	while getopts :A:bB:cC:dD:hj:J:LmM:o:rsS:UvV:z:!: opt
 	do
 		case $opt in
 			h)	print_usage
@@ -324,6 +326,16 @@ get_options()
 				;;
 			v)	print_version_info 'opt'
 				exit 0
+				;;
+			V)	# construct new user values file name, then test it, load it
+				SCRIPT_VALUES="$SCRIPT_VALUES-$OPTARG"
+				if [ -f "$SCRIPT_DATA_DIR$SCRIPT_VALUES" ];then
+					source $SCRIPT_DATA_DIR$SCRIPT_VALUES
+					set_script_colors
+					check_script_requires
+				else
+					error_handler 22
+				fi
 				;;
 			z)	if [ -n "$( grep -E '^([1-9]|10)$' <<< $OPTARG )" ];then
 					BACKUP_JOB_NU=$OPTARG
@@ -456,7 +468,7 @@ error_handler()
 			error_message="You are using an unsupported color scheme: ${C}$2"
 			;;
 		22)
-			error_message="User Values File ${C}$SCRIPT_DATA_DIR$SCRIPT_VALUES${W} was not found. Exiting now."
+			error_message="Could not load user values file: ${C}$SCRIPT_DATA_DIR$SCRIPT_VALUES${W}\nPlease double check that the file exists and is in: ${C}$SCRIPT_DATA_DIR${W}\nExiting now."
 			;;
 		23)
 			error_message="Unable to locate the script data directory: ${C}$SCRIPT_PATH$SCRIPT_DATA\n${C}rbxi${W} requires the program ${C}$2${W} to create its paths if you start using a symbolic link.\nYou must install this application before you can run ${C}$SCRIPT_NAME${W} with a sybolic link.\nUnable to continue."
