@@ -14,7 +14,7 @@
 #### RSYNC/RDIFF-BACKUP DATA, REQUIRED APPLICATION PATHS ###############
 ########################################################################
 
-# set to either rdiff-backup or rsync. Can be overridden with -o [rm/rs] optionn
+# set to either rdiff-backup or rsync. Can be overridden with -o [rd/rs] optionn
 BACKUP_APP='rsync'
 
 # change these to the true system paths if you are going to run this as a cron job
