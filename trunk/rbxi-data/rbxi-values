@@ -44,8 +44,8 @@ RDIFF_REMOVE_TIME='60D'
 #
 # This is either a mount point, or a partition on the running OS HD
 #
-# REMEMBER, IF BACKING UP TO A PARTITION ON THE OS HD, DO NOT BACKUP THE
-# BACKUP DIRECTORY, BLOCK IT IN THE EXCLUDE FILE LIST
+# REMEMBER, DO NOT BACKUP BACKUP_MOUNT_POINT ITSELF, MAKE SURE TO BLOCK IT
+# IN THE EXCLUDE FILE LIST, OTHERWISE YOU WILL BACKUP YOUR BACKUP!!
 #
 # DO NOT END the destination directory names below with a '/'
 # START them with a / unless it's a remote mount:
