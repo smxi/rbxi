@@ -48,7 +48,7 @@ RDIFF_REMOVE_TIME='60D'
 # BACKUP DIRECTORY, BLOCK IT IN THE EXCLUDE FILE LIST
 #
 # DO NOT END the destination directory names below with a '/'
-# # START them with a / unless it's a remote mount:
+# START them with a / unless it's a remote mount:
 # remote machine drives that are not mounted on your local system must be in this form:
 # BACKUP_MOUNT_POINT='username@machine:/path/to/backup/destination'
 #
