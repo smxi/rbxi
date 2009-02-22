@@ -1,8 +1,8 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi
-####  Version: 2.5.0
-####  Date: 15 January 2009
+####  Version: 2.5.1
+####  Date: 22 February 2009
 ####  Copyright (C) Harald Hope 2006-9
 ####
 ####  This program is free software; you can redistribute it and/or modify it under
@@ -43,6 +43,7 @@ LSOF='lsof'
 SCRIPT_CONFIGS='/etc/rbxi.conf'
 SCRIPT_NAME='rbxi'
 SCRIPT_DATA='/rbxi-data/'
+SCRIPT_README='readme-rbxi.htm'
 SCRIPT_VALUES='rbxi-values'
 # http://forums.macosxhints.com/archive/index.php/t-73839.html
 # note, no other method works reliably to get the true script path, not dirname $0.
@@ -200,7 +201,7 @@ print_usage()
 	echo '-d Automatic backup and delete, non interactive.'
 	echo '-D Change default backup sub directory (1-10).'
 	echo '-j Set script color scheme -j [0-5]: 0 - no colors; 1 - default, ok for dark/light or light/dark'
-	echo '   2 - fancy dark on light; 3 - basic light on dark; 3 - fancy light on dark; 4 - smxi style'
+	echo '   2 - fancy dark on light; 3 - basic light on dark; 4 - fancy light on dark; 5 - smxi style'
 	echo '-J Start preset backup job (1-10). Cannot be used with any other option.'
 	echo "-L Create symbolic link in /usr/local/bin to $SCRIPT_NAME"
 	echo '-m Skip the mounting option.'
@@ -373,10 +374,10 @@ get_options()
 	# -C overrides -D, backup subdirectory, and sets it to null
 	# -D overrides default main backup directory for -M
 	if [ -n "$setDirectory" ];then
-		set_backup_directory "$setDirectory"
+		set_backup_mount_point "$setDirectory"
 	fi
 	if [ -n "$setSubDir" ];then
-		set_backup_sub_directory "$setSubDir"
+		set_backup_mount_point_directory "$setSubDir"
 	fi
 	if [ -n "$setFullSkips" ];then
 		set_skip_data "$setFullSkips"
@@ -423,7 +424,7 @@ error_handler()
 			;;
 		5)	error_message="dependency not met: ${C}$2${W} not found in path"
 			;;
-		6)	error_message="Your backup partition/directory ${C}$BACKUP_DIRECTORY${W} is not present.\nPlease make sure to create it or mount it up before you proceed."
+		6)	error_message="Your backup partition/directory ${C}$BACKUP_MOUNT_POINT${W} is not present.\nPlease make sure to create it or mount it up before you proceed."
 			;;
 		7)	error_message="One of the options you entered in your script parameters: ${C}$2${W}\nIs not supported, or requires a further argument.\nFor a list of supported options, check the help menu: ${C}$SCRIPT_NAME -h"
 			;;
@@ -851,6 +852,24 @@ check_script_path()
 	fi
 }
 
+check_script_changes()
+{
+	local oldBuMount='BACKUP_DIRECTORY'
+	local oldBuMountSub='BACKUP_SUB_DIR'
+	local updateBuMount=$( egrep "($oldBuMount|$oldBuMountSub)" $SCRIPT_DATA_DIR$SCRIPT_VALUES $SCRIPT_DATA_DIR$SCRIPT_README )
+
+	if [ -n "$updateBuMount" ];then
+		echo "${S}Updating your $SCRIPT_VALUES $SCRIPT_README files to use new variable names:"
+		echo "BACKUP_MOUNT_POINT replaces BACKUP_DIRECTORY"
+		echo "BACKUP_MOUNT_POINT_DIRECTORY replaces BACKUP_SUB_DIR"
+		echo "Please restart $SCRIPT_NAME after this is completed.${N}"
+		sed -i 's/BACKUP_DIRECTORY/BACKUP_MOUNT_POINT/g' $SCRIPT_DATA_DIR$SCRIPT_VALUES $SCRIPT_DATA_DIR$SCRIPT_README
+		sed -i 's/BACKUP_SUB_DIR/BACKUP_MOUNT_POINT_DIRECTORY/g' $SCRIPT_DATA_DIR$SCRIPT_VALUES $SCRIPT_DATA_DIR$SCRIPT_README
+		echo "${S}Updated and exiting. Please restart $SCRIPT_NAME, sorry for the inconvenience.${N}"
+		exit 0
+	fi
+}
+
 check_bu_app_installed()
 {
 	local pathExists='' appToCheck=''
@@ -957,19 +976,19 @@ set_primary_backup_data()
 		rsync)
 			# update global file names.
 			# First make sure no user error with the directory name occured with options
-			if [ -z "$BACKUP_DIRECTORY_RS" ];then
-				error_handler 18 'BACKUP_DIRECTORY_RS'
+			if [ -z "$BACKUP_MOUNT_POINT_RS" ];then
+				error_handler 18 'BACKUP_MOUNT_POINT_RS'
 			fi
 			# then remove this data, since we only use the primary directories
 			if [ "$B_IS_CLONE" == 'true' ];then
-				BACKUP_SUB_DIR_RS=''
+				BACKUP_MOUNT_POINT_DIRECTORY_RS=''
 			fi
 
-			# note: these values were set in set_backup_directory
-			# and set_backup_sub_directory if -B or -D were used
+			# note: these values were set in set_backup_mount_point
+			# and set_backup_mount_point_directory if -B or -D were used
 			# note: this is required for mounts
-			BACKUP_DIRECTORY=$BACKUP_DIRECTORY_RS
-			BACKUP_LOCATION=$BACKUP_DIRECTORY_RS$BACKUP_SUB_DIR_RS
+			BACKUP_MOUNT_POINT=$BACKUP_MOUNT_POINT_RS
+			BACKUP_LOCATION=$BACKUP_MOUNT_POINT_RS$BACKUP_MOUNT_POINT_DIRECTORY_RS
 			EXCLUDE_ROOT=$EXCLUDE_ROOT_RS
 			EXCLUDE_HOME=$EXCLUDE_HOME_RS
 			EXCLUDE_DATA_1=$EXCLUDE_DATA_1_RS
@@ -985,16 +1004,16 @@ set_primary_backup_data()
 			;;
 		rdiff-backup)
 			# First make sure no user error with the directory name occured with options
-			if [ -z "$BACKUP_DIRECTORY" ];then
-				error_handler 18 'BACKUP_DIRECTORY'
+			if [ -z "$BACKUP_MOUNT_POINT" ];then
+				error_handler 18 'BACKUP_MOUNT_POINT'
 			fi
-			BACKUP_LOCATION=$BACKUP_DIRECTORY$BACKUP_SUB_DIR
+			BACKUP_LOCATION=$BACKUP_MOUNT_POINT$BACKUP_MOUNT_POINT_DIRECTORY
 			;;
 	esac
 	if [ -z "$BACKUP_LOCATION" ];then
 		error_handler 19
 	fi
-	check_backup_destination_directory "$BACKUP_DIRECTORY"
+	check_backup_destination_directory "$BACKUP_MOUNT_POINT"
 }
 
 # these will be tested in the actual backup function for exist if local, or
@@ -1115,95 +1134,95 @@ set_backup_commands()
 
 # all error null directory handling is done in the final set_primary_backup_data function
 # args: $1 - backup directory number
-set_backup_directory()
+set_backup_mount_point()
 {
 	case $1 in
 		1)
-			BACKUP_DIRECTORY=$BACKUP_DIRECTORY_1
-			BACKUP_DIRECTORY_RS=$BACKUP_DIRECTORY_1_RS
+			BACKUP_MOUNT_POINT=$BACKUP_MOUNT_POINT_1
+			BACKUP_MOUNT_POINT_RS=$BACKUP_MOUNT_POINT_1_RS
 			;;
 		2)
-			BACKUP_DIRECTORY=$BACKUP_DIRECTORY_2
-			BACKUP_DIRECTORY_RS=$BACKUP_DIRECTORY_2_RS
+			BACKUP_MOUNT_POINT=$BACKUP_MOUNT_POINT_2
+			BACKUP_MOUNT_POINT_RS=$BACKUP_MOUNT_POINT_2_RS
 			;;
 		3)
-			BACKUP_DIRECTORY=$BACKUP_DIRECTORY_3
-			BACKUP_DIRECTORY_RS=$BACKUP_DIRECTORY_3_RS
+			BACKUP_MOUNT_POINT=$BACKUP_MOUNT_POINT_3
+			BACKUP_MOUNT_POINT_RS=$BACKUP_MOUNT_POINT_3_RS
 			;;
 		4)
-			BACKUP_DIRECTORY=$BACKUP_DIRECTORY_4
-			BACKUP_DIRECTORY_RS=$BACKUP_DIRECTORY_4_RS
+			BACKUP_MOUNT_POINT=$BACKUP_MOUNT_POINT_4
+			BACKUP_MOUNT_POINT_RS=$BACKUP_MOUNT_POINT_4_RS
 			;;
 		5)
-			BACKUP_DIRECTORY=$BACKUP_DIRECTORY_5
-			BACKUP_DIRECTORY_RS=$BACKUP_DIRECTORY_5_RS
+			BACKUP_MOUNT_POINT=$BACKUP_MOUNT_POINT_5
+			BACKUP_MOUNT_POINT_RS=$BACKUP_MOUNT_POINT_5_RS
 			;;
 		6)
-			BACKUP_DIRECTORY=$BACKUP_DIRECTORY_6
-			BACKUP_DIRECTORY_RS=$BACKUP_DIRECTORY_6_RS
+			BACKUP_MOUNT_POINT=$BACKUP_MOUNT_POINT_6
+			BACKUP_MOUNT_POINT_RS=$BACKUP_MOUNT_POINT_6_RS
 			;;
 		7)
-			BACKUP_DIRECTORY=$BACKUP_DIRECTORY_7
-			BACKUP_DIRECTORY_RS=$BACKUP_DIRECTORY_7_RS
+			BACKUP_MOUNT_POINT=$BACKUP_MOUNT_POINT_7
+			BACKUP_MOUNT_POINT_RS=$BACKUP_MOUNT_POINT_7_RS
 			;;
 		8)
-			BACKUP_DIRECTORY=$BACKUP_DIRECTORY_8
-			BACKUP_DIRECTORY_RS=$BACKUP_DIRECTORY_8_RS
+			BACKUP_MOUNT_POINT=$BACKUP_MOUNT_POINT_8
+			BACKUP_MOUNT_POINT_RS=$BACKUP_MOUNT_POINT_8_RS
 			;;
 		9)
-			BACKUP_DIRECTORY=$BACKUP_DIRECTORY_9
-			BACKUP_DIRECTORY_RS=$BACKUP_DIRECTORY_9_RS
+			BACKUP_MOUNT_POINT=$BACKUP_MOUNT_POINT_9
+			BACKUP_MOUNT_POINT_RS=$BACKUP_MOUNT_POINT_9_RS
 			;;
 		10)
-			BACKUP_DIRECTORY=$BACKUP_DIRECTORY_10
-			BACKUP_DIRECTORY_RS=$BACKUP_DIRECTORY_10_RS
+			BACKUP_MOUNT_POINT=$BACKUP_MOUNT_POINT_10
+			BACKUP_MOUNT_POINT_RS=$BACKUP_MOUNT_POINT_10_RS
 			;;
 	esac
 }
 
 # args: $1 - backup directory number
-set_backup_sub_directory()
+set_backup_mount_point_directory()
 {
 	case $1 in
 		1)
-			BACKUP_SUB_DIR=$BACKUP_SUB_DIR_1
-			BACKUP_SUB_DIR_RS=$BACKUP_SUB_DIR_1_RS
+			BACKUP_MOUNT_POINT_DIRECTORY=$BACKUP_MOUNT_POINT_DIRECTORY_1
+			BACKUP_MOUNT_POINT_DIRECTORY_RS=$BACKUP_MOUNT_POINT_DIRECTORY_1_RS
 			;;
 		2)
-			BACKUP_SUB_DIR=$BACKUP_SUB_DIR_2
-			BACKUP_SUB_DIR_RS=$BACKUP_SUB_DIR_2_RS
+			BACKUP_MOUNT_POINT_DIRECTORY=$BACKUP_MOUNT_POINT_DIRECTORY_2
+			BACKUP_MOUNT_POINT_DIRECTORY_RS=$BACKUP_MOUNT_POINT_DIRECTORY_2_RS
 			;;
 		3)
-			BACKUP_SUB_DIR=$BACKUP_SUB_DIR_3
-			BACKUP_SUB_DIR_RS=$BACKUP_SUB_DIR_3_RS
+			BACKUP_MOUNT_POINT_DIRECTORY=$BACKUP_MOUNT_POINT_DIRECTORY_3
+			BACKUP_MOUNT_POINT_DIRECTORY_RS=$BACKUP_MOUNT_POINT_DIRECTORY_3_RS
 			;;
 		4)
-			BACKUP_SUB_DIR=$BACKUP_SUB_DIR_4
-			BACKUP_SUB_DIR_RS=$BACKUP_SUB_DIR_4_RS
+			BACKUP_MOUNT_POINT_DIRECTORY=$BACKUP_MOUNT_POINT_DIRECTORY_4
+			BACKUP_MOUNT_POINT_DIRECTORY_RS=$BACKUP_MOUNT_POINT_DIRECTORY_4_RS
 			;;
 		5)
-			BACKUP_SUB_DIR=$BACKUP_SUB_DIR_5
-			BACKUP_SUB_DIR_RS=$BACKUP_SUB_DIR_5_RS
+			BACKUP_MOUNT_POINT_DIRECTORY=$BACKUP_MOUNT_POINT_DIRECTORY_5
+			BACKUP_MOUNT_POINT_DIRECTORY_RS=$BACKUP_MOUNT_POINT_DIRECTORY_5_RS
 			;;
 		6)
-			BACKUP_SUB_DIR=$BACKUP_SUB_DIR_6
-			BACKUP_SUB_DIR_RS=$BACKUP_SUB_DIR_6_RS
+			BACKUP_MOUNT_POINT_DIRECTORY=$BACKUP_MOUNT_POINT_DIRECTORY_6
+			BACKUP_MOUNT_POINT_DIRECTORY_RS=$BACKUP_MOUNT_POINT_DIRECTORY_6_RS
 			;;
 		7)
-			BACKUP_SUB_DIR=$BACKUP_SUB_DIR_7
-			BACKUP_SUB_DIR_RS=$BACKUP_SUB_DIR_7_RS
+			BACKUP_MOUNT_POINT_DIRECTORY=$BACKUP_MOUNT_POINT_DIRECTORY_7
+			BACKUP_MOUNT_POINT_DIRECTORY_RS=$BACKUP_MOUNT_POINT_DIRECTORY_7_RS
 			;;
 		8)
-			BACKUP_SUB_DIR=$BACKUP_SUB_DIR_8
-			BACKUP_SUB_DIR_RS=$BACKUP_SUB_DIR_8_RS
+			BACKUP_MOUNT_POINT_DIRECTORY=$BACKUP_MOUNT_POINT_DIRECTORY_8
+			BACKUP_MOUNT_POINT_DIRECTORY_RS=$BACKUP_MOUNT_POINT_DIRECTORY_8_RS
 			;;
 		9)
-			BACKUP_SUB_DIR=$BACKUP_SUB_DIR_9
-			BACKUP_SUB_DIR_RS=$BACKUP_SUB_DIR_9_RS
+			BACKUP_MOUNT_POINT_DIRECTORY=$BACKUP_MOUNT_POINT_DIRECTORY_9
+			BACKUP_MOUNT_POINT_DIRECTORY_RS=$BACKUP_MOUNT_POINT_DIRECTORY_9_RS
 			;;
 		10)
-			BACKUP_SUB_DIR=$BACKUP_SUB_DIR_10
-			BACKUP_SUB_DIR_RS=$BACKUP_SUB_DIR_10_RS
+			BACKUP_MOUNT_POINT_DIRECTORY=$BACKUP_MOUNT_POINT_DIRECTORY_10
+			BACKUP_MOUNT_POINT_DIRECTORY_RS=$BACKUP_MOUNT_POINT_DIRECTORY_10_RS
 			;;
 	esac
 }
@@ -2149,6 +2168,9 @@ get_options "$@"
 check_startup_stuff
 # this sets the correct startup path so that exclude lists load correctly
 check_script_path
+# any updates that need to be run will be run here, should only be required
+# at rare intervals.
+check_script_changes
 
 # set rsync/rdiff-backup variables
 set_primary_backup_data

@@ -1,8 +1,8 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi-values
-####  Version: 2.5.0
-####  Date: 15 January 2009
+####  Version: 2.5.1
+####  Date: 22 February 2009
 ########################################################################
 #### Note: you can create any number of these rbxi-values files, and load
 #### alternate values files by using the -V option. See rbxi -h for details.
@@ -37,75 +37,79 @@ RDIFF_EXTRA_OPTIONS=' --terminal-verbosity 5 '
 # For example, 32m  means  32  minutes; 3W2D10h7s  means 3 weeks, 2 days, 10 hours, and 7 seconds.
 RDIFF_REMOVE_TIME='60D'
 
-########################################################################
-#### BACKUP (DESTINATION) DIRECTORY PATHS AND INFORMATION ##############
-########################################################################
-#    << CHANGE TO YOUR BACKUP LOCATION PATHS >>
+####################################################################################
+#### BACKUP (DESTINATION) MOUNT POINT DIRECTORY PATHS AND INFORMATION ##############
+####################################################################################
+#    << CHANGE TO YOUR BACKUP MOUNT POINT LOCATION AND DIRECTORY PATHS >>
 #
-# Primary backup directory on partition or external drive
-# set to your backup partition path
-# REMEMBER, DO NOT BACKUP THE BACKUP DIRECTORY, BLOCK IT IN THE EXCLUDE FILE LIST
+# This is either a mount point, or a partition on the running OS HD
+#
+# REMEMBER, IF BACKING UP TO A PARTITION ON THE OS HD, DO NOT BACKUP THE
+# BACKUP DIRECTORY, BLOCK IT IN THE EXCLUDE FILE LIST
+#
 # DO NOT END the destination directory names below with a '/'
-# DO START them with a '/'
-# remote machines must be in this form: username@machine:/path/to/backup/destination
+# # START them with a / unless it's a remote mount:
+# remote machine drives that are not mounted on your local system must be in this form:
+# BACKUP_MOUNT_POINT='username@machine:/path/to/backup/destination'
+#
 # primary rdiff-backup directory (sample)
-BACKUP_DIRECTORY='/media/esata'
-BACKUP_DIRECTORY_1=''
-BACKUP_DIRECTORY_2=''
-BACKUP_DIRECTORY_3=''
-BACKUP_DIRECTORY_4=''
-BACKUP_DIRECTORY_5=''
-BACKUP_DIRECTORY_6=''
-BACKUP_DIRECTORY_7=''
-BACKUP_DIRECTORY_8=''
-BACKUP_DIRECTORY_9=''
-BACKUP_DIRECTORY_10=''
+BACKUP_MOUNT_POINT='/media/esata'
+BACKUP_MOUNT_POINT_1=''
+BACKUP_MOUNT_POINT_2=''
+BACKUP_MOUNT_POINT_3=''
+BACKUP_MOUNT_POINT_4=''
+BACKUP_MOUNT_POINT_5=''
+BACKUP_MOUNT_POINT_6=''
+BACKUP_MOUNT_POINT_7=''
+BACKUP_MOUNT_POINT_8=''
+BACKUP_MOUNT_POINT_9=''
+BACKUP_MOUNT_POINT_10=''
 
 # set rsync backup directory separately
 # primary rdiff-backup directory (sample):
-BACKUP_DIRECTORY_RS='/media/esata'
-BACKUP_DIRECTORY_1_RS=''
-BACKUP_DIRECTORY_2_RS=''
-BACKUP_DIRECTORY_3_RS=''
-BACKUP_DIRECTORY_4_RS=''
-BACKUP_DIRECTORY_5_RS=''
-BACKUP_DIRECTORY_6_RS=''
-BACKUP_DIRECTORY_7_RS=''
-BACKUP_DIRECTORY_8_RS=''
-BACKUP_DIRECTORY_9_RS=''
-BACKUP_DIRECTORY_10_RS=''
+BACKUP_MOUNT_POINT_RS='/media/esata'
+BACKUP_MOUNT_POINT_1_RS=''
+BACKUP_MOUNT_POINT_2_RS=''
+BACKUP_MOUNT_POINT_3_RS=''
+BACKUP_MOUNT_POINT_4_RS=''
+BACKUP_MOUNT_POINT_5_RS=''
+BACKUP_MOUNT_POINT_6_RS=''
+BACKUP_MOUNT_POINT_7_RS=''
+BACKUP_MOUNT_POINT_8_RS=''
+BACKUP_MOUNT_POINT_9_RS=''
+BACKUP_MOUNT_POINT_10_RS=''
 
-# Primary backup job directories, these will be located inside of the BACKUP_DIRECTORY
+# Primary backup job directories, these will be located inside of the BACKUP_MOUNT_POINT
 # I strongly recommend you use these, because that can help avoid accidently writing the
 # backup to a directory that did not get mounted, for example: /media/backup prior to
 # mounting the actual drive  to /media/backup. This is an easy mistake to make.
 # DO NOT END the destination directory names below with a '/'
 # START them with a /
 # rdiff-backup sub directory name (sample):):
-BACKUP_SUB_DIR='/backup'
-BACKUP_SUB_DIR_1=''
-BACKUP_SUB_DIR_2=''
-BACKUP_SUB_DIR_3=''
-BACKUP_SUB_DIR_4=''
-BACKUP_SUB_DIR_5=''
-BACKUP_SUB_DIR_6=''
-BACKUP_SUB_DIR_7=''
-BACKUP_SUB_DIR_8=''
-BACKUP_SUB_DIR_9=''
-BACKUP_SUB_DIR_10=''
+BACKUP_MOUNT_POINT_DIRECTORY='/backup'
+BACKUP_MOUNT_POINT_DIRECTORY_1=''
+BACKUP_MOUNT_POINT_DIRECTORY_2=''
+BACKUP_MOUNT_POINT_DIRECTORY_3=''
+BACKUP_MOUNT_POINT_DIRECTORY_4=''
+BACKUP_MOUNT_POINT_DIRECTORY_5=''
+BACKUP_MOUNT_POINT_DIRECTORY_6=''
+BACKUP_MOUNT_POINT_DIRECTORY_7=''
+BACKUP_MOUNT_POINT_DIRECTORY_8=''
+BACKUP_MOUNT_POINT_DIRECTORY_9=''
+BACKUP_MOUNT_POINT_DIRECTORY_10=''
 
 # rsync sub directory name (sample):
-BACKUP_SUB_DIR_RS='/backup-rs'
-BACKUP_SUB_DIR_1_RS=''
-BACKUP_SUB_DIR_2_RS=''
-BACKUP_SUB_DIR_3_RS=''
-BACKUP_SUB_DIR_4_RS=''
-BACKUP_SUB_DIR_5_RS=''
-BACKUP_SUB_DIR_6_RS=''
-BACKUP_SUB_DIR_7_RS=''
-BACKUP_SUB_DIR_8_RS=''
-BACKUP_SUB_DIR_9_RS=''
-BACKUP_SUB_DIR_10_RS=''
+BACKUP_MOUNT_POINT_DIRECTORY_RS='/backup-rs'
+BACKUP_MOUNT_POINT_DIRECTORY_1_RS=''
+BACKUP_MOUNT_POINT_DIRECTORY_2_RS=''
+BACKUP_MOUNT_POINT_DIRECTORY_3_RS=''
+BACKUP_MOUNT_POINT_DIRECTORY_4_RS=''
+BACKUP_MOUNT_POINT_DIRECTORY_5_RS=''
+BACKUP_MOUNT_POINT_DIRECTORY_6_RS=''
+BACKUP_MOUNT_POINT_DIRECTORY_7_RS=''
+BACKUP_MOUNT_POINT_DIRECTORY_8_RS=''
+BACKUP_MOUNT_POINT_DIRECTORY_9_RS=''
+BACKUP_MOUNT_POINT_DIRECTORY_10_RS=''
 
 ####--------------------------------------------------------------------
 #### BACKUP DESTINATION SUB DIRECTORIES --------------------------------
@@ -203,32 +207,32 @@ DATA_10_PATH=''
 # UNMOUNT_BU_DISK=''
 # Note: you can use anything here, </dev/sdd1>; -L <disk label>; -U <disk uuid>
 # replace <....> with your label,uuid, or /dev/...
-# Syntax for label: mount -L <disklabel> $BACKUP_DIRECTORY
-# Syntax for uuid: mount -U <uuid> $BACKUP_DIRECTORY
-# Syntax for standard: mount </dev/sdd2> $BACKUP_DIRECTORY
+# Syntax for label: mount -L <disklabel> $BACKUP_MOUNT_POINT
+# Syntax for uuid: mount -U <uuid> $BACKUP_MOUNT_POINT
+# Syntax for standard: mount </dev/sdd2> $BACKUP_MOUNT_POINT
 #
 # If you are using NFS mounted directories, the host nfs server must have these permissions set
 # in /etc/exports: rw,async,,no_root_squash or write permissions will fail in rsync
 #
-# IMPORTANT: DO NOT USE " " quotes, because the $BACKUP_DIRECTORY will be evaluated later
-# after the final BACKUP_DIRECTORY has been set in the script. Use '' to handle this!
+# IMPORTANT: DO NOT USE " " quotes, because the $BACKUP_MOUNT_POINT will be evaluated later
+# after the final BACKUP_MOUNT_POINT has been set in the script. Use '' to handle this!
 # note: the proper rdiff/rsync directory will be assigned later by script
 # For cron jobs, put the full system path to mount/umount here in the command.
 # use 'which mount' OR 'which umount' (no quotes) to find the true path.
 #
 # EXCEPTION: if you want to use a custom DIRECTORY from above, do it like this:
-# MOUNT_BU_DISK="mount -L backup-disk-1 $BACKUP_DIRECTORY_3"
-# UNMOUNT_BU_DISK="umount $BACKUP_DIRECTORY_3"
+# MOUNT_BU_DISK="mount -L backup-disk-1 $BACKUP_MOUNT_POINT_3"
+# UNMOUNT_BU_DISK="umount $BACKUP_MOUNT_POINT_3"
 # this will then use the directory you list. This requires double quotes, "", not single, ''
 # of course you can also just hard code in the entire thing if you want, but it's easier to
 # avoid errors if you just type it in time I find.
 #
-# If you are just needing to change the BACKUP_DIRECTORY, just use -B <bu directory number>
+# If you are just needing to change the BACKUP_MOUNT_POINT, just use -B <bu directory number>
 # instead and rbxi will change that automatically for you, but if you need to put actually
 # different mount/umount information, then use an alternate MOUNT/UNMOUNT number
 ## DEFAULT MOUNT
-MOUNT_BU_DISK='mount -L backup-disk-1 $BACKUP_DIRECTORY'
-UNMOUNT_BU_DISK='umount $BACKUP_DIRECTORY'
+MOUNT_BU_DISK='mount -L backup-disk-1 $BACKUP_MOUNT_POINT'
+UNMOUNT_BU_DISK='umount $BACKUP_MOUNT_POINT'
 ## OPTIONAL MOUNT SET
 MOUNT_BU_DISK_1=''
 UNMOUNT_BU_DISK_1=''

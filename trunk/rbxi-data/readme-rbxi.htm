@@ -87,7 +87,7 @@ li {
 <h1>Read-me for Setting Up rbxi</h1>
 <pre>
 Filename: rbxi-readme.htm
-Version: 2.5.0
+Version: 2.5.1
 </pre>
 
 <ul>
@@ -123,7 +123,6 @@ Version: 2.5.0
 	<li><a href="#rbxi-static-variables">Static Variables</a> :: These are core rbxi variables, and shouldn't require any changes in general.</li>
 	<li><a href="#rbxi-functions">Rbxi Functions</a> :: You would not change these in general unless you like hacking on scripts.</li>
 </ul>
-
 
 <h2 id="rbxi-introduction">Introduction to rbxi</h2>
 
@@ -471,13 +470,13 @@ For default job, simply set, if the remote machine is the backup destination,
 ie, you are backing up your local machine TO the remote machine:
 </p>
 <pre>
-BACKUP_DIRECTORY_RS='username@remotemachine:/path/on/remote/machine/to/backup/directory'
+BACKUP_MOUNT_POINT_RS='username@remotemachine:/path/on/remote/machine/to/backup/directory'
 </pre>
 <p>
 NOTE: you do NOT need to use:
 </p>
 <pre>
-BACKUP_SUB_DIR_RS= can be blank in this case, unless you want to have it point somewhere.
+BACKUP_MOUNT_POINT_DIRECTORY_RS= can be blank in this case, unless you want to have it point somewhere.
 </pre>
 <p>
 Then set the backup DIR name:
@@ -507,8 +506,8 @@ DATA_1_DIR='backup-name'
 unless you use the -C clone option, in that case:
 </p>
 <pre>
-BACKUP_DIRECTORY_RS='/media/backup'
-BACKUP_SUB_DIR_RS='/backup-rs' #if you needed a subdirectory
+BACKUP_MOUNT_POINT_RS='/media/backup'
+BACKUP_MOUNT_POINT_DIRECTORY_RS='/backup-rs' #if you needed a subdirectory
 </pre>
 <p>
 and then
@@ -854,34 +853,34 @@ This is your backup mount location, the mount name that you have created for you
 Remote machines must be in this form: <strong>username@machine:/path/to/backup/destination</strong>
 </p>
 <pre>
-BACKUP_DIRECTORY='/media/usbdisk'
-BACKUP_DIRECTORY_1=''
-BACKUP_DIRECTORY_2=''
-BACKUP_DIRECTORY_3=''
-BACKUP_DIRECTORY_4=''
-BACKUP_DIRECTORY_5=''
-BACKUP_DIRECTORY_6=''
-BACKUP_DIRECTORY_7=''
-BACKUP_DIRECTORY_8=''
-BACKUP_DIRECTORY_9=''
-BACKUP_DIRECTORY_10=''
+BACKUP_MOUNT_POINT='/media/usbdisk'
+BACKUP_MOUNT_POINT_1=''
+BACKUP_MOUNT_POINT_2=''
+BACKUP_MOUNT_POINT_3=''
+BACKUP_MOUNT_POINT_4=''
+BACKUP_MOUNT_POINT_5=''
+BACKUP_MOUNT_POINT_6=''
+BACKUP_MOUNT_POINT_7=''
+BACKUP_MOUNT_POINT_8=''
+BACKUP_MOUNT_POINT_9=''
+BACKUP_MOUNT_POINT_10=''
 </pre>
 <p>
 If you are using rsync, and want a different backup directory, set this to different,
 otherwise make it the same as above.
 </p>
 <pre>
-BACKUP_DIRECTORY_RS='/media/usbdisk'
-BACKUP_DIRECTORY_1_RS=''
-BACKUP_DIRECTORY_2_RS=''
-BACKUP_DIRECTORY_3_RS=''
-BACKUP_DIRECTORY_4_RS=''
-BACKUP_DIRECTORY_5_RS=''
-BACKUP_DIRECTORY_6_RS=''
-BACKUP_DIRECTORY_7_RS=''
-BACKUP_DIRECTORY_8_RS=''
-BACKUP_DIRECTORY_9_RS=''
-BACKUP_DIRECTORY_10_RS=''
+BACKUP_MOUNT_POINT_RS='/media/usbdisk'
+BACKUP_MOUNT_POINT_1_RS=''
+BACKUP_MOUNT_POINT_2_RS=''
+BACKUP_MOUNT_POINT_3_RS=''
+BACKUP_MOUNT_POINT_4_RS=''
+BACKUP_MOUNT_POINT_5_RS=''
+BACKUP_MOUNT_POINT_6_RS=''
+BACKUP_MOUNT_POINT_7_RS=''
+BACKUP_MOUNT_POINT_8_RS=''
+BACKUP_MOUNT_POINT_9_RS=''
+BACKUP_MOUNT_POINT_10_RS=''
 </pre>
 <p>
 This is the mounted location of your backup disk or partition. The default assumes
@@ -904,7 +903,7 @@ Do not use the /dev/sda1 type names, use the mounted name, like /media/sda1
 <h4 id="rbxi-values-primary-backup-directory">Primary Backup Job Directories in Destination Directory</h4>
 
 <p>
-Primary backup job directories, these will be located inside of the BACKUP_DIRECTORY
+Primary backup job directories, these will be located inside of the BACKUP_MOUNT_POINT
 I strongly recommend you use these, because that can help avoid accidently writing the
 backup to a directory that did not get mounted, for example: /media/backup prior to
 mounting the actual drive  to /media/backup. This is an easy mistake to make.
@@ -917,34 +916,34 @@ DO NOT END the destination directory names below with a '/'
 START them with a /
 </p>
 <pre>
-BACKUP_SUB_DIR='/backup'
-BACKUP_SUB_DIR_1=''
-BACKUP_SUB_DIR_2=''
-BACKUP_SUB_DIR_3=''
-BACKUP_SUB_DIR_4=''
-BACKUP_SUB_DIR_5=''
-BACKUP_SUB_DIR_6=''
-BACKUP_SUB_DIR_7=''
-BACKUP_SUB_DIR_8=''
-BACKUP_SUB_DIR_9=''
-BACKUP_SUB_DIR_10=''
+BACKUP_MOUNT_POINT_DIRECTORY='/backup'
+BACKUP_MOUNT_POINT_DIRECTORY_1=''
+BACKUP_MOUNT_POINT_DIRECTORY_2=''
+BACKUP_MOUNT_POINT_DIRECTORY_3=''
+BACKUP_MOUNT_POINT_DIRECTORY_4=''
+BACKUP_MOUNT_POINT_DIRECTORY_5=''
+BACKUP_MOUNT_POINT_DIRECTORY_6=''
+BACKUP_MOUNT_POINT_DIRECTORY_7=''
+BACKUP_MOUNT_POINT_DIRECTORY_8=''
+BACKUP_MOUNT_POINT_DIRECTORY_9=''
+BACKUP_MOUNT_POINT_DIRECTORY_10=''
 </pre>
 <p>
 If you are using rsync, set this path to the actual sub directory used in the main backup
 directory.
 </p>
 <pre>
-BACKUP_SUB_DIR_RS='/backup-rs'
-BACKUP_SUB_DIR_1_RS=''
-BACKUP_SUB_DIR_2_RS=''
-BACKUP_SUB_DIR_3_RS=''
-BACKUP_SUB_DIR_4_RS=''
-BACKUP_SUB_DIR_5_RS=''
-BACKUP_SUB_DIR_6_RS=''
-BACKUP_SUB_DIR_7_RS=''
-BACKUP_SUB_DIR_8_RS=''
-BACKUP_SUB_DIR_9_RS=''
-BACKUP_SUB_DIR_10_RS=''
+BACKUP_MOUNT_POINT_DIRECTORY_RS='/backup-rs'
+BACKUP_MOUNT_POINT_DIRECTORY_1_RS=''
+BACKUP_MOUNT_POINT_DIRECTORY_2_RS=''
+BACKUP_MOUNT_POINT_DIRECTORY_3_RS=''
+BACKUP_MOUNT_POINT_DIRECTORY_4_RS=''
+BACKUP_MOUNT_POINT_DIRECTORY_5_RS=''
+BACKUP_MOUNT_POINT_DIRECTORY_6_RS=''
+BACKUP_MOUNT_POINT_DIRECTORY_7_RS=''
+BACKUP_MOUNT_POINT_DIRECTORY_8_RS=''
+BACKUP_MOUNT_POINT_DIRECTORY_9_RS=''
+BACKUP_MOUNT_POINT_DIRECTORY_10_RS=''
 </pre>
 <p>
 This is the actual directory name of where the backup will go, inside the primary,
@@ -1194,7 +1193,7 @@ here must be real and exist on your system if it is a local path.
 </pre>
 <p>
 Note that MOUNT/UNMOUNT 1-10 are triggered by the -M option, and that
-$BACKUP_DIRECTORY will be set dynamically from rdiff/rsync BACKUP_DIRECTORY set in rbxi
+$BACKUP_MOUNT_POINT will be set dynamically from rdiff/rsync BACKUP_MOUNT_POINT set in rbxi
 based on the values you used in the config file.
 </p>
 <p>
@@ -1205,8 +1204,8 @@ use this. If you don't want this, just leave the variables with a blank value.
 For cron jobs, put the full system path to mount/umount in the command.
 </p>
 <pre>
-MOUNT_BU_DISK='/usr/bin/mount -L backup-disk-1 $BACKUP_DIRECTORY'
-UNMOUNT_BU_DISK='/usr/bin/umount $BACKUP_DIRECTORY'
+MOUNT_BU_DISK='/usr/bin/mount -L backup-disk-1 $BACKUP_MOUNT_POINT'
+UNMOUNT_BU_DISK='/usr/bin/umount $BACKUP_MOUNT_POINT'
 </pre>
 <p>
 Use'which mount' OR 'which umount' (no quotes) to find the true path.
@@ -1215,8 +1214,8 @@ Use'which mount' OR 'which umount' (no quotes) to find the true path.
 EXCEPTION: if you want to use a custom DIRECTORY from above, do it like this:
 </p>
 <pre>
-MOUNT_BU_DISK="mount -L backup-disk-1 $BACKUP_DIRECTORY_3"
-UNMOUNT_BU_DISK="umount $BACKUP_DIRECTORY_3"
+MOUNT_BU_DISK="mount -L backup-disk-1 $BACKUP_MOUNT_POINT_3"
+UNMOUNT_BU_DISK="umount $BACKUP_MOUNT_POINT_3"
 </pre>
 <p>
 This will then use the directory you list. This requires double quotes, "", not single, ''.
@@ -1224,13 +1223,13 @@ Of course you can also just hard code in the entire thing if you want, but it's 
 avoid errors if you just type it in time I find.
 </p>
 <p>
-If you are just needing to change the BACKUP_DIRECTORY, just use -B &lt;bu directory number>
+If you are just needing to change the BACKUP_MOUNT_POINT, just use -B &lt;bu directory number>
 instead and rbxi will change that automatically for you, but if you need to put actually
 different mount/umount information, then use an alternate MOUNT/UNMOUNT number
 </p>
 <pre>
-MOUNT_BU_DISK='mount -L backup-disk-1 $BACKUP_DIRECTORY'
-UNMOUNT_BU_DISK='umount $BACKUP_DIRECTORY'
+MOUNT_BU_DISK='mount -L backup-disk-1 $BACKUP_MOUNT_POINT'
+UNMOUNT_BU_DISK='umount $BACKUP_MOUNT_POINT'
 MOUNT_BU_DISK_1=''
 UNMOUNT_BU_DISK_1=''
 MOUNT_BU_DISK_2=''
@@ -1273,31 +1272,31 @@ standard:	/dev/sdc1
 For LABEL mounting:
 </p>
 <pre>
-MOUNT_BU_DISK="mount -L backup-disk-1 $BACKUP_DIRECTORY"
+MOUNT_BU_DISK="mount -L backup-disk-1 $BACKUP_MOUNT_POINT"
 </pre>
 <p>
 For UUID mounting
 </p>
 <pre>
-MOUNT_BU_DISK="mount -U b833d2c1-b824-4d93-a8c9-74e84226rc9c $BACKUP_DIRECTORY"
+MOUNT_BU_DISK="mount -U b833d2c1-b824-4d93-a8c9-74e84226rc9c $BACKUP_MOUNT_POINT"
 </pre>
 <p>
 For standard mounting:
 </p>
 <pre>
-MOUNT_BU_DISK="mount /dev/sdc1 $BACKUP_DIRECTORY"
+MOUNT_BU_DISK="mount /dev/sdc1 $BACKUP_MOUNT_POINT"
 </pre>
 <p>
 For network disk mounting
 </p>
 <pre>
-MOUNT_BU_DISK="mount backupmachine:/dev/sdc1 $BACKUP_DIRECTORY"
+MOUNT_BU_DISK="mount backupmachine:/dev/sdc1 $BACKUP_MOUNT_POINT"
 </pre>
 <p>
 Unmounting command, should not need to be changed:
 </p>
 <p>
-UNMOUNT_BU_DISK="umount $BACKUP_DIRECTORY"
+UNMOUNT_BU_DISK="umount $BACKUP_MOUNT_POINT"
 </p>
 
 <h5>
@@ -1308,12 +1307,12 @@ Complex Example
 This will mount/umount 2 drives, source and destination, and echoes success messages after each operation.
 </p>
 <pre>
-MOUNT_BU_DISK_10='mount -L audio-bu-1 $BACKUP_DIRECTORY &amp;&amp; \
-echo "Mounted backup directory $BACKUP_DIRECTORY..." &amp;&amp; \
+MOUNT_BU_DISK_10='mount -L audio-bu-1 $BACKUP_MOUNT_POINT &amp;&amp; \
+echo "Mounted backup directory $BACKUP_MOUNT_POINT..." &amp;&amp; \
 mount musicbox:/home/username/mm $DATA_10_PATH &amp;&amp; \
 echo "mounted source directory $DATA_10_PATH..."'
-UNMOUNT_BU_DISK_10='umount $BACKUP_DIRECTORY &amp;&amp; \
-echo "Unmounted $BACKUP_DIRECTORY..." &amp;&amp; \
+UNMOUNT_BU_DISK_10='umount $BACKUP_MOUNT_POINT &amp;&amp; \
+echo "Unmounted $BACKUP_MOUNT_POINT..." &amp;&amp; \
 umount $DATA_10_PATH &amp;&amp; \
 echo "Unmounted $DATA_10_PATH"'
 </pre>
