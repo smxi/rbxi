@@ -865,6 +865,7 @@ check_script_changes()
 		echo "Please restart $SCRIPT_NAME after this is completed.${N}"
 		sed -i 's/BACKUP_DIRECTORY/BACKUP_MOUNT_POINT/g' $SCRIPT_DATA_DIR$SCRIPT_VALUES $SCRIPT_DATA_DIR$SCRIPT_README
 		sed -i 's/BACKUP_SUB_DIR/BACKUP_MOUNT_POINT_DIRECTORY/g' $SCRIPT_DATA_DIR$SCRIPT_VALUES $SCRIPT_DATA_DIR$SCRIPT_README
+		sed -i 's/2\.5\.0/2.5.1/g' $SCRIPT_DATA_DIR$SCRIPT_VALUES $SCRIPT_DATA_DIR$SCRIPT_README
 		echo "${S}Updated and exiting. Please restart $SCRIPT_NAME, sorry for the inconvenience.${N}"
 		exit 0
 	fi
