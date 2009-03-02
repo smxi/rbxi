@@ -1,8 +1,8 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi
-####  Version: 2.5.1
-####  Date: 22 February 2009
+####  Version: 2.5.2
+####  Date: 2 March 2009
 ####  Copyright (C) Harald Hope 2006-9
 ####
 ####  This program is free software; you can redistribute it and/or modify it under
@@ -865,7 +865,7 @@ check_script_changes()
 		echo "Please restart $SCRIPT_NAME after this is completed.${N}"
 		sed -i 's/BACKUP_DIRECTORY/BACKUP_MOUNT_POINT/g' $SCRIPT_DATA_DIR$SCRIPT_VALUES $SCRIPT_DATA_DIR$SCRIPT_README
 		sed -i 's/BACKUP_SUB_DIR/BACKUP_MOUNT_POINT_DIRECTORY/g' $SCRIPT_DATA_DIR$SCRIPT_VALUES $SCRIPT_DATA_DIR$SCRIPT_README
-		sed -i 's/2\.5\.0/2.5.1/g' $SCRIPT_DATA_DIR$SCRIPT_VALUES $SCRIPT_DATA_DIR$SCRIPT_README
+		sed -i 's/2\.5\.[0-1]/2.5.2/g' $SCRIPT_DATA_DIR$SCRIPT_VALUES $SCRIPT_DATA_DIR$SCRIPT_README
 		echo "${S}Updated and exiting. Please restart $SCRIPT_NAME, sorry for the inconvenience.${N}"
 		exit 0
 	fi
@@ -1796,15 +1796,21 @@ delete_old_backup()
 		fi
 		for directory in $removedDirectories
 		do
-			if [ "$B_SPINNING_WHEEL" == 'true' ];then
-				rm -fr $BACKUP_LOCATION/$directory &
-				GET_PID="$!"
-				spinning_wheel_activity_indicator delete
-				wait
+			# as ghstryder pointed out, this should also be dry run supporting so people don't
+			# get unexpected result of deleting their actual backup with -r (--dry-run) option
+			if [ "$B_DRY_RUN" != 'true' ];then
+				if [ "$B_SPINNING_WHEEL" == 'true' ];then
+					rm -fr $BACKUP_LOCATION/$directory &
+					GET_PID="$!"
+					spinning_wheel_activity_indicator delete
+					wait
+				else
+					echo -n "${S}Deleting ${C}$BACKUP_LOCATION/$directory${S} now.....${N}"
+					rm -fr $BACKUP_LOCATION/$directory
+					echo "${S}... ${M}directory deleted${N}"
+				fi
 			else
-				echo -n "${S}Deleting ${C}$BACKUP_LOCATION/$directory${S} now.....${N}"
-				rm -fr $BACKUP_LOCATION/$directory
-				echo "${S}... ${M}directory deleted${N}"
+				echo -n "${S}Dry run (${C}-r${S}) emulation mode: Deleting ${C}$BACKUP_LOCATION/$directory${S} now.....${N}"
 			fi
 		done
 	else

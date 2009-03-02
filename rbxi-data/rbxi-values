@@ -1,8 +1,8 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi-values
-####  Version: 2.5.1
-####  Date: 22 February 2009
+####  Version: 2.5.2
+####  Date: 2 March 2009
 ########################################################################
 #### Note: you can create any number of these rbxi-values files, and load
 #### alternate values files by using the -V option. See rbxi -h for details.
@@ -26,6 +26,7 @@ RSYNC_PATH='rsync'
 # If you know your preferred options, just put them in here.
 # ie: RSYNC_EXTRA_OPTIONS=' --rsh=ssh'
 # RSYNC_EXTRA_OPTIONS=' --dry-run -v ' # for verbose, testing only, no actual backup
+# or deletion of previous backups or directories
 # only set if it's a remote machine, otherwise make null: RSYNC_EXTRA_OPTIONS=''
 RSYNC_EXTRA_OPTIONS=' --dry-run -v --stats '
 RDIFF_EXTRA_OPTIONS=' --terminal-verbosity 5 '
