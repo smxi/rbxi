@@ -87,7 +87,7 @@ li {
 <h1>Read-me for Setting Up rbxi</h1>
 <pre>
 Filename: rbxi-readme.htm
-Version: 2.5.1
+Version: 2.5.2
 </pre>
 
 <ul>
@@ -342,6 +342,9 @@ Create preset jobs, 1-10, in rbxi-values, using script arguments. Use presets li
 
 -L Create symbolic link in /usr/local/bin to rbxi. You must be root to use this.
    It will check for the link and create it if it's missing.
+
+-r Runs --dry-run option, which emulates the backup job without actually running
+   any of it, including the -d delete option.
 
 -s Runs the backup using spinning wheel progress indicators.
    Warning: in order to do this, the script puts the actual backup jobs
