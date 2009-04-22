@@ -1,8 +1,8 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi
-####  Version: 2.5.2
-####  Date: 2 March 2009
+####  Version: 2.5.3
+####  Date: 22 April 2009
 ####  Copyright (C) Harald Hope 2006-9
 ####
 ####  This program is free software; you can redistribute it and/or modify it under
@@ -479,6 +479,9 @@ error_handler()
 			;;
 		25)
 			error_message="Your backup application ${C}$BACKUP_APP${W} exited with error: ${C}$2${W}\nPlease check the source of the error and try again. Exiting $SCRIPT_NAME now."
+			;;
+		26)
+			error_message="The variable ${C}BACKUP_MOUNT_POINT${W} is empty. Backup directory mount cannnot continue."
 			;;
 		50)
 			error_message="User initiated script termination. Exiting $SCRIPT_NAME now."
@@ -1590,7 +1593,7 @@ run_backup_question()
 
 	# need to check destination data here, after mount, but not need to recheck if same as
 	# initial
-	if [ "$BACKUP_LOCATION" != "$BACKUP_DIRECTORY" ];then
+	if [ "$BACKUP_LOCATION" != "$BACKUP_MOUNT_POINT" ];then
 		check_backup_destination_directory "$BACKUP_LOCATION"
 	fi
 	echo $MLINE
@@ -1621,7 +1624,7 @@ run_backup_question()
 		fi
 
 		echo "${M}You are about to run a$rsyncSim2 direct ${C}Clone job${M} (${C}-C${M}) using these directories:${S}"
-		echo "Source Directory: ${C}$cloneSource${S} :: Destination Directory: ${C}$BACKUP_DIRECTORY"
+		echo "Source Directory: ${C}$cloneSource${S} :: Destination Directory: ${C}$BACKUP_MOUNT_POINT"
 		echo
 		eval "$nullCloneSource"
 		echo "${S}Cloning will sync all destination files with your source directory files, and remove"
@@ -2127,7 +2130,11 @@ mount_backup_disk()
 	local retNu=0
 
 	if [ "$MOUNT_BU_DISK" != '' -a "$B_SKIP_MOUNT" != 'true'  ];then
-		echo -n "${S}Mounting backup drive/partition to ${C}$BACKUP_DIRECTORY${S}....${N}"
+		# found a possible error case here with null backup directory:
+		if [ -z "$BACKUP_MOUNT_POINT" ];then
+			error_handler 26
+		fi
+		echo -n "${S}Mounting backup drive/partition to ${C}$BACKUP_MOUNT_POINT${S}....${N}"
 		eval $MOUNT_BU_DISK || retNu=$?
 		if [ "$retNu" -eq 0 ];then
 			echo "${S}....${M}mounted${N}"
@@ -2146,7 +2153,7 @@ umount_backup_disk()
 
 	if [ "$MOUNT_BU_DISK" != '' -a "$B_SKIP_MOUNT" != 'true' ];then
 		echo
-		echo -n "${S}Unmounting your backup partition $BACKUP_DIRECTORY now...${N}"
+		echo -n "${S}Unmounting your backup partition $BACKUP_MOUNT_POINT now...${N}"
 		eval $UNMOUNT_BU_DISK || retNu=$?
 		if [ "$retNu" -eq 0 ];then
 			echo "${S}.....${M}successfully unmounted.${N}"

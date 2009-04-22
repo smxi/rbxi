@@ -1,8 +1,8 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi-values
-####  Version: 2.5.2
-####  Date: 2 March 2009
+####  Version: 2.5.3
+####  Date: 22 April 2009
 ########################################################################
 #### Note: you can create any number of these rbxi-values files, and load
 #### alternate values files by using the -V option. See rbxi -h for details.
