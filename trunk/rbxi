@@ -717,6 +717,7 @@ print_version_info()
 script_self_updater()
 {
 	local wget_error=0
+	local ua='-U s-tools/rbxi.updater'
 
 	echo "Starting $SCRIPT_NAME self updater."
 	echo "Currently running $SCRIPT_NAME version number: $SCRIPT_VERSION_NUMBER"
@@ -725,7 +726,7 @@ script_self_updater()
 	wget -q --spider $1$SCRIPT_NAME || wget_error=$?
 	# then do the actual download
 	if [[ $wget_error -eq 0 ]];then
-		wget -q -O $SCRIPT_PATH/$SCRIPT_NAME $1$SCRIPT_NAME || wget_error=$?
+		wget $ua -q -O $SCRIPT_PATH/$SCRIPT_NAME $1$SCRIPT_NAME || wget_error=$?
 		if [[ $wget_error -eq 0 ]];then
 			SCRIPT_VERSION_NUMBER=$( grep -im 1 'version:' $SCRIPT_PATH/$SCRIPT_NAME | awk '{print $3}' )
 			echo "Successfully updated to $2 version: $SCRIPT_VERSION_NUMBER"
@@ -943,9 +944,10 @@ check_backup_destination_directory()
 check_remote_version()
 {
 	local versionRemote=''
+	local ua='-U s-tools/rbxi.rb-version'
 
 	# get ip using wget redirect to stdout. This is a clean, text only IP output url.
-	versionRemote=$( wget -q -O - http://smxi.org/rb/rb-version | grep 'rbxi=' | cut -d '=' -f 2 )
+	versionRemote=$( wget $ua -q -O - http://smxi.org/rb/rb-version | grep 'rbxi=' | cut -d '=' -f 2 )
 	echo "$versionRemote"
 }
 
@@ -1684,6 +1686,7 @@ run_backup_question()
 				removeBackup='true'
 				doTheBackup='true'
 				;;
+			# rdiff-backup only
 			clean-older)
 				# first get rid of all older files and increments
 				B_CLEAN_OLDER='true'
@@ -1691,6 +1694,7 @@ run_backup_question()
 				B_CLEAN_OLDER='false'
 				doTheBackup='true'
 				;;
+			# rsync only
 			clean-obsolete)
 				B_CLEAN_OLDER='true'
 				doTheBackup='true'
@@ -2197,7 +2201,9 @@ set_backup_destination_data
 # then, if you use this, mount your backup drive
 mount_backup_disk
 
-# for option run deletion/run clean. You can only run one of these, not both.
+# note that this block only runs if the -a,-c, or -d flags are used, or if these
+# are set in a job or preset file.
+# for option deletion-run/run/clean-run. You can only run one of these, not more.
 if [ "$B_DELETE_BACKUP" == 'true' ];then
 	delete_old_backup
 # this is for rdiff only, we need to run first the cleanup job, then
