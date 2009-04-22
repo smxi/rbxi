@@ -258,6 +258,7 @@ get_options()
 				fi
 				;;
 			c)	B_CLEAN_OLDER='true'
+				B_DO_BACKUP='true'
 				;;
 			C)	if [ -n "$( grep -E '^(r|h|[1-9]|10)$' <<< $OPTARG )" ];then
 					setCloneData=$OPTARG
@@ -267,6 +268,7 @@ get_options()
 				fi
 				;;
 			d)	B_DELETE_BACKUP='true'
+				B_DO_BACKUP='true'
 				;;
 			D)	if [ -n "$( grep -E '^([1-9]|10)$' <<< $OPTARG )" ];then
 					setSubDir="$OPTARG"
@@ -1086,7 +1088,7 @@ set_backup_commands()
 
 			# set text
 			BACKUP_CLEAR='Backing up'
-			# rest to false so main backup function can finish up
+			# reset to false so main backup function can finish up
 			B_CLEAN_OLDER='false'
 			;;
 		rdiff-backup)
@@ -2198,14 +2200,12 @@ mount_backup_disk
 # for option run deletion/run clean. You can only run one of these, not both.
 if [ "$B_DELETE_BACKUP" == 'true' ];then
 	delete_old_backup
-	B_DO_BACKUP='true'
 # this is for rdiff only, we need to run first the cleanup job, then
 # next send it to the main backup.
 elif [ "$B_CLEAN_OLDER" == 'true' -a "$BACKUP_TYPE" == 'rdiff-backup' ];then
 	run_backup_components
 	# must reset so we don't run the rdiff-cleanup stuff again
 	B_CLEAN_OLDER='false'
-	B_DO_BACKUP='true'
 fi
 # skip the intro question and do it automatically
 if [ "$B_DO_BACKUP" == 'true' ];then
