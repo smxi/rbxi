@@ -373,11 +373,16 @@ POST_UMOUNT_FUNCTION_5=''
 # but you can put any actions you want in here as well that you want done
 # that rbxi doesn't do already. Errors from the action cannot be handled 
 # unless you make your action scripting itself process it.
-# Actions must be written in Bash.
+# Actions must be written in Bash, or any other language you can call directly
+# on the system that is running the backup.
 #
 # These actions will be triggered in a function that will have access to the
 # following data, called with "$data" (" quotes are NOT optional). $data is time
 # stamped always for start/finish/error.
+#
+# All code must be contained in a block using single quotes, '
+# for example: 
+#
 # 
 # EMAIL_START_ACTION: $data is the startup options rbxi is running with, and the start time
 # EMAIL_FINISH_ACTION: $data is the startup options, plus the finish time.
