@@ -99,6 +99,12 @@ EXCLUDE_DATA_10_RS='excludes-data-10-rsync.txt'
 ####  USER SPECIFIC VARIABLES - REQUIRES rbxi-data/rbxi-values file
 ####--------------------------------------------------------------------
 
+# initializing user defined functions just to be safe, must be prior to script
+# rbxi-values sourcing
+PRE_MOUNT_FUNCTION=''
+POST_MOUNT_FUNCTION=''
+POST_UMOUNT_FUNCTION=''
+
 ## add in user variable values, sticky value file
 # missing test will occur a bit later
 if [ -f "$SCRIPT_DATA_DIR$SCRIPT_VALUES" ];then
@@ -2163,18 +2169,24 @@ run_pre_post_tasks()
 	case $1 in
 		pre-mount)
 			if [ -n "$PRE_MOUNT_FUNCTION" ];then
+				echo $LINE
+				echo -n "${S}Running user defined function: ${C}pre_mount_tasks()${N}"
 				eval "$PRE_MOUNT_FUNCTION"
 				pre_mount_tasks || error_handler 27 "$?"
 			fi
 			;;
 		post-mount)
 			if [ -n "$POST_MOUNT_FUNCTION" ];then
+				echo $LINE
+				echo -n "${S}Running user defined function: ${C}post_mount_tasks()${N}"
 				eval "$POST_MOUNT_FUNCTION"
 				post_mount_tasks || error_handler 28 "$?"
 			fi
 			;;
 		post-umount)
 			if [ -n "$POST_UMOUNT_FUNCTION" ];then
+				echo $LINE
+				echo -n "${S}Running user defined function: ${C}post_umount_tasks()${N}"
 				eval "$POST_UMOUNT_FUNCTION"
 				post_umount_tasks || error_handler 29 "$?"
 			fi
