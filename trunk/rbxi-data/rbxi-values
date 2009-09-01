@@ -1,8 +1,8 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi-values
-####  Version: 2.5.3
-####  Date: 22 April 2009
+####  Version: 2.6.0
+####  Date: 31 August 2009
 ########################################################################
 #### Note: you can create any number of these rbxi-values files, and load
 #### alternate values files by using the -V option. See rbxi -h for details.
@@ -53,6 +53,8 @@ RDIFF_REMOVE_TIME='60D'
 # remote machine drives that are not mounted on your local system must be in this form:
 # BACKUP_MOUNT_POINT='username@machine:/path/to/backup/destination'
 #
+# Option: -B <1-10>
+#
 # primary rdiff-backup directory (sample)
 BACKUP_MOUNT_POINT='/media/esata'
 BACKUP_MOUNT_POINT_1=''
@@ -86,6 +88,9 @@ BACKUP_MOUNT_POINT_10_RS=''
 # mounting the actual drive  to /media/backup. This is an easy mistake to make.
 # DO NOT END the destination directory names below with a '/'
 # START them with a /
+#
+# Option -D <1-10>
+#
 # rdiff-backup sub directory name (sample):):
 BACKUP_MOUNT_POINT_DIRECTORY='/backup'
 BACKUP_MOUNT_POINT_DIRECTORY_1=''
@@ -122,6 +127,9 @@ BACKUP_MOUNT_POINT_DIRECTORY_10_RS=''
 # you override it with a -C (clone) option, which also sets these to blank anyway, except home.
 # You do not need to create the following subdirectories, rsync/rdiff-backup will create them
 # automatically using the names you give here
+#
+# Option: To Skip: -S <d|h|hr|r|1-10> To Add: -A <d|h|hr|r|1-10> (repeat as many times as needed)
+#
 HOME_DIR='home'
 ROOT_DIR='root-hda1'
 
@@ -231,6 +239,9 @@ DATA_10_PATH=''
 # If you are just needing to change the BACKUP_MOUNT_POINT, just use -B <bu directory number>
 # instead and rbxi will change that automatically for you, but if you need to put actually
 # different mount/umount information, then use an alternate MOUNT/UNMOUNT number
+#
+# Option: -M <1-10>
+#
 ## DEFAULT MOUNT
 MOUNT_BU_DISK='mount -L backup-disk-1 $BACKUP_MOUNT_POINT'
 UNMOUNT_BU_DISK='umount $BACKUP_MOUNT_POINT'
@@ -266,7 +277,8 @@ UNMOUNT_BU_DISK_10=''
 # sample: BACKUP_JOB_2='system-c-bu: -M 2 -S rh -A 8' - this would use mount/umount 2, skip home/root backup
 # and Add the normally turned off DATA_8
 #
-# This is triggered by the -J <1-10> option.
+# Option: -J <1-10>
+#
 # syntax: 'job-display-name: <job options>'
 BACKUP_JOB_1=':'
 BACKUP_JOB_2=':'
@@ -304,6 +316,45 @@ B_SKIP_DATA_9='false' # -S 9
 B_SKIP_DATA_10='false' # -S 10
 B_SKIP_HOME='false' # -S h
 B_SKIP_ROOT='false' # -S r
+
+########################################################################
+#### ADVANCED USER SET PRE MOUNT/POST MOUNT/POST UMOUNT FUNCTIONS  #####
+########################################################################
+# If the first, non numbered variable contains the function, rbxi will always
+# execute that every time it runs, unless overridden by -P <...>
+#
+# Note that each function must return 0 for success, and > 0 for failure. rbxi error 
+# handling requires this to properly exit and halt on failure. If no error handling
+# is required, then simply return 0 at the end of the function.
+# Functions must be written in Bash.
+# 
+# Option: -P <1-5>:<1-5>:<1-5> where any number can be skipped: like so: -P 2::2
+# that would trigger PRE_MOUNT_FUNCTION_2 and POST_UMOUNT_FUNCTION_2 but not
+# POST_MOUNT_FUNCTION, for example. See readme-rbxi.htm for some samples.
+#
+# launches function: pre_mount_tasks()
+PRE_MOUNT_FUNCTION=''
+PRE_MOUNT_FUNCTION_1=''
+PRE_MOUNT_FUNCTION_2=''
+PRE_MOUNT_FUNCTION_3=''
+PRE_MOUNT_FUNCTION_4=''
+PRE_MOUNT_FUNCTION_5=''
+
+# launches function post_mount_tasks()
+POST_MOUNT_FUNCTION=''
+POST_MOUNT_FUNCTION_1=''
+POST_MOUNT_FUNCTION_2=''
+POST_MOUNT_FUNCTION_3=''
+POST_MOUNT_FUNCTION_4=''
+POST_MOUNT_FUNCTION_5=''
+
+# launches function post_umount_tasks()
+POST_UMOUNT_FUNCTION=''
+POST_UMOUNT_FUNCTION_1=''
+POST_UMOUNT_FUNCTION_2=''
+POST_UMOUNT_FUNCTION_3=''
+POST_UMOUNT_FUNCTION_4=''
+POST_UMOUNT_FUNCTION_5=''
 
 ########################################################################
 #### MISCELLANEOUS SCRIPT OPTIONS ######################################
