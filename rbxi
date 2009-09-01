@@ -1,8 +1,8 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi
-####  Version: 2.5.3
-####  Date: 22 April 2009
+####  Version: 2.6.0
+####  Date: 31 August 2009
 ####  Copyright (C) Harald Hope 2006-9
 ####
 ####  This program is free software; you can redistribute it and/or modify it under
@@ -207,6 +207,8 @@ print_usage()
 	echo '-m Skip the mounting option.'
 	echo '-M use alternate mount/umount set (1-10)'
 	echo '-o Override default backup application.'
+	echo '-P Requires <1-5:1-5:1-5> for pre mount, post mount, or post umount extra functions. Must be'
+	echo '   one or more, but does not need to be all three. Functions are user created.'
 	echo '-r Trigger --dry-run for rsync. This simulates the backup, but does not actually run it.'
 	echo '-s Show spinning wheel indicator.'
 	echo '-S Skip backup component (d|h|hr|1-10)'
@@ -235,10 +237,10 @@ print_usage()
 # -A and -S can iterate repeatedly
 get_options()
 {
-	local opt='' setDirectory='' setSubDir='' setMount=''
+	local opt='' setDirectory='' setSubDir='' setMount='' setPrePost=''
 	local setFullAdds='' setFullSkips='' setCloneData=''
 
-	while getopts :A:bB:cC:dD:hj:J:LmM:o:rsS:UvV:z:!: opt
+	while getopts :A:bB:cC:dD:hj:J:LmM:o:P:rsS:UvV:z:!: opt
 	do
 		case $opt in
 			h)	print_usage
@@ -309,6 +311,12 @@ get_options()
 							BACKUP_APP='rsync'
 							;;
 					esac
+				else
+					error_handler 13 "-$opt $OPTARG"
+				fi
+				;;
+			P)	if [ -n "$( grep -E '^[1-5]?:[1-5]?:[1-5]?$' <<< $OPTARG )" ];then
+					setPrePost="$OPTARG"
 				else
 					error_handler 13 "-$opt $OPTARG"
 				fi
@@ -392,6 +400,9 @@ get_options()
 	fi
 	if [ -n "$setMount" ];then
 		set_mount_data "$setMount"
+	fi
+	if [ -n "$setPrePost" ];then
+		set_pre_post_data "$setPrePost"
 	fi
 }
 
@@ -484,6 +495,15 @@ error_handler()
 			;;
 		26)
 			error_message="The variable ${C}BACKUP_MOUNT_POINT${W} is empty. Backup directory mount cannnot continue."
+			;;
+		27)
+			error_message="The function: ${C}pre_mount_tasks${W} exited with error code: (${C}$2${W})"
+			;;
+		28)
+			error_message="The function: ${C}post_mount_tasks${W} exited with error code: (${C}$2${W})"
+			;;
+		29)
+			error_message="The function: ${C}post_umount_tasks${W} exited with error code: (${C}$2${W})"
 			;;
 		50)
 			error_message="User initiated script termination. Exiting $SCRIPT_NAME now."
@@ -799,6 +819,7 @@ trap_handler()
  			done
  			echo "${M}...done!${N}"
  			umount_backup_disk
+ 			run_pre_post_tasks 'post-umount'
  			# set trap to null to avoid loops for final exits
 			trap - INT TERM EXIT
  			error_handler 50
@@ -1320,7 +1341,7 @@ set_or_print_backup_job()
 			;;
 	esac
 	if [ -n "$( grep ':' <<< $backupJob )" ];then
-		backupJobData=$( cut -d ':' -f 2 <<< $backupJob )
+		backupJobData=$( cut -d ':' -f 2-20 <<< $backupJob )
 		BACKUP_JOB_NAME=$( cut -d ':' -f 1 <<< $backupJob )
 	else
 		backupJobData=$backupJob
@@ -1343,6 +1364,71 @@ set_or_print_backup_job()
 		fi
 	else
 		error_handler 17 "$1"
+	fi
+}
+
+# args: $1 - data in format: x:y:z where x/y/z are null or 1-5
+set_pre_post_data(){
+	local preMount=$( cut -d ':' -f 1 <<< $1 )
+	local postMount=$( cut -d ':' -f 2 <<< $1 )
+	local postUmount=$( cut -d ':' -f 3 <<< $1 )
+
+	if [ -n "$preMount" ];then
+		case $preMount in
+			1)
+				PRE_MOUNT_FUNCTION="$PRE_MOUNT_FUNCTION_1"
+				;;
+			2)
+				PRE_MOUNT_FUNCTION="$PRE_MOUNT_FUNCTION_2"
+				;;
+			3)
+				PRE_MOUNT_FUNCTION="$PRE_MOUNT_FUNCTION_3"
+				;;
+			4)
+				PRE_MOUNT_FUNCTION="$PRE_MOUNT_FUNCTION_4"
+				;;
+			5)
+				PRE_MOUNT_FUNCTION="$PRE_MOUNT_FUNCTION_5"
+				;;
+		esac
+	fi
+	if [ -n "$postMount" ];then
+		case $postMount in
+			1)
+				POST_MOUNT_FUNCTION="$POST_MOUNT_FUNCTION_1"
+				;;
+			2)
+				POST_MOUNT_FUNCTION="$POST_MOUNT_FUNCTION_2"
+				;;
+			3)
+				POST_MOUNT_FUNCTION="$POST_MOUNT_FUNCTION_3"
+				;;
+			4)
+				POST_MOUNT_FUNCTION="$POST_MOUNT_FUNCTION_4"
+				;;
+			5)
+				POST_MOUNT_FUNCTION="$POST_MOUNT_FUNCTION_5"
+				;;
+		esac
+	fi
+	if [ -n "$postUmount" ];then
+		case $postUmount in
+			1)
+				POST_UMOUNT_FUNCTION="$POST_UMOUNT_FUNCTION_1"
+				;;
+			2)
+				POST_UMOUNT_FUNCTION="$POST_UMOUNT_FUNCTION_2"
+				;;
+			3)
+				POST_UMOUNT_FUNCTION="$POST_UMOUNT_FUNCTION_3"
+				;;
+			4)
+				POST_UMOUNT_FUNCTION="$POST_UMOUNT_FUNCTION_4"
+				;;
+			5)
+				POST_UMOUNT_FUNCTION="$POST_UMOUNT_FUNCTION_5"
+				;;
+		esac
 	fi
 }
 
@@ -2045,6 +2131,58 @@ run_backup_components()
 }
 
 #### -------------------------------------------------------------------
+#### Backup start functions
+#### -------------------------------------------------------------------
+
+mount_backup_disk()
+{
+	local retNu=0
+
+	if [ "$MOUNT_BU_DISK" != '' -a "$B_SKIP_MOUNT" != 'true'  ];then
+		# found a possible error case here with null backup directory:
+		if [ -z "$BACKUP_MOUNT_POINT" ];then
+			error_handler 26
+		fi
+		echo -n "${S}Mounting backup drive/partition to ${C}$BACKUP_MOUNT_POINT${S}....${N}"
+		eval $MOUNT_BU_DISK || retNu=$?
+		if [ "$retNu" -eq 0 ];then
+			echo "${S}....${M}mounted${N}"
+		else
+			echo "${S}....${W}MOUNT FAILED!${N}"
+			error_handler 2 "$retNu"
+		fi
+		# set the trap here
+		trap 'trap_handler umount' INT TERM EXIT
+	fi
+}
+
+# args: $1 - pre-mount/post-mount/post-umount
+run_pre_post_tasks()
+{
+	# note that the function must be in quotes when you declare it with eval
+	case $1 in
+		pre-mount)
+			if [ -n "$PRE_MOUNT_FUNCTION" ];then
+				eval "$PRE_MOUNT_FUNCTION"
+				pre_mount_tasks || error_handler 27 "$?"
+			fi
+			;;
+		post-mount)
+			if [ -n "$POST_MOUNT_FUNCTION" ];then
+				eval "$POST_MOUNT_FUNCTION"
+				post_mount_tasks || error_handler 28 "$?"
+			fi
+			;;
+		post-umount)
+			if [ -n "$POST_UMOUNT_FUNCTION" ];then
+				eval "$POST_UMOUNT_FUNCTION"
+				post_umount_tasks || error_handler 29 "$?"
+			fi
+			;;
+	esac
+}
+
+#### -------------------------------------------------------------------
 #### Backup completion functions
 #### -------------------------------------------------------------------
 
@@ -2054,6 +2192,7 @@ finish_backup()
 	print_the_end_time
 	update_configs
 	umount_backup_disk
+	run_pre_post_tasks 'post-umount'
 	print_complete_message
 }
 
@@ -2131,28 +2270,6 @@ print_the_end_time()
 	BACKUP_DURATION=$hours:$minutes:$seconds
 }
 
-mount_backup_disk()
-{
-	local retNu=0
-
-	if [ "$MOUNT_BU_DISK" != '' -a "$B_SKIP_MOUNT" != 'true'  ];then
-		# found a possible error case here with null backup directory:
-		if [ -z "$BACKUP_MOUNT_POINT" ];then
-			error_handler 26
-		fi
-		echo -n "${S}Mounting backup drive/partition to ${C}$BACKUP_MOUNT_POINT${S}....${N}"
-		eval $MOUNT_BU_DISK || retNu=$?
-		if [ "$retNu" -eq 0 ];then
-			echo "${S}....${M}mounted${N}"
-		else
-			echo "${S}....${W}MOUNT FAILED!${N}"
-			error_handler 2 "$retNu"
-		fi
-		# set the trap here
-		trap 'trap_handler umount' INT TERM EXIT
-	fi
-}
-
 umount_backup_disk()
 {
 	local retNu=0
@@ -2198,9 +2315,10 @@ set_primary_backup_data
 # initialize the backup directory values
 set_backup_destination_data
 
+run_pre_post_tasks 'pre-mount'
 # then, if you use this, mount your backup drive
 mount_backup_disk
-
+run_pre_post_tasks 'post-mount'
 # note that this block only runs if the -a,-c, or -d flags are used, or if these
 # are set in a job or preset file.
 # for option deletion-run/run/clean-run. You can only run one of these, not more.

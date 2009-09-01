@@ -87,7 +87,7 @@ li {
 <h1>Read-me for Setting Up rbxi</h1>
 <pre>
 Filename: rbxi-readme.htm
-Version: 2.5.3
+Version: 2.6.0
 </pre>
 
 <ul>
@@ -113,6 +113,7 @@ Version: 2.5.3
 					<li><a href="#rbxi-values-backup-source-paths">Backup Source Paths</a></li>
 					<li><a href="#rbxi-values-mount-umount">Mount / Umount Data</a> - Set mount/umount commands.</li>
 					<li><a href="#rbxi-values-backup-jobs">Backup Job Preset Section</a></li>
+					<li><a href="#rbxi-values-user-functions">User Defined Pre/Post Mount/Umount Functions</a></li>
 					<li><a href="#rbxi-values-clean-delete">Clean Delete Backup Skip Section</a></li>
 					<li><a href="#rbxi-values-misc-options">Miscellaneous Script Options Section</a></li>
 					<li><a href="#rbxi-values-final-step">Final Configuration Step</a> - rbxi will not run at all if you do not complete this final step.</li>
@@ -281,9 +282,12 @@ The script can be started with a variety of different options, and the same opti
 	then transfers files directly into that directory.
    Takes parameters: (h|r|1-10). Clone root, home, or a data direcory.
 -D Change default backup sub directory (1-10)
--M use alternate mount/umount set (1-10) - these are set in rbxi-values.
+-M Use alternate mount/umount set (1-10) - these are set in rbxi-values.
    They can be null, so make sure you have the right number for your selection.
 -o [rb|rs] Override default backup application: use rsync/rdiff-backu
+-P [1-5]:[1-5]:[1-5] - note, you can skip any number, like: -P 2:: which will
+   then only run pre mount tasks. Requires user set up of functions to run
+   pre mount, post mount, and post umount. 
 -S Skip backup component (d|h|hr|1-10)
    d - skip all DATA; h - skip HOME; r - skip ROOT; skip DATA 1-10
 </pre>
@@ -1386,6 +1390,97 @@ This sets standard delete obsolete, autorun backup, using main backup destinatio
 with backup destination sub directory 2, using Mount / Umount set 2.
 </p>
 
+<p class="small">
+<a href="#top">top</a>
+</p>
+
+<h4 id="rbxi-values-user-functions">User Defined Pre/Post Mount/Umount Functions Section</h4>
+
+<pre>
+########################################################################
+#### ADVANCED USER SET PRE MOUNT/POST MOUNT/POST UMOUNT FUNCTIONS  #####
+########################################################################
+</pre>
+
+<p>
+Since nobody can anticipate everything you might need to get done, rbxi also includes the option to set and run functions you create and define in this section, and triggered by the -P option unless you set these here in the default variables, PRE_MOUNT_FUNCTION, POST_MOUNT_FUNCTION, POST_UMOUNT_FUNCTION, which will make them run always unless overridden by a specific -P value.
+</p>
+
+<pre>
+# launches function: pre_mount_tasks()
+PRE_MOUNT_FUNCTION=''
+PRE_MOUNT_FUNCTION_1=''
+PRE_MOUNT_FUNCTION_2=''
+PRE_MOUNT_FUNCTION_3=''
+PRE_MOUNT_FUNCTION_4=''
+PRE_MOUNT_FUNCTION_5=''
+
+# launches function post_mount_tasks()
+POST_MOUNT_FUNCTION=''
+POST_MOUNT_FUNCTION_1=''
+POST_MOUNT_FUNCTION_2=''
+POST_MOUNT_FUNCTION_3=''
+POST_MOUNT_FUNCTION_4=''
+POST_MOUNT_FUNCTION_5=''
+
+# launches function post_umount_tasks()
+POST_UMOUNT_FUNCTION=''
+POST_UMOUNT_FUNCTION_1=''
+POST_UMOUNT_FUNCTION_2=''
+POST_UMOUNT_FUNCTION_3=''
+POST_UMOUNT_FUNCTION_4=''
+POST_UMOUNT_FUNCTION_5=''
+</pre>
+
+<p>
+Note a few things: If the first, non numbered variable contains the function, rbxi will always execute that every time it runs, unless overridden by -P 3::2 for example would override or run PRE_MOUNT_FUNCTION_3 and POST_UMOUNT_FUNCTION_2.
+</p>
+<p>
+The argument for -P is constructed like this: [1-5]:[1-5]:[1-5] where 1-5 is optional, ie, you can skip any or all, or run them all, like for example: -P 2:: or -P 2:2:2
+</p>
+<p>
+Note that each function must return 0 for success, and > 0 for failure. rbxi error handling requires this to properly exit and halt on failure. If no error handling is required, then simply return 0 at the end of the function. Functions must be written in Bash. The functions must be named as follows:
+</p>
+<ul>
+<li>For all PRE_MOUNT_FUNCTION, function must be defined as: pre_mount_tasks()</li>
+<li>For all POST_MOUNT_FUNCTION, function must be defined as: post_mount_tasks()</li>
+<li>For all POST_UMOUNT_FUNCTION, function must be defined as: post_umount_tasks()</li>
+</ul>
+<p>
+Sample:
+</p>
+<pre>
+PRE_MOUNT_FUNCTION_1='pre_mount_tasks(){
+	mount -L some-external-drive /data/drive/mount/point || return 1
+	return 0
+}'
+</pre>
+<p>
+Note two things here: first, the main feature has a return value of > 0 on failure, and if nothing fails, the function returns 0, success. If you want rbxi to do error handling on your functions, they must return > 0 error codes to rbxi, but less than 255 (that's a bash limitation), which will then report the error number using the rbxi error handler. You can have as many tests and error returns as you want in this function, this is just a very simple sample case, for instance, this would be with echoes so you know it's running (highly recommended), you can even use rbxi colors if you want, but I'll leave that up to you to figure out:
+</p>
+<pre>
+PRE_MOUNT_FUNCTION_1='pre_mount_tasks(){
+	echo "Mounting some-drive now..."
+	mount -L some-drive /data/drive/mount/point || return 1
+	echo "Testing test-file exists in mount point: /data/drive/mount/point/..."
+	[ -f /data/drive/mount/point/test-file ] || return 2
+	echo "Mounting another-drive now..."
+	mount -L another-drive /data/drive/mount/point2 || return 3
+	echo "Testing test-file exists in mount point: /data/drive/mount/point2/..."
+	[ -f /data/drive/mount/point2/test-file ] || return 4
+	return 0
+}'
+</pre>
+<p>
+Note that the interior echoes use "" whereas the main variable function declaration is used single quotes. Make sure to do that too if you need to use quotes inside the function, or escape any single quotel like this: echo "it\'s going to work!"
+</p>
+<p>
+And here you'd just run this command: rbxi -P 1::<br>
+in order to trigger this extra function before the first mount runs.
+</p>
+<p>
+Things to remember: these pre/post mount and post umount functions do not depend on anything being mounted, that's just where they will be run physically in the script, ie, before the main mount backup drive function, after the mount main backup drive function, and after the umount backup drive function. If you are skipping mounting the backup drive, with -m, then they will still run.
+</p>
 <p class="small">
 <a href="#top">top</a>
 </p>
