@@ -1555,8 +1555,15 @@ Note a few things: If the first, non numbered variable contains the action, rbxi
 The argument for -E is constructed like this: [1-5]:[1-5]:[1-5] where 1-5 is optional, ie, you can skip any or all, or run them all, like for example: -P 2:: or -P 2:2:2
 </p>
 <p>
-rbxi does not do error handling on your commands, so make sure to debug them completely before you rely on this for production use.
+Rbxi does not do error handling on your commands, so make sure to debug them completely before you rely on this for production use.
 </p>
+
+<p>
+Sample (I'm not sure you can use &lt;&lt;&lt; "$data" with nail, this is just a sample, always test your code before putting it live):
+</p>
+<pre>
+EMAIL_ERROR_ACTION_1='nail -r "myaddress@something.com" -s "Backup Error on Raven" -S smtp=some.smtp.server info@company.com &lt;&lt;&lt; "$data"'
+</pre>
 
 <p class="small">
 <a href="#top">top</a>
