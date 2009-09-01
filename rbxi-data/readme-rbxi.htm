@@ -87,7 +87,7 @@ li {
 <h1>Read-me for Setting Up rbxi</h1>
 <pre>
 Filename: rbxi-readme.htm
-Version: 2.6.0
+Version: 2.7.0
 </pre>
 
 <ul>
@@ -114,6 +114,7 @@ Version: 2.6.0
 					<li><a href="#rbxi-values-mount-umount">Mount / Umount Data</a> - Set mount/umount commands.</li>
 					<li><a href="#rbxi-values-backup-jobs">Backup Job Preset Section</a></li>
 					<li><a href="#rbxi-values-user-functions">User Defined Pre/Post Mount/Umount Functions</a></li>
+					<li><a href="#rbxi-values-user-actions">User Defined Start/Finish/Error Actions (emails)</a></li>
 					<li><a href="#rbxi-values-clean-delete">Clean Delete Backup Skip Section</a></li>
 					<li><a href="#rbxi-values-misc-options">Miscellaneous Script Options Section</a></li>
 					<li><a href="#rbxi-values-final-step">Final Configuration Step</a> - rbxi will not run at all if you do not complete this final step.</li>
@@ -282,6 +283,9 @@ The script can be started with a variety of different options, and the same opti
 	then transfers files directly into that directory.
    Takes parameters: (h|r|1-10). Clone root, home, or a data direcory.
 -D Change default backup sub directory (1-10)
+-E [1-5]:[1-5]:[1-5] - note, you can skip any number, like: -E 2:: which will
+   then only run start actions. Requires user set up of actions to run rbxi
+   start, finish, and rbxi error. 
 -M Use alternate mount/umount set (1-10) - these are set in rbxi-values.
    They can be null, so make sure you have the right number for your selection.
 -o [rb|rs] Override default backup application: use rsync/rdiff-backu
@@ -1393,13 +1397,20 @@ with backup destination sub directory 2, using Mount / Umount set 2.
 <p class="small">
 <a href="#top">top</a>
 </p>
-
+rbxi-values-user-actions
 <h4 id="rbxi-values-user-functions">User Defined Pre/Post Mount/Umount Functions Section</h4>
 
 <pre>
 ########################################################################
-#### ADVANCED USER SET PRE MOUNT/POST MOUNT/POST UMOUNT FUNCTIONS  #####
+#### ADVANCED USER SET FUNCTIONS/ACTIONS ###############################
 ########################################################################
+
+# The following allow for user customization of rbxi actions using a simple
+# api that will run either pre-defined functions or actions when desired.
+
+####--------------------------------------------------------------------
+#### PRE/POST MOUNT/UMOUNT FUNCTIONS -----------------------------------
+####--------------------------------------------------------------------
 </pre>
 
 <p>
@@ -1481,6 +1492,72 @@ in order to trigger this extra function before the first mount runs.
 <p>
 Things to remember: these pre/post mount and post umount functions do not depend on anything being mounted, that's just where they will be run physically in the script, ie, before the main mount backup drive function, after the mount main backup drive function, and after the umount backup drive function. If you are skipping mounting the backup drive, with -m, then they will still run.
 </p>
+
+<p class="small">
+<a href="#top">top</a>
+</p>
+
+<h4 id="rbxi-values-user-actions">User Defined Start/Finish/Error Actions (emails)</h4>
+
+<pre>
+####--------------------------------------------------------------------
+#### EMAILER ACTIONS ---------------------------------------------------
+####--------------------------------------------------------------------
+</pre>
+
+<p>
+These work much the same as above, only they do NOT use a function, just a scripted action, which will for most people be emailing the sys admin, but you can put any actions you want in here as well that you want done that rbxi doesn't do already. Errors from the action cannot be handled unless you make your action scripting itself process it. Actions must be written in Bash.
+</p>
+<p>
+These actions will be triggered in a function that will have access to the following data, called with "$data" (" quotes are NOT optional). $data is time stamped always for start/finish/error.
+</p>
+<ul>
+<li>EMAIL_START_ACTION: $data is the startup options rbxi is running with, and the start time</li>
+<li>EMAIL_FINISH_ACTION: $data is the startup options, plus the finish time.</li>
+<li>EMAIL_ERROR_ACTION: $data is the error message from the error handler, including error numbers and error time.
+</li>
+</ul>
+
+<p>
+Actions can be any Bash command your system supports, of any complexity, including but not limited to sending emails using system emailers like exim4 or mail or whatever you want. The Action will execute when the script starts, when it finishes, and if error occurs, if you select these options, depending on how you use these options.
+</p>
+
+<pre>
+# Alerts to start of backup operation
+EMAIL_START_ACTION=''
+EMAIL_START_ACTION_1=''
+EMAIL_START_ACTION_2=''
+EMAIL_START_ACTION_3=''
+EMAIL_START_ACTION_4=''
+EMAIL_START_ACTION_5=''
+
+# Alerts to finish of backup operation
+EMAIL_FINISH_ACTION=''
+EMAIL_FINISH_ACTION_1=''
+EMAIL_FINISH_ACTION_2=''
+EMAIL_FINISH_ACTION_3=''
+EMAIL_FINISH_ACTION_4=''
+EMAIL_FINISH_ACTION_5=''
+
+# Alerts to backup error, should include error data.
+EMAIL_ERROR_ACTION=''
+EMAIL_ERROR_ACTION_1=''
+EMAIL_ERROR_ACTION_2=''
+EMAIL_ERROR_ACTION_3=''
+EMAIL_ERROR_ACTION_4=''
+EMAIL_ERROR_ACTION_5=''
+</pre>
+
+<p>
+Note a few things: If the first, non numbered variable contains the action, rbxi will always execute that every time it runs, unless overridden by -E 3::2 for example would override or run EMAIL_START_ACTION_3 and EMAIL_FINISH_ACTION_2.
+</p>
+<p>
+The argument for -E is constructed like this: [1-5]:[1-5]:[1-5] where 1-5 is optional, ie, you can skip any or all, or run them all, like for example: -P 2:: or -P 2:2:2
+</p>
+<p>
+rbxi does not do error handling on your commands, so make sure to debug them completely before you rely on this for production use.
+</p>
+
 <p class="small">
 <a href="#top">top</a>
 </p>
@@ -1539,7 +1616,7 @@ B_SKIP_ROOT='false' # -S r
 
 <p>
 <pre>
-B_LOGGING='false' # -L : use logging true/false
+B_LOGGING='false' # -l : use logging true/false
 B_SKIP_MOUNT='false' # -m :do not mount backup drive, or umount it
 B_SPINNING_WHEEL='false' # -s :use spinning wheel option
 B_TESTING_1='false' # -! 1 :testing flag 1
@@ -1565,6 +1642,14 @@ B_UPDATE_NOTIFIER='false'
 5 - smxi style, for light on dark, green text, otherwise same as 3
 Try each one and see which works best for your terminal colors using -j <0-5>, then set it here.
 COLOR_SCHEME='1' # -j [0-5]
+</pre>
+
+<h5>Override Default Log File Directory</h5>
+<p>
+You can manually override the default logfile directory location here if you want (must end with /). Do  not set this to '', since this will override the script default. Comment it out if you don't want to use it.
+</p>
+<pre>
+LOGFILE_DIR='/var/log/'
 </pre>
 
 <h5>Sleep Times</h5>

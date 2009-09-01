@@ -1,8 +1,8 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi
-####  Version: 2.6.0
-####  Date: 31 August 2009
+####  Version: 2.7.0
+####  Date: 1 September 2009
 ####  Copyright (C) Harald Hope 2006-9
 ####
 ####  This program is free software; you can redistribute it and/or modify it under
@@ -32,6 +32,10 @@
 ####  SCRIPT PATH VARIABLES
 ####--------------------------------------------------------------------
 
+# Basic script layout markers
+BA='=================================================================='
+LI='------------------------------------------------------------------'
+
 ### if you do need to change one of these, make sure to change it in the
 ### user values file: rbxi-data/rbxi-values, not here, or you might lose
 ### your changes if you update this script.
@@ -40,6 +44,7 @@
 # set this as absolute path for cron jobs if you need to, you'll have to
 # update this manually every time you update the script:
 LSOF='lsof'
+LOGFILE_DIR='/var/log/'
 SCRIPT_CONFIGS='/etc/rbxi.conf'
 SCRIPT_NAME='rbxi'
 SCRIPT_DATA='/rbxi-data/'
@@ -99,8 +104,12 @@ EXCLUDE_DATA_10_RS='excludes-data-10-rsync.txt'
 ####  USER SPECIFIC VARIABLES - REQUIRES rbxi-data/rbxi-values file
 ####--------------------------------------------------------------------
 
-# initializing user defined functions just to be safe, must be prior to script
-# rbxi-values sourcing
+# initializing user defined functions/scripted actions just to be safe, 
+# must be prior to script rbxi-values sourcing
+
+EMAIL_START_ACTION=''
+EMAIL_FINISH_ACTION=''
+EMAIL_ERROR_ACTION=''
 PRE_MOUNT_FUNCTION=''
 POST_MOUNT_FUNCTION=''
 POST_UMOUNT_FUNCTION=''
@@ -182,6 +191,7 @@ DELETION_TEXT=''
 # spinning wheel pid value
 GET_PID=''
 RSYNC_DELETE=''
+SCRIPT_OPTIONS="$@"
 
 ###################################################################
 #####  Functions
@@ -206,9 +216,12 @@ print_usage()
 	echo '   Takes parameters: (h|r|1-10). Clone root, home, or a data direcory.'
 	echo '-d Automatic backup and delete, non interactive.'
 	echo '-D Change default backup sub directory (1-10).'
+	echo '-E Requires <1-5:1-5:1-5> for script start, finish, or error actions. Must be'
+	echo '   one or more, but does not need to be all three. Actions are user created.'
 	echo '-j Set script color scheme -j [0-5]: 0 - no colors; 1 - default, ok for dark/light or light/dark'
 	echo '   2 - fancy dark on light; 3 - basic light on dark; 4 - fancy light on dark; 5 - smxi style'
 	echo '-J Start preset backup job (1-10). Cannot be used with any other option.'
+	echo '-l Use logging. Will override user rbxi-values setting.'
 	echo "-L Create symbolic link in /usr/local/bin to $SCRIPT_NAME"
 	echo '-m Skip the mounting option.'
 	echo '-M use alternate mount/umount set (1-10)'
@@ -244,9 +257,9 @@ print_usage()
 get_options()
 {
 	local opt='' setDirectory='' setSubDir='' setMount='' setPrePost=''
-	local setFullAdds='' setFullSkips='' setCloneData=''
+	local setFullAdds='' setFullSkips='' setCloneData='' setEmailer=''
 
-	while getopts :A:bB:cC:dD:hj:J:LmM:o:P:rsS:UvV:z:!: opt
+	while getopts :A:bB:cC:dD:E:hj:J:LlmM:o:P:rsS:UvV:z:!: opt
 	do
 		case $opt in
 			h)	print_usage
@@ -284,6 +297,12 @@ get_options()
 					error_handler 13 "-$opt $OPTARG"
 				fi
 				;;
+			E)	if [ -n "$( grep -E '^[1-5]?:[1-5]?:[1-5]?$' <<< $OPTARG )" ];then
+					setEmailer="$OPTARG"
+				else
+					error_handler 13 "-$opt $OPTARG"
+				fi
+				;;
 			j)	if [ -n "$( grep -E '^([0-5])$' <<< $OPTARG )" ];then
 					COLOR_SCHEME=$OPTARG
 					set_script_colors
@@ -296,6 +315,8 @@ get_options()
 				else
 					error_handler 13 "-$opt $OPTARG"
 				fi
+				;;
+			l)	B_LOGGING='true'
 				;;
 			L) create_symbolic_link
 				exit 0
@@ -354,6 +375,7 @@ get_options()
 					error_handler 22
 				fi
 				;;
+			# set_or_print_backup_job will relaunch with job options and -z has the bu job nu for output
 			z)	if [ -n "$( grep -E '^([1-9]|10)$' <<< $OPTARG )" ];then
 					BACKUP_JOB_NU=$OPTARG
 				fi
@@ -407,6 +429,9 @@ get_options()
 	if [ -n "$setMount" ];then
 		set_mount_data "$setMount"
 	fi
+	if [ -n "$setEmailer" ];then
+		set_emailer_data "$setEmailer"
+	fi
 	if [ -n "$setPrePost" ];then
 		set_pre_post_data "$setPrePost"
 	fi
@@ -421,7 +446,7 @@ get_options()
 # args: $1 - error number; $2 - optional, extra information
 error_handler()
 {
-	local error_message='' errorType='' extra2='' extra3=''
+	local error_message='' errorType='' extra2='' extra3='' cleanedMessage=''
 
 	case $1 in
 		50)
@@ -511,6 +536,9 @@ error_handler()
 		29)
 			error_message="The function: ${C}post_umount_tasks${W} exited with error code: (${C}$2${W})"
 			;;
+		30)
+			error_message="The rbxi log directory ${C}$2${W} does not exist.\nPlease correct the path in rbxi-values LOGFILE_DIR='' before continuing."
+			;;
 		50)
 			error_message="User initiated script termination. Exiting $SCRIPT_NAME now."
 			;;
@@ -521,9 +549,54 @@ error_handler()
 		*)	error_message="Unknown error number: ${C}$1"
 			;;
 	esac
+	log_function_data 'error' "$errorType ($1)\n$error_message"
+	run_emailer_tasks 'error' "$errorType ($1)\n$error_message"
 	# then print it and exit
 	echo -e "${W}$errorType ${C}$1${W}: $error_message${N}"
 	exit $1
+}
+
+# args: $1 type: start/error/data; $2 - data to be logged
+log_function_data()
+{
+	if [ "$B_LOGGING" == 'true' ];then
+		local data=$( echo -e "$2" | sed 's/\x1b\[[0-9]\{1,2\}\(;[0-9]\{1,2\}\)\{0,2\}m//g' )
+		local actionTime=$( date +"%R:%S" )
+		local logFile=${LOGFILE_DIR}${SCRIPT_NAME}.log
+
+		# check user error first
+		if [ ! -d $LOGFILE_DIR ];then
+			error_handler 30 "$LOGFILE_DIR"
+		fi
+		# I don't to try to handle various distro logrotate tools, so I'm making my own here
+		# going to rotate it at 100kB
+		if [ -f $logFile -a "$( du -s $logFile | awk '{print $1}' )" -gt 100 ];then
+			mv -f $logFile ${LOGFILE_DIR}${SCRIPT_NAME}.1.log
+		fi
+		# then make sure the file is ready to go
+		if [ ! -f $logFile ];then
+			touch $logFile
+		fi
+		case $1 in
+			start)
+				echo $BA >> $logFile
+				echo "Starting $SCRIPT_NAME at: $( date +"%Y %B %e - %R:%S" )" >> $logFile
+				echo "Script start options: $2" >> $logFile
+				echo $LI >> $logFile
+				if [ -f $SCRIPT_CONFIGS -a -n "$( cat $SCRIPT_CONFIGS )" ];then
+					echo "Previous Script Config Data:" >> $logFile
+					echo "$( cat $SCRIPT_CONFIGS )" >> $logFile
+				else
+					echo "Previous Script Config Data File Is Null." >> $logFile
+				fi
+				echo $LI >> $logFile
+				echo "Starting backup job." >> $logFile
+				;;
+			error|data)
+				echo -e "$actionTime: $data" >> $logFile
+				;;
+		esac
+	fi
 }
 
 #### -------------------------------------------------------------------
@@ -608,8 +681,6 @@ set_script_colors()
 	esac
 
 	# script layout stuff
-	BA='=================================================================='
-	LI='------------------------------------------------------------------'
 	BAR=${S}$BA${N}
 	EBAR=${E}$BA${N}
 	WBAR=${W}$BA${N}
@@ -1262,6 +1333,71 @@ set_backup_mount_point_directory()
 	esac
 }
 
+# args: $1 - data in format: x:y:z where x/y/z are null or 1-5
+set_emailer_data(){
+	local emailStart=$( cut -d ':' -f 1 <<< $1 )
+	local emailFinish=$( cut -d ':' -f 2 <<< $1 )
+	local emailError=$( cut -d ':' -f 3 <<< $1 )
+
+	if [ -n "$emailStart" ];then
+		case $emailStart in
+			1)
+				EMAIL_START_ACTION="$EMAIL_START_ACTION_1"
+				;;
+			2)
+				EMAIL_START_ACTION="$EMAIL_START_ACTION_2"
+				;;
+			3)
+				EMAIL_START_ACTION="$EMAIL_START_ACTION_3"
+				;;
+			4)
+				EMAIL_START_ACTION="$EMAIL_START_ACTION_4"
+				;;
+			5)
+				EMAIL_START_ACTION="$EMAIL_START_ACTION_5"
+				;;
+		esac
+	fi
+	if [ -n "$emailFinish" ];then
+		case $emailFinish in
+			1)
+				EMAIL_FINISH_ACTION="$EMAIL_FINISH_ACTION_1"
+				;;
+			2)
+				EMAIL_FINISH_ACTION="$EMAIL_FINISH_ACTION_2"
+				;;
+			3)
+				EMAIL_FINISH_ACTION="$EMAIL_FINISH_ACTION_3"
+				;;
+			4)
+				EMAIL_FINISH_ACTION="$EMAIL_FINISH_ACTION_4"
+				;;
+			5)
+				EMAIL_FINISH_ACTION="$EMAIL_FINISH_ACTION_5"
+				;;
+		esac
+	fi
+	if [ -n "$emailError" ];then
+		case $emailError in
+			1)
+				EMAIL_ERROR_ACTION="$EMAIL_ERROR_ACTION_1"
+				;;
+			2)
+				EMAIL_ERROR_ACTION="$EMAIL_ERROR_ACTION_2"
+				;;
+			3)
+				EMAIL_ERROR_ACTION="$EMAIL_ERROR_ACTION_3"
+				;;
+			4)
+				EMAIL_ERROR_ACTION="$EMAIL_ERROR_ACTION_4"
+				;;
+			5)
+				EMAIL_ERROR_ACTION="$EMAIL_ERROR_ACTION_5"
+				;;
+		esac
+	fi
+}
+
 # args: $1 - mount number
 set_mount_data()
 {
@@ -1770,6 +1906,7 @@ run_backup_question()
 	echo $LINE
 	select opt in $options
 	do
+		log_function_data 'data' "User Option Selection: $opt"
 		case $opt in
 			backup-normal)
 				doTheBackup='true'
@@ -1845,6 +1982,7 @@ remove_backups()
 	options='yes-delete no-keep quit'
 	select opt in $options
 	do
+		log_function_data 'data' "User Option Selection: $opt"
 		case $opt in
 			yes-delete)
 				deleteBackup='true'
@@ -1882,6 +2020,7 @@ delete_old_backup()
 
 	echo $LINE
 	if [ -n "$removedDirectories" ];then
+		log_function_data 'data' "delete_old_backup - Directories to be deleted:\n$removedDirectories"
 		GET_PID=''
 		echo -n "${S}Starting deletion of "
 		for directory in $removedDirectories
@@ -1916,6 +2055,7 @@ delete_old_backup()
 		done
 	else
 		echo -n "${M}There is nothing to delete, continuing with backup...${N}"
+		log_function_data 'data' "delete_old_backup - No Directories to be deleted"
 	fi
 
 	DELETION_TEXT=' deletion and'
@@ -1933,10 +2073,11 @@ run_backup_components()
 
 	# If you don't need excludes in /home, then just delete the exclude stuff, --exclude...
 	echo $LINE
-
+	log_function_data 'data' "run_backup_components: begin\n\n"
 	#backup home directory
 	if [ "$B_CLONE_HOME" == 'true' ] || [ "$HOME_DIR" != '' -a "$B_SKIP_HOME" != 'true' ];then
 		check_backup_source_directory "$HOME_PATH"
+		log_function_data 'data' "Starting Home Backup Command:\n$HOME_BU_COMMAND"
 		echo -n "${S}$BACKUP_CLEAR ${C}home${S} directory$ENDING_1${N}"
 		if [ "$B_SPINNING_WHEEL" == 'true' ];then
 			GET_PID=''
@@ -1947,12 +2088,14 @@ run_backup_components()
 			eval $HOME_BU_COMMAND || error_handler 25 "$?"
 			echo
 		fi
+		log_function_data 'data' "Finished Home\n\n"
 		sleep $SLEEP_TIME_BACKUP
 	fi
 
 	# backup system root directory
 	if [ "$B_CLONE_ROOT" == 'true' ] || [ "$ROOT_DIR" != '' -a "$B_SKIP_ROOT" != 'true'  ];then
 		check_backup_source_directory "$ROOT_PATH"
+		log_function_data 'data' "Starting Root Backup Command:\n$ROOT_BU_COMMAND"
 		echo -n "${S}$BACKUP_CLEAR ${C}root${S} directory ${C}$ROOT_DESC${S}$ENDING_1${N}"
 		if [ "$B_SPINNING_WHEEL" == 'true' ];then
 			GET_PID=''
@@ -1963,12 +2106,14 @@ run_backup_components()
 			eval $ROOT_BU_COMMAND || error_handler 25 "$?"
 			echo
 		fi
+		log_function_data 'data' "Finished Root\n\n"
 	fi
 
 	if [ "$B_SKIP_DATA_FULL" != 'true' ];then
 		# backup optional user data 1
 		if [ "$B_CLONE_DATA_1" == 'true' ] || [ "$DATA_1_DIR" != '' -a "$B_SKIP_DATA_1" != 'true' ];then
 			check_backup_source_directory "$DATA_1_PATH"
+			log_function_data 'data' "Starting Data 1 Backup Command:\n$DATA_1_BU_COMMAND"
 			echo -n "${S}$BACKUP_CLEAR ${C}$DATA_1_DESC${S} directory$ENDING_1${N}"
 			if [ "$B_SPINNING_WHEEL" == 'true' ];then
 				GET_PID=''
@@ -1979,12 +2124,14 @@ run_backup_components()
 				eval $DATA_1_BU_COMMAND || error_handler 25 "$?"
 				echo
 			fi
+			log_function_data 'data' "Finished Data 1\n\n"
 			sleep $SLEEP_TIME_BACKUP
 		fi
 
 		# backup optional user data 2
 		if [ "$B_CLONE_DATA_2" == 'true' ] || [ "$DATA_2_DIR" != '' -a "$B_SKIP_DATA_2" != 'true' ];then
 			check_backup_source_directory "$DATA_2_PATH"
+			log_function_data 'data' "Starting Data 2 Backup Command:\n$DATA_2_BU_COMMAND"
 			echo -n "${S}$BACKUP_CLEAR ${C}$DATA_2_DESC${S} directory$ENDING_1${N}"
 			if [ "$B_SPINNING_WHEEL" == 'true' ];then
 				GET_PID=''
@@ -1995,12 +2142,14 @@ run_backup_components()
 				eval $DATA_2_BU_COMMAND || error_handler 25 "$?"
 				echo
 			fi
+			log_function_data 'data' "Finished Data 2\n\n"
 			sleep $SLEEP_TIME_BACKUP
 		fi
 
 		# backup optional user data 3
 		if [ "$B_CLONE_DATA_3" == 'true' ] || [ "$DATA_3_DIR" != '' -a "$B_SKIP_DATA_3" != 'true' ];then
 			check_backup_source_directory "$DATA_3_PATH"
+			log_function_data 'data' "Starting Data 3 Backup Command:\n$DATA_3_BU_COMMAND"
 			echo -n "${S}$BACKUP_CLEAR ${C}$DATA_3_DESC${S} directory$ENDING_1${N}"
 			if [ "$B_SPINNING_WHEEL" == 'true' ];then
 				GET_PID=''
@@ -2011,12 +2160,14 @@ run_backup_components()
 				eval $DATA_3_BU_COMMAND || error_handler 25 "$?"
 				echo
 			fi
+			log_function_data 'data' "Finished Data 3\n\n"
 			sleep $SLEEP_TIME_BACKUP
 		fi
 
 		# backup optional user data 4
 		if [ "$B_CLONE_DATA_4" == 'true' ] || [ "$DATA_4_DIR" != '' -a "$B_SKIP_DATA_4" != 'true' ];then
 			check_backup_source_directory "$DATA_4_PATH"
+			log_function_data 'data' "Starting Data 4 Backup Command:\n$DATA_4_BU_COMMAND"
 			echo -n "${S}$BACKUP_CLEAR ${C}$DATA_4_DESC${S} directory$ENDING_1${N}"
 			if [ "$B_SPINNING_WHEEL" == 'true' ];then
 				GET_PID=''
@@ -2027,12 +2178,14 @@ run_backup_components()
 				eval $DATA_4_BU_COMMAND || error_handler 25 "$?"
 				echo
 			fi
+			log_function_data 'data' "Finished Data 4\n\n"
 			sleep $SLEEP_TIME_BACKUP
 		fi
 
 		# backup optional user data 5
 		if [ "$B_CLONE_DATA_5" == 'true' ] || [ "$DATA_5_DIR" != '' -a "$B_SKIP_DATA_5" != 'true' ];then
 			check_backup_source_directory "$DATA_5_PATH"
+			log_function_data 'data' "Starting Data 5 Backup Command:\n$DATA_5_BU_COMMAND"
 			echo -n "${S}$BACKUP_CLEAR ${C}$DATA_5_DESC${S} directory$ENDING_1${N}"
 			if [ "$B_SPINNING_WHEEL" == 'true' ];then
 				GET_PID=''
@@ -2043,12 +2196,14 @@ run_backup_components()
 				eval $DATA_5_BU_COMMAND || error_handler 25 "$?"
 				echo
 			fi
+			log_function_data 'data' "Finished Data 5\n\n"
 			sleep $SLEEP_TIME_BACKUP
 		fi
 
 		# backup optional user data 2
 		if [ "$B_CLONE_DATA_6" == 'true' ] || [ "$DATA_6_DIR" != '' -a "$B_SKIP_DATA_6" != 'true' ];then
 			check_backup_source_directory "$DATA_6_PATH"
+			log_function_data 'data' "Starting Data 6 Backup Command:\n$DATA_6_BU_COMMAND"
 			echo -n "${S}$BACKUP_CLEAR ${C}$DATA_6_DESC${S} directory$ENDING_1${N}"
 			if [ "$B_SPINNING_WHEEL" == 'true' ];then
 				GET_PID=''
@@ -2059,12 +2214,14 @@ run_backup_components()
 				eval $DATA_6_BU_COMMAND || error_handler 25 "$?"
 				echo
 			fi
+			log_function_data 'data' "Finished Data 6\n\n"
 			sleep $SLEEP_TIME_BACKUP
 		fi
 
 		# backup optional user data 7
 		if [ "$B_CLONE_DATA_7" == 'true' ] || [ "$DATA_7_DIR" != '' -a "$B_SKIP_DATA_7" != 'true' ];then
 			check_backup_source_directory "$DATA_7_PATH"
+			log_function_data 'data' "Starting Data 7 Backup Command:\n$DATA_7_BU_COMMAND"
 			echo -n "${S}$BACKUP_CLEAR ${C}$DATA_7_DESC${S} directory$ENDING_1${N}"
 			if [ "$B_SPINNING_WHEEL" == 'true' ];then
 				GET_PID=''
@@ -2075,12 +2232,14 @@ run_backup_components()
 				eval $DATA_7_BU_COMMAND || error_handler 25 "$?"
 				echo
 			fi
+			log_function_data 'data' "Finished Data 7\n\n"
 			sleep $SLEEP_TIME_BACKUP
 		fi
 
 		# backup optional user data 8
 		if [ "$B_CLONE_DATA_8" == 'true' ] || [ "$DATA_8_DIR" != '' -a "$B_SKIP_DATA_8" != 'true' ];then
 			check_backup_source_directory "$DATA_8_PATH"
+			log_function_data 'data' "Starting Data 8 Backup Command:\n$DATA_8_BU_COMMAND"
 			echo -n "${S}$BACKUP_CLEAR ${C}$DATA_8_DESC${S} directory$ENDING_1${N}"
 			if [ "$B_SPINNING_WHEEL" == 'true' ];then
 				GET_PID=''
@@ -2091,12 +2250,14 @@ run_backup_components()
 				eval $DATA_8_BU_COMMAND || error_handler 25 "$?"
 				echo
 			fi
+			log_function_data 'data' "Finished Data 8\n\n"
 			sleep $SLEEP_TIME_BACKUP
 		fi
 
 		# backup optional user data 9
 		if [ "$B_CLONE_DATA_9" == 'true' ] || [ "$DATA_9_DIR" != '' -a "$B_SKIP_DATA_9" != 'true' ];then
 			check_backup_source_directory "$DATA_9_PATH"
+			log_function_data 'data' "Starting Data 9 Backup Command:\n$DATA_9_BU_COMMAND"
 			echo -n "${S}$BACKUP_CLEAR ${C}$DATA_9_DESC${S} directory$ENDING_1${N}"
 			if [ "$B_SPINNING_WHEEL" == 'true' ];then
 				GET_PID=''
@@ -2107,12 +2268,14 @@ run_backup_components()
 				eval $DATA_9_BU_COMMAND || error_handler 25 "$?"
 				echo
 			fi
+			log_function_data 'data' "Finished Data 9\n\n"
 			sleep $SLEEP_TIME_BACKUP
 		fi
 
 		# backup optional user data 10
 		if [ "$B_CLONE_DATA_10" == 'true' ] || [ "$DATA_10_DIR" != '' -a "$B_SKIP_DATA_10" != 'true' ];then
 			check_backup_source_directory "$DATA_10_PATH"
+			log_function_data 'data' "Starting Data 10 Backup Command:\n$DATA_10_BU_COMMAND"
 			echo -n "${S}$BACKUP_CLEAR ${C}$DATA_10_DESC${S} directory$ENDING_1${N}"
 			if [ "$B_SPINNING_WHEEL" == 'true' ];then
 				GET_PID=''
@@ -2123,9 +2286,11 @@ run_backup_components()
 				eval $DATA_10_BU_COMMAND || error_handler 25 "$?"
 				echo
 			fi
+			log_function_data 'data' "Finished Data 10\n\n"
 			sleep $SLEEP_TIME_BACKUP
 		fi
 	fi
+	log_function_data 'data' "run_backup_components: end\n$LI\n"
 	# this is set to false either in the main rsync assigner or by rdiff feature
 	if [ "$B_CLEAN_OLDER" != 'true' ];then
 		finish_backup
@@ -2137,7 +2302,7 @@ run_backup_components()
 }
 
 #### -------------------------------------------------------------------
-#### Backup start functions
+#### Backup start/pre/post/finish functions
 #### -------------------------------------------------------------------
 
 mount_backup_disk()
@@ -2146,6 +2311,7 @@ mount_backup_disk()
 
 	if [ "$MOUNT_BU_DISK" != '' -a "$B_SKIP_MOUNT" != 'true'  ];then
 		# found a possible error case here with null backup directory:
+		log_function_data 'data' "BACKUP_MOUNT_POINT: $BACKUP_MOUNT_POINT\nMount Data: $MOUNT_BU_DISK"
 		if [ -z "$BACKUP_MOUNT_POINT" ];then
 			error_handler 26
 		fi
@@ -2153,6 +2319,7 @@ mount_backup_disk()
 		eval $MOUNT_BU_DISK || retNu=$?
 		if [ "$retNu" -eq 0 ];then
 			echo "${S}....${M}mounted${N}"
+			log_function_data 'data' "Mounted"
 		else
 			echo "${S}....${W}MOUNT FAILED!${N}"
 			error_handler 2 "$retNu"
@@ -2160,6 +2327,42 @@ mount_backup_disk()
 		# set the trap here
 		trap 'trap_handler umount' INT TERM EXIT
 	fi
+}
+
+# args: $1 - start/finish/error; $2 - data to be processed, error message, script start options
+run_emailer_tasks()
+{
+	# strip out colors if present
+	
+	local data=$( echo -e "$2" | sed 's/\x1b\[[0-9]\{1,2\}\(;[0-9]\{1,2\}\)\{0,2\}m//g' )
+	local actionTime=$( date +"%Y %B %e - %R:%S" )
+	# then construct the string
+	data="Rbxi $1: $actionTime\n$data"
+	
+	# note that the action must be in quotes when you execute it with eval
+	case $1 in
+		start)
+			if [ -n "$EMAIL_START_ACTION" ];then
+				echo $LINE
+				echo "${S}Running user action: ${C}start${N}"
+				eval "$EMAIL_START_ACTION"
+			fi
+			;;
+		finish)
+			if [ -n "$EMAIL_FINISH_ACTION" ];then
+				echo $LINE
+				echo "${S}Running user action: ${C}finish${N}"
+				eval "$EMAIL_FINISH_ACTION"
+			fi
+			;;
+		error)
+			if [ -n "$EMAIL_ERROR_ACTION" ];then
+				echo $LINE
+				echo "${S}Running user action: ${C}error${N}"
+				eval "$EMAIL_ERROR_ACTION"
+			fi
+			;;
+	esac
 }
 
 # args: $1 - pre-mount/post-mount/post-umount
@@ -2170,7 +2373,7 @@ run_pre_post_tasks()
 		pre-mount)
 			if [ -n "$PRE_MOUNT_FUNCTION" ];then
 				echo $LINE
-				echo -n "${S}Running user defined function: ${C}pre_mount_tasks()${N}"
+				echo "${S}Running user defined function: ${C}pre_mount_tasks()${N}"
 				eval "$PRE_MOUNT_FUNCTION"
 				pre_mount_tasks || error_handler 27 "$?"
 			fi
@@ -2178,7 +2381,7 @@ run_pre_post_tasks()
 		post-mount)
 			if [ -n "$POST_MOUNT_FUNCTION" ];then
 				echo $LINE
-				echo -n "${S}Running user defined function: ${C}post_mount_tasks()${N}"
+				echo "${S}Running user defined function: ${C}post_mount_tasks()${N}"
 				eval "$POST_MOUNT_FUNCTION"
 				post_mount_tasks || error_handler 28 "$?"
 			fi
@@ -2186,7 +2389,7 @@ run_pre_post_tasks()
 		post-umount)
 			if [ -n "$POST_UMOUNT_FUNCTION" ];then
 				echo $LINE
-				echo -n "${S}Running user defined function: ${C}post_umount_tasks()${N}"
+				echo "${S}Running user defined function: ${C}post_umount_tasks()${N}"
 				eval "$POST_UMOUNT_FUNCTION"
 				post_umount_tasks || error_handler 29 "$?"
 			fi
@@ -2206,6 +2409,8 @@ finish_backup()
 	umount_backup_disk
 	run_pre_post_tasks 'post-umount'
 	print_complete_message
+	log_function_data 'data' "Backup Job Completed.\n\n"
+	run_emailer_tasks 'finish' "Completed. Start Options: $SCRIPT_OPTIONS"
 }
 
 update_configs()
@@ -2236,6 +2441,7 @@ update_configs()
 			sed -i "s%rsync-backup-history=.*%rsync-backup-history=$backupString%" $SCRIPT_CONFIGS
 			;;
 	esac
+	log_function_data 'data' "Completed Backup Config Data:\n$( cat $SCRIPT_CONFIGS )\n$LI\n"
 }
 
 # do some arithmetic on time
@@ -2287,11 +2493,13 @@ umount_backup_disk()
 	local retNu=0
 
 	if [ "$MOUNT_BU_DISK" != '' -a "$B_SKIP_MOUNT" != 'true' ];then
+		log_function_data 'data' "BACKUP_MOUNT_POINT: $BACKUP_MOUNT_POINT\nUmount Data: $UNMOUNT_BU_DISK"
 		echo
 		echo -n "${S}Unmounting your backup partition $BACKUP_MOUNT_POINT now...${N}"
 		eval $UNMOUNT_BU_DISK || retNu=$?
 		if [ "$retNu" -eq 0 ];then
 			echo "${S}.....${M}successfully unmounted.${N}"
+			log_function_data 'data' "Umount successful."
 		else
 			echo "${S}.....${W}UMOUNT FAILED!${N}"
 			error_handler 3 "$retNu"
@@ -2313,8 +2521,11 @@ print_complete_message()
 set_script_colors
 check_script_requires
 get_options "$@"
+run_emailer_tasks 'start' "Start Options: $SCRIPT_OPTIONS"
+
 # Make sure user is logged in as root first and that backup location is present
 check_startup_stuff
+log_function_data 'start' "$SCRIPT_OPTIONS"
 # this sets the correct startup path so that exclude lists load correctly
 check_script_path
 # any updates that need to be run will be run here, should only be required
