@@ -380,9 +380,8 @@ POST_UMOUNT_FUNCTION_5=''
 # following data, called with "$data" (" quotes are NOT optional). $data is time
 # stamped always for start/finish/error.
 #
-# All code must be contained in a block using single quotes, '
-# for example: 
-#
+# All code must be contained in a block using single quotes for the eval to work with  '
+# the "$data" variable.
 # 
 # EMAIL_START_ACTION: $data is the startup options rbxi is running with, and the start time
 # EMAIL_FINISH_ACTION: $data is the startup options, plus the finish time.
