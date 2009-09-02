@@ -87,7 +87,7 @@ li {
 <h1>Read-me for Setting Up rbxi</h1>
 <pre>
 Filename: rbxi-readme.htm
-Version: 2.7.0
+Version: 2.7.1
 </pre>
 
 <ul>
@@ -1506,7 +1506,25 @@ Things to remember: these pre/post mount and post umount functions do not depend
 </pre>
 
 <p>
-These work much the same as above, only they do NOT use a function, just a scripted action, which will for most people be emailing the sys admin, but you can put any actions you want in here as well that you want done that rbxi doesn't do already. Errors from the action cannot be handled unless you make your action scripting itself process it. Actions must be written in Bash.
+These work much the same as above, only they do NOT use a function, just a scripted action, which will for most people be emailing the sys admin, but you can put any actions you want in here as well that you want done that rbxi doesn't do already. Errors from the action cannot be handled unless you make your action scripting itself process it. 
+</p>
+<p>
+You can get rbxi error handling by using the following in your action code, triggered by whatever error condition you want. Error 31 is a generic User Action error code for this feature. Sample:
+</p>
+<pre>
+some email sending procedure || error_handler 31 "your error data"
+</pre>
+<p>
+Note that you need to use quotes for your actual error message "your error data", for example:
+</p>
+<pre>
+error_handler 31 "Script Emailer (method 2) Error on step: finish"
+</pre>
+</p>
+
+</p>
+<p>
+Actions must be written in Bash, or any other language you can call directly on the system that is running the backup.
 </p>
 <p>
 These actions will be triggered in a function that will have access to the following data, called with "$data" (" quotes are NOT optional). $data is time stamped always for start/finish/error.
@@ -1623,7 +1641,6 @@ B_SKIP_ROOT='false' # -S r
 
 <p>
 <pre>
-B_LOGGING='false' # -l : use logging true/false
 B_SKIP_MOUNT='false' # -m :do not mount backup drive, or umount it
 B_SPINNING_WHEEL='false' # -s :use spinning wheel option
 B_TESTING_1='false' # -! 1 :testing flag 1
@@ -1651,12 +1668,25 @@ Try each one and see which works best for your terminal colors using -j <0-5>, t
 COLOR_SCHEME='1' # -j [0-5]
 </pre>
 
-<h5>Override Default Log File Directory</h5>
+<h5>Logging options</h5>
 <p>
-You can manually override the default logfile directory location here if you want (must end with /). Do  not set this to '', since this will override the script default. Comment it out if you don't want to use it.
+Default is logging on. To turn off, change to 'false'. If you want to override a false, use -l option when starting rbxi and it will use logging for just that session.
 </p>
 <pre>
-LOGFILE_DIR='/var/log/'
+B_LOGGING='true'
+</pre>
+<p>
+You can manually override the default logfile directory location here if you want (must end with /). Uncomment if you want to change rbxi default location to somewhere else in your system.
+</p>
+<pre>
+# LOGFILE_DIR='/var/log/'
+</pre>
+<p>
+Log file max size, in kB. Must be an integer, for example: LOGFILE_SIZE=500<br>
+Overrides script default size of 100kB. Uncomment to use override. Rbxi will automatically rotate the file one time, to rbxi.1.log in the logfile directory once it hits the size in kB given.
+</p>
+<pre>
+# LOGFILE_SIZE=100
 </pre>
 
 <h5>Sleep Times</h5>
