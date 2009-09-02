@@ -1,8 +1,8 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi
-####  Version: 2.7.0
-####  Date: 1 September 2009
+####  Version: 2.7.1
+####  Date: 2 September 2009
 ####  Copyright (C) Harald Hope 2006-9
 ####
 ####  This program is free software; you can redistribute it and/or modify it under
@@ -113,6 +113,9 @@ EMAIL_ERROR_ACTION=''
 PRE_MOUNT_FUNCTION=''
 POST_MOUNT_FUNCTION=''
 POST_UMOUNT_FUNCTION=''
+
+# variables that can be overridden in rbxi-values but which are commented out
+LOGFILE_SIZE=100
 
 ## add in user variable values, sticky value file
 # missing test will occur a bit later
@@ -539,6 +542,9 @@ error_handler()
 		30)
 			error_message="The rbxi log directory ${C}$2${W} does not exist.\nPlease correct the path in rbxi-values LOGFILE_DIR='' before continuing."
 			;;
+		31)
+			error_message="User set Action returned error: $2"
+			;;
 		50)
 			error_message="User initiated script termination. Exiting $SCRIPT_NAME now."
 			;;
@@ -570,7 +576,7 @@ log_function_data()
 		fi
 		# I don't to try to handle various distro logrotate tools, so I'm making my own here
 		# going to rotate it at 100kB
-		if [ -f $logFile -a "$( du -s $logFile | awk '{print $1}' )" -gt 100 ];then
+		if [ -f $logFile -a "$( du -s $logFile | awk '{print $1}' )" -gt $LOGFILE_SIZE ];then
 			mv -f $logFile ${LOGFILE_DIR}${SCRIPT_NAME}.1.log
 		fi
 		# then make sure the file is ready to go

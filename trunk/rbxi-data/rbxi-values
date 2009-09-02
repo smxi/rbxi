@@ -1,8 +1,8 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi-values
-####  Version: 2.6.0
-####  Date: 31 August 2009
+####  Version: 2.7.1
+####  Date: 2 September 2009
 ########################################################################
 #### Note: you can create any number of these rbxi-values files, and load
 #### alternate values files by using the -V option. See rbxi -h for details.
@@ -14,7 +14,8 @@
 #### RSYNC/RDIFF-BACKUP DATA, REQUIRED APPLICATION PATHS ###############
 ########################################################################
 
-# set to either rdiff-backup or rsync. Can be overridden with -o [rd/rs] optionn
+# set to either rdiff-backup or rsync. 
+# Option: [rd/rs] - rd is rdiff-backup and rs is rsync.
 BACKUP_APP='rsync'
 
 # change these to the true system paths if you are going to run this as a cron job
@@ -297,9 +298,12 @@ BACKUP_JOB_10=':'
 # these are for options, used in case of cron or option run backups/deletes
 # if you want to hard set any option just set the variable to true.
 # trigger rdiff/rsync cleeanup, either older than x, or remove deleted files
-B_CLEAN_OLDER='false' # -c :clean old backup files, then do backup
-B_DELETE_BACKUP='false' # -d :delete old backup, then do backup
-B_DO_BACKUP='false' # -b :automatic backup
+# Option: -c :clean old backup files, then do backup
+B_CLEAN_OLDER='false'
+# Option: -d :delete old backup, then do backup
+B_DELETE_BACKUP='false'
+# Option: -b :automatic backup
+B_DO_BACKUP='false'
 
 # skip home/root/data can be overridden by -A <r|h|number> when you are creating
 # a separate job (-J <number>).
@@ -373,6 +377,11 @@ POST_UMOUNT_FUNCTION_5=''
 # but you can put any actions you want in here as well that you want done
 # that rbxi doesn't do already. Errors from the action cannot be handled 
 # unless you make your action scripting itself process it.
+#
+# You can get rbxi error handling by using the following in your action code, 
+# triggered by whatever error condition you want: error_handler 31 "your error data"
+# Error 31 is a generic User Action error code for this feature.
+
 # Actions must be written in Bash, or any other language you can call directly
 # on the system that is running the backup.
 #
@@ -381,13 +390,16 @@ POST_UMOUNT_FUNCTION_5=''
 # stamped always for start/finish/error.
 #
 # All code must be contained in a block using single quotes for the eval to work with  '
-# the "$data" variable.
+# the "$data" variable. 
 # 
 # EMAIL_START_ACTION: $data is the startup options rbxi is running with, and the start time
 # EMAIL_FINISH_ACTION: $data is the startup options, plus the finish time.
 # EMAIL_ERROR_ACTION: $data is the error message from the error handler, including error
 # numbers and error time.
 # 
+# Sample (can be multiline action also: 
+# EMAIL_ERROR_ACTION_1='nail -r "myaddress@something.com" -s "Backup Error on Raven" -S smtp=some.smtp.server info@company.com &lt;&lt;&lt; "$data"'
+#
 # Option: -E <1-5>:<1-5>:<1-5> where any number can be skipped: like so: -E 2::2
 # that would trigger EMAIL_START_ACTION_2 and EMAIL_ERROR_ACTION_2 but not
 # EMAIL_FINISH_ACTION, for example. See readme-rbxi.htm for some samples.
@@ -420,21 +432,34 @@ EMAIL_ERROR_ACTION_5=''
 #### MISCELLANEOUS SCRIPT OPTIONS ######################################
 ########################################################################
 # miscellaneous script booleans
-B_LOGGING='false' # -l : use logging true/false
-B_SKIP_MOUNT='false' # -m :do not mount backup drive, or umount it
-B_SPINNING_WHEEL='false' # -s :use spinning wheel option
-B_TESTING_1='false' # -! 1 :testing flag 1
-B_TESTING_2='false' # -! 2 :testing flag 2
+# Option: -m :do not mount backup drive, or umount it
+B_SKIP_MOUNT='false' 
+# Option: -s :use spinning wheel option
+B_SPINNING_WHEEL='false' 
+# Option: -! 1 :testing flag 1
+B_TESTING_1='false' 
+# Option: -! 2 :testing flag 2
+B_TESTING_2='false' 
 B_UPDATE_NOTIFIER='false' # if you want rbxi to notify you of newer versions, set true.
 
 # try each one and see which works best for your terminal colors using -j <0-5>, then set it below.
 # script color scheme: 0 - no colors; 1 - default simple, for dark on light or light on dark
 # 2 - fancy dark on light; 3 - basic light on dark; 3 - fancy light on dark; 4 - smxi style
-COLOR_SCHEME='1' # -j [0-5]
+# Option: -j [0-5]
+COLOR_SCHEME='1'
 
-# you can manually override the default logfile location here if you want
-# comment out if you don't need it, or just leave it like it is.
-LOGFILE='/var/log/rbxi.log'
+## Logging Options ##
+# if you do not want to use logging, set this to 'false'
+# Option: -l - use logging is set to true.
+B_LOGGING='true' 
+## you can manually override the default logfile directory location here if you want (must end with /)
+## Uncomment if you want to change rbxi default location to somewhere else in your system.
+# LOGFILE_DIR='/var/log/'
+## logfile max size, in kB. Must be an integer, for example: LOGFILE_SIZE=500
+## Overrides script default size of 100kB. Uncomment to use override. Rbxi will
+## automatically rotate the file one time, to rbxi.1.log in the logfile directory
+## once it hits the size in kB given.
+# LOGFILE_SIZE=100
 
 # this is how fast the spinning wheel moves. Anything less than 0.5 not
 # recommended due to performance problems on most machines.
