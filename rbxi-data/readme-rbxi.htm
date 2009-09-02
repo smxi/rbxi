@@ -129,7 +129,7 @@ Version: 2.7.1
 <h2 id="rbxi-introduction">Introduction to rbxi</h2>
 
 <p>
-rbxi script is designed to only require a single setup, one time.
+The rbxi script is designed to only require a single setup, one time.
 Any updates to the script should only be new features, which if your system is the
 way you want, you should not need. But feel free to check the script homepage
 now and then to see if a new feature might be implemented that would be useful
@@ -182,7 +182,7 @@ See the <a href="#rbxi-values-setup">rbxi-values setup section</a> and <a href="
 <h2 id="rbxi-package-contents">rbxi.tar.bz2 Package Contents</h2>
 
 <p>
-This bzipped package should contain the following inside the directory called bu:
+This bzipped package should contain the following files and directories:
 </p>
 <ol>
 	<li>
@@ -196,10 +196,14 @@ rbxi
 chmod +x rbxi
 </pre>
 		<p>
-		to make it executable.
+		to make it executable, although it should already be executable.
 		</p>
 	</li>
-
+	<li>
+<pre>
+rbxi-data/ # main rbxi data directory
+</pre>
+	</li>
 	<li>
 <pre>
 rbxi-data/excludes-root.txt (for rdiff-backup)
@@ -220,10 +224,10 @@ rbxi-data/excludes-root-rsync.txt (for rsync)
 <pre>
 # for rdiff-backup
 rbxi-data/excludes-home.txt
-rbxi-data/excludes-data-<1-10>.txt
+rbxi-data/excludes-data-&lt;1-10>.txt
 # and for rsync
 rbxi-data/excludes-home-rsync.txt
-rbxi-data/excludes-data-<1-10>-rsync.txt
+rbxi-data/excludes-data-&lt;1-10>-rsync.txt
 </pre>
 		<p>
 		These are blank files. Use them to add more excludes if required to your backup.
