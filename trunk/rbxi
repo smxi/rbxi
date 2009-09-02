@@ -576,8 +576,12 @@ log_function_data()
 		fi
 		# I don't to try to handle various distro logrotate tools, so I'm making my own here
 		# going to rotate it at 100kB
-		if [ -f $logFile -a "$( du -s $logFile | awk '{print $1}' )" -gt $LOGFILE_SIZE ];then
-			mv -f $logFile ${LOGFILE_DIR}${SCRIPT_NAME}.1.log
+		if [ -f $logFile ];then
+			# this shouldn't have been necessary, but if on same line as -f test, gives error
+			# if no file exists.
+			if [ "$( du -s $logFile | awk '{print $1}' )" -gt $LOGFILE_SIZE ];then
+				mv -f $logFile ${LOGFILE_DIR}${SCRIPT_NAME}.1.log
+			fi
 		fi
 		# then make sure the file is ready to go
 		if [ ! -f $logFile ];then
