@@ -1496,7 +1496,11 @@ in order to trigger this extra function before the first mount runs.
 <p>
 Things to remember: these pre/post mount and post umount functions do not depend on anything being mounted, that's just where they will be run physically in the script, ie, before the main mount backup drive function, after the mount main backup drive function, and after the umount backup drive function. If you are skipping mounting the backup drive, with -m, then they will still run.
 </p>
-
+<p>
+Important! If you use variables in your functions, make sure to either make them local, 
+like: local variablename='', or by starting the variables with a prefix: like: ppmm_
+that is unique. Otherwise you might accidently overwrite a script variable.
+</p>
 <p class="small">
 <a href="#top">top</a>
 </p>
@@ -1585,6 +1589,16 @@ Sample (I'm not sure you can use &lt;&lt;&lt; "$data" with nail, this is just a 
 </p>
 <pre>
 EMAIL_ERROR_ACTION_1='nail -r "myaddress@something.com" -s "Backup Error on Raven" -S smtp=some.smtp.server info@company.com &lt;&lt;&lt; "$data"'
+</pre>
+
+<p>
+If you prefer, you can also just write a separate function, then include it, say you create a file: rbxi-extra-functions<br>
+put it in rbxi-data, which let's say is in /usr/local/bin, then, above: # Alerts to start of backup operation<br>
+you would add this line: source /usr/local/bin/rbxi-data/rbxi-extra-functions<br>
+then you could simply call your function like so (let's say your function is called: email_processing. Remember that the $data variable must always be in double quotes: "$data".
+</p>
+<pre>
+EMAIL_ERROR_ACTION_1='email_processing startup "$data"'
 </pre>
 
 <p class="small">
