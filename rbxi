@@ -1,8 +1,8 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi
-####  Version: 2.7.1
-####  Date: 2 September 2009
+####  Version: 2.7.2
+####  Date: 4 September 2009
 ####  Copyright (C) Harald Hope 2006-9
 ####
 ####  This program is free software; you can redistribute it and/or modify it under
@@ -219,8 +219,8 @@ print_usage()
 	echo '   Takes parameters: (h|r|1-10). Clone root, home, or a data direcory.'
 	echo '-d Automatic backup and delete, non interactive.'
 	echo '-D Change default backup sub directory (1-10).'
-	echo '-E Requires <1-5:1-5:1-5> for script start, finish, or error actions. Must be'
-	echo '   one or more, but does not need to be all three. Actions are user created.'
+	echo '-E Requires <1-10:1-10:1-10> for script start, finish, or error actions. Must be'
+	echo '   one or more, but does not need to be all three. Actions are user created. See readme for how-to.'
 	echo '-j Set script color scheme -j [0-5]: 0 - no colors; 1 - default, ok for dark/light or light/dark'
 	echo '   2 - fancy dark on light; 3 - basic light on dark; 4 - fancy light on dark; 5 - smxi style'
 	echo '-J Start preset backup job (1-10). Cannot be used with any other option.'
@@ -229,9 +229,11 @@ print_usage()
 	echo '-m Skip the mounting option.'
 	echo '-M use alternate mount/umount set (1-10)'
 	echo '-o Override default backup application.'
-	echo '-P Requires <1-5:1-5:1-5> for pre mount, post mount, or post umount extra functions. Must be'
-	echo '   one or more, but does not need to be all three. Functions are user created.'
+	echo '-P Requires <1-10:1-10:1-10> for pre mount, post mount, or post umount extra functions. Must be'
+	echo '   one or more, but does not need to be all three. Functions are user created. See readme for how-to.'
 	echo '-r Trigger --dry-run for rsync. This simulates the backup, but does not actually run it.'
+	echo '-R Show script readme file. Requires one of these console browsers (can also be set in rbxi-values):'
+	echo '   links2 elinks w3m links lynx'
 	echo '-s Show spinning wheel indicator.'
 	echo '-S Skip backup component (d|h|hr|1-10)'
 	echo '   d - skip all DATA; h - skip HOME; r - skip ROOT; skip DATA 1-10'
@@ -262,7 +264,7 @@ get_options()
 	local opt='' setDirectory='' setSubDir='' setMount='' setPrePost=''
 	local setFullAdds='' setFullSkips='' setCloneData='' setEmailer=''
 
-	while getopts :A:bB:cC:dD:E:hj:J:LlmM:o:P:rsS:UvV:z:!: opt
+	while getopts :A:bB:cC:dD:E:hj:J:LlmM:o:P:rRsS:UvV:z:!: opt
 	do
 		case $opt in
 			h)	print_usage
@@ -300,7 +302,7 @@ get_options()
 					error_handler 13 "-$opt $OPTARG"
 				fi
 				;;
-			E)	if [ -n "$( grep -E '^[1-5]?:[1-5]?:[1-5]?$' <<< $OPTARG )" ];then
+			E)	if [ -n "$( grep -E '^([1-9]|10)?:([1-9]|10)?:([1-9]|10)?$' <<< $OPTARG )" ];then
 					setEmailer="$OPTARG"
 				else
 					error_handler 13 "-$opt $OPTARG"
@@ -345,13 +347,16 @@ get_options()
 					error_handler 13 "-$opt $OPTARG"
 				fi
 				;;
-			P)	if [ -n "$( grep -E '^[1-5]?:[1-5]?:[1-5]?$' <<< $OPTARG )" ];then
+			P)	if [ -n "$( grep -E '^([1-9]|10)?:([1-9]|10)?:([1-9]|10)?$' <<< $OPTARG )" ];then
 					setPrePost="$OPTARG"
 				else
 					error_handler 13 "-$opt $OPTARG"
 				fi
 				;;
 			r)	B_DRY_RUN='true'
+				;;
+			R)	show_script_readme
+				exit
 				;;
 			s)	B_SPINNING_WHEEL='true'
 				ENDING_1=': '
@@ -544,6 +549,9 @@ error_handler()
 			;;
 		31)
 			error_message="User set Action returned error: $2"
+			;;
+		32)
+			error_message="No console browser detected in your system. Requires one of these: links2 elinks w3m links lynx"
 			;;
 		50)
 			error_message="User initiated script termination. Exiting $SCRIPT_NAME now."
@@ -850,6 +858,24 @@ script_self_updater()
 		else
 			error_handler 12 "$1"
 		fi
+	fi
+}
+
+show_script_readme()
+{
+	local browser='' browser_path=''
+	
+	for browser in $CONSOLE_BROWSER links2 elinks w3m links lynx
+	do
+		if [ -n "$( which $browser )" ];then
+			browser_path=$( which $browser )
+			break
+		fi
+	done
+	if [ -n "$browser_path" ];then
+		$browser_path $SCRIPT_PATH$SCRIPT_DATA$SCRIPT_README
+	else
+		error_handler 32
 	fi
 }
 
@@ -1366,6 +1392,21 @@ set_emailer_data(){
 			5)
 				EMAIL_START_ACTION="$EMAIL_START_ACTION_5"
 				;;
+			6)
+				EMAIL_START_ACTION="$EMAIL_START_ACTION_6"
+				;;
+			7)
+				EMAIL_START_ACTION="$EMAIL_START_ACTION_7"
+				;;
+			8)
+				EMAIL_START_ACTION="$EMAIL_START_ACTION_8"
+				;;
+			9)
+				EMAIL_START_ACTION="$EMAIL_START_ACTION_9"
+				;;
+			10)
+				EMAIL_START_ACTION="$EMAIL_START_ACTION_10"
+				;;
 		esac
 	fi
 	if [ -n "$emailFinish" ];then
@@ -1385,6 +1426,21 @@ set_emailer_data(){
 			5)
 				EMAIL_FINISH_ACTION="$EMAIL_FINISH_ACTION_5"
 				;;
+			6)
+				EMAIL_FINISH_ACTION="$EMAIL_FINISH_ACTION_6"
+				;;
+			7)
+				EMAIL_FINISH_ACTION="$EMAIL_FINISH_ACTION_7"
+				;;
+			8)
+				EMAIL_FINISH_ACTION="$EMAIL_FINISH_ACTION_8"
+				;;
+			9)
+				EMAIL_FINISH_ACTION="$EMAIL_FINISH_ACTION_9"
+				;;
+			10)
+				EMAIL_FINISH_ACTION="$EMAIL_FINISH_ACTION_10"
+				;;
 		esac
 	fi
 	if [ -n "$emailError" ];then
@@ -1403,6 +1459,21 @@ set_emailer_data(){
 				;;
 			5)
 				EMAIL_ERROR_ACTION="$EMAIL_ERROR_ACTION_5"
+				;;
+			6)
+				EMAIL_ERROR_ACTION="$EMAIL_ERROR_ACTION_6"
+				;;
+			7)
+				EMAIL_ERROR_ACTION="$EMAIL_ERROR_ACTION_7"
+				;;
+			8)
+				EMAIL_ERROR_ACTION="$EMAIL_ERROR_ACTION_8"
+				;;
+			9)
+				EMAIL_ERROR_ACTION="$EMAIL_ERROR_ACTION_9"
+				;;
+			10)
+				EMAIL_ERROR_ACTION="$EMAIL_ERROR_ACTION_10"
 				;;
 		esac
 	fi
@@ -1542,6 +1613,21 @@ set_pre_post_data(){
 			5)
 				PRE_MOUNT_FUNCTION="$PRE_MOUNT_FUNCTION_5"
 				;;
+			6)
+				PRE_MOUNT_FUNCTION="$PRE_MOUNT_FUNCTION_6"
+				;;
+			7)
+				PRE_MOUNT_FUNCTION="$PRE_MOUNT_FUNCTION_7"
+				;;
+			8)
+				PRE_MOUNT_FUNCTION="$PRE_MOUNT_FUNCTION_8"
+				;;
+			9)
+				PRE_MOUNT_FUNCTION="$PRE_MOUNT_FUNCTION_9"
+				;;
+			10)
+				PRE_MOUNT_FUNCTION="$PRE_MOUNT_FUNCTION_10"
+				;;
 		esac
 	fi
 	if [ -n "$postMount" ];then
@@ -1561,6 +1647,21 @@ set_pre_post_data(){
 			5)
 				POST_MOUNT_FUNCTION="$POST_MOUNT_FUNCTION_5"
 				;;
+			6)
+				POST_MOUNT_FUNCTION="$POST_MOUNT_FUNCTION_6"
+				;;
+			7)
+				POST_MOUNT_FUNCTION="$POST_MOUNT_FUNCTION_7"
+				;;
+			8)
+				POST_MOUNT_FUNCTION="$POST_MOUNT_FUNCTION_8"
+				;;
+			9)
+				POST_MOUNT_FUNCTION="$POST_MOUNT_FUNCTION_9"
+				;;
+			10)
+				POST_MOUNT_FUNCTION="$POST_MOUNT_FUNCTION_10"
+				;;
 		esac
 	fi
 	if [ -n "$postUmount" ];then
@@ -1579,6 +1680,21 @@ set_pre_post_data(){
 				;;
 			5)
 				POST_UMOUNT_FUNCTION="$POST_UMOUNT_FUNCTION_5"
+				;;
+			6)
+				POST_UMOUNT_FUNCTION="$POST_UMOUNT_FUNCTION_6"
+				;;
+			7)
+				POST_UMOUNT_FUNCTION="$POST_UMOUNT_FUNCTION_7"
+				;;
+			8)
+				POST_UMOUNT_FUNCTION="$POST_UMOUNT_FUNCTION_8"
+				;;
+			9)
+				POST_UMOUNT_FUNCTION="$POST_UMOUNT_FUNCTION_9"
+				;;
+			10)
+				POST_UMOUNT_FUNCTION="$POST_UMOUNT_FUNCTION_10"
 				;;
 		esac
 	fi
@@ -2353,6 +2469,7 @@ run_emailer_tasks()
 	case $1 in
 		start)
 			if [ -n "$EMAIL_START_ACTION" ];then
+				log_function_data 'data' "Begin emailer task: start action"
 				echo $LINE
 				echo "${S}Running user action: ${C}start${N}"
 				eval "$EMAIL_START_ACTION"
@@ -2360,6 +2477,7 @@ run_emailer_tasks()
 			;;
 		finish)
 			if [ -n "$EMAIL_FINISH_ACTION" ];then
+				log_function_data 'data' "Begin emailer task: finish action"
 				echo $LINE
 				echo "${S}Running user action: ${C}finish${N}"
 				eval "$EMAIL_FINISH_ACTION"
@@ -2367,6 +2485,7 @@ run_emailer_tasks()
 			;;
 		error)
 			if [ -n "$EMAIL_ERROR_ACTION" ];then
+				log_function_data 'data' "Begin emailer task: error action"
 				echo $LINE
 				echo "${S}Running user action: ${C}error${N}"
 				eval "$EMAIL_ERROR_ACTION"
@@ -2382,6 +2501,7 @@ run_pre_post_tasks()
 	case $1 in
 		pre-mount)
 			if [ -n "$PRE_MOUNT_FUNCTION" ];then
+				log_function_data 'data' "Begin pre post tasks: pre mount function"
 				echo $LINE
 				echo "${S}Running user defined function: ${C}pre_mount_tasks()${N}"
 				eval "$PRE_MOUNT_FUNCTION"
@@ -2390,6 +2510,7 @@ run_pre_post_tasks()
 			;;
 		post-mount)
 			if [ -n "$POST_MOUNT_FUNCTION" ];then
+				log_function_data 'data' "Begin pre post tasks: post mount function"
 				echo $LINE
 				echo "${S}Running user defined function: ${C}post_mount_tasks()${N}"
 				eval "$POST_MOUNT_FUNCTION"
@@ -2398,6 +2519,7 @@ run_pre_post_tasks()
 			;;
 		post-umount)
 			if [ -n "$POST_UMOUNT_FUNCTION" ];then
+				log_function_data 'data' "Begin pre post tasks: error function"
 				echo $LINE
 				echo "${S}Running user defined function: ${C}post_umount_tasks()${N}"
 				eval "$POST_UMOUNT_FUNCTION"

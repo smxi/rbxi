@@ -87,7 +87,7 @@ li {
 <h1>Read-me for Setting Up rbxi</h1>
 <pre>
 Filename: rbxi-readme.htm
-Version: 2.7.1
+Version: 2.7.2
 </pre>
 
 <ul>
@@ -357,6 +357,9 @@ Create preset jobs, 1-10, in rbxi-values, using script arguments. Use presets li
 
 -r Runs --dry-run option, which emulates the backup job without actually running
    any of it, including the -d delete option.
+   
+-R Show script readme file. Requires one of the following console browsers: 
+	links2 elinks w3m links lynx
 
 -s Runs the backup using spinning wheel progress indicators.
    Warning: in order to do this, the script puts the actual backup jobs
@@ -1429,6 +1432,11 @@ PRE_MOUNT_FUNCTION_2=''
 PRE_MOUNT_FUNCTION_3=''
 PRE_MOUNT_FUNCTION_4=''
 PRE_MOUNT_FUNCTION_5=''
+PRE_MOUNT_FUNCTION_6=''
+PRE_MOUNT_FUNCTION_7=''
+PRE_MOUNT_FUNCTION_8=''
+PRE_MOUNT_FUNCTION_9=''
+PRE_MOUNT_FUNCTION_10=''
 
 # launches function post_mount_tasks()
 POST_MOUNT_FUNCTION=''
@@ -1437,6 +1445,11 @@ POST_MOUNT_FUNCTION_2=''
 POST_MOUNT_FUNCTION_3=''
 POST_MOUNT_FUNCTION_4=''
 POST_MOUNT_FUNCTION_5=''
+POST_MOUNT_FUNCTION_6=''
+POST_MOUNT_FUNCTION_7=''
+POST_MOUNT_FUNCTION_8=''
+POST_MOUNT_FUNCTION_9=''
+POST_MOUNT_FUNCTION_10=''
 
 # launches function post_umount_tasks()
 POST_UMOUNT_FUNCTION=''
@@ -1445,13 +1458,18 @@ POST_UMOUNT_FUNCTION_2=''
 POST_UMOUNT_FUNCTION_3=''
 POST_UMOUNT_FUNCTION_4=''
 POST_UMOUNT_FUNCTION_5=''
+POST_UMOUNT_FUNCTION_6=''
+POST_UMOUNT_FUNCTION_7=''
+POST_UMOUNT_FUNCTION_8=''
+POST_UMOUNT_FUNCTION_9=''
+POST_UMOUNT_FUNCTION_10=''
 </pre>
 
 <p>
 Note a few things: If the first, non numbered variable contains the function, rbxi will always execute that every time it runs, unless overridden by -P 3::2 for example would override or run PRE_MOUNT_FUNCTION_3 and POST_UMOUNT_FUNCTION_2.
 </p>
 <p>
-The argument for -P is constructed like this: [1-5]:[1-5]:[1-5] where 1-5 is optional, ie, you can skip any or all, or run them all, like for example: -P 2:: or -P 2:2:2
+The argument for -P is constructed like this: [1-10]:[1-10]:[1-10] where 1-10 is optional, ie, you can skip any or all, or run them all, like for example: -P 2:: or -P 2:2:2
 </p>
 <p>
 Note that each function must return 0 for success, and > 0 for failure. rbxi error handling requires this to properly exit and halt on failure. If no error handling is required, then simply return 0 at the end of the function. Functions must be written in Bash. The functions must be named as follows:
@@ -1557,6 +1575,11 @@ EMAIL_START_ACTION_2=''
 EMAIL_START_ACTION_3=''
 EMAIL_START_ACTION_4=''
 EMAIL_START_ACTION_5=''
+EMAIL_START_ACTION_6=''
+EMAIL_START_ACTION_7=''
+EMAIL_START_ACTION_8=''
+EMAIL_START_ACTION_9=''
+EMAIL_START_ACTION_10=''
 
 # Alerts to finish of backup operation
 EMAIL_FINISH_ACTION=''
@@ -1565,6 +1588,11 @@ EMAIL_FINISH_ACTION_2=''
 EMAIL_FINISH_ACTION_3=''
 EMAIL_FINISH_ACTION_4=''
 EMAIL_FINISH_ACTION_5=''
+EMAIL_FINISH_ACTION_6=''
+EMAIL_FINISH_ACTION_7=''
+EMAIL_FINISH_ACTION_8=''
+EMAIL_FINISH_ACTION_9=''
+EMAIL_FINISH_ACTION_10=''
 
 # Alerts to backup error, should include error data.
 EMAIL_ERROR_ACTION=''
@@ -1573,13 +1601,18 @@ EMAIL_ERROR_ACTION_2=''
 EMAIL_ERROR_ACTION_3=''
 EMAIL_ERROR_ACTION_4=''
 EMAIL_ERROR_ACTION_5=''
+EMAIL_ERROR_ACTION_6=''
+EMAIL_ERROR_ACTION_7=''
+EMAIL_ERROR_ACTION_8=''
+EMAIL_ERROR_ACTION_9=''
+EMAIL_ERROR_ACTION_10=''
 </pre>
 
 <p>
 Note a few things: If the first, non numbered variable contains the action, rbxi will always execute that every time it runs, unless overridden by -E 3::2 for example would override or run EMAIL_START_ACTION_3 and EMAIL_FINISH_ACTION_2.
 </p>
 <p>
-The argument for -E is constructed like this: [1-5]:[1-5]:[1-5] where 1-5 is optional, ie, you can skip any or all, or run them all, like for example: -P 2:: or -P 2:2:2
+The argument for -E is constructed like this: [1-10]:[1-10]:[1-10] where 1-10 is optional, ie, you can skip any or all, or run them all, like for example: -P 2:: or -P 2:2:2
 </p>
 <p>
 Rbxi does not do error handling on your commands, so make sure to debug them completely before you rely on this for production use.
@@ -1685,6 +1718,15 @@ B_UPDATE_NOTIFIER='false'
 5 - smxi style, for light on dark, green text, otherwise same as 3
 Try each one and see which works best for your terminal colors using -j <0-5>, then set it here.
 COLOR_SCHEME='1' # -j [0-5]
+</pre>
+
+<h5>Set console browser</h5>
+<p>
+Uncomment then set only if you want to override the default console browser rbxi selects
+to show readme-rbxi.htm with -R option.
+</p>
+<pre>
+# CONSOLE_BROWSER=''
 </pre>
 
 <h5>Logging options</h5>

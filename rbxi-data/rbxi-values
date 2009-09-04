@@ -1,8 +1,8 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi-values
-####  Version: 2.7.1
-####  Date: 2 September 2009
+####  Version: 2.7.2
+####  Date: 4 September 2009
 ########################################################################
 #### Note: you can create any number of these rbxi-values files, and load
 #### alternate values files by using the -V option. See rbxi -h for details.
@@ -355,6 +355,11 @@ PRE_MOUNT_FUNCTION_2=''
 PRE_MOUNT_FUNCTION_3=''
 PRE_MOUNT_FUNCTION_4=''
 PRE_MOUNT_FUNCTION_5=''
+PRE_MOUNT_FUNCTION_6=''
+PRE_MOUNT_FUNCTION_7=''
+PRE_MOUNT_FUNCTION_8=''
+PRE_MOUNT_FUNCTION_9=''
+PRE_MOUNT_FUNCTION_10=''
 
 # launches function post_mount_tasks()
 POST_MOUNT_FUNCTION=''
@@ -363,6 +368,11 @@ POST_MOUNT_FUNCTION_2=''
 POST_MOUNT_FUNCTION_3=''
 POST_MOUNT_FUNCTION_4=''
 POST_MOUNT_FUNCTION_5=''
+POST_MOUNT_FUNCTION_6=''
+POST_MOUNT_FUNCTION_7=''
+POST_MOUNT_FUNCTION_8=''
+POST_MOUNT_FUNCTION_9=''
+POST_MOUNT_FUNCTION_10=''
 
 # launches function post_umount_tasks()
 POST_UMOUNT_FUNCTION=''
@@ -371,6 +381,11 @@ POST_UMOUNT_FUNCTION_2=''
 POST_UMOUNT_FUNCTION_3=''
 POST_UMOUNT_FUNCTION_4=''
 POST_UMOUNT_FUNCTION_5=''
+POST_UMOUNT_FUNCTION_6=''
+POST_UMOUNT_FUNCTION_7=''
+POST_UMOUNT_FUNCTION_8=''
+POST_UMOUNT_FUNCTION_9=''
+POST_UMOUNT_FUNCTION_10=''
 
 ####--------------------------------------------------------------------
 #### EMAILER ACTIONS ---------------------------------------------------
@@ -404,7 +419,7 @@ POST_UMOUNT_FUNCTION_5=''
 # Sample (can be multiline action also).
 # EMAIL_ERROR_ACTION_1='nail -r "myaddress@something.com" -s "Backup Error on Raven" -S smtp=some.smtp.server info@company.com <<< "$data"'
 #
-# Option: -E <1-5>:<1-5>:<1-5> where any number can be skipped: like so: -E 2::2
+# Option: -E <1-10>:<1-10>:<1-10> where any number can be skipped: like so: -E 2::2
 # that would trigger EMAIL_START_ACTION_2 and EMAIL_ERROR_ACTION_2 but not
 # EMAIL_FINISH_ACTION, for example. See readme-rbxi.htm for some samples.
 #
@@ -415,6 +430,11 @@ EMAIL_START_ACTION_2=''
 EMAIL_START_ACTION_3=''
 EMAIL_START_ACTION_4=''
 EMAIL_START_ACTION_5=''
+EMAIL_START_ACTION_6=''
+EMAIL_START_ACTION_7=''
+EMAIL_START_ACTION_8=''
+EMAIL_START_ACTION_9=''
+EMAIL_START_ACTION_10=''
 
 # Alerts to finish of backup operation
 EMAIL_FINISH_ACTION=''
@@ -423,6 +443,11 @@ EMAIL_FINISH_ACTION_2=''
 EMAIL_FINISH_ACTION_3=''
 EMAIL_FINISH_ACTION_4=''
 EMAIL_FINISH_ACTION_5=''
+EMAIL_FINISH_ACTION_6=''
+EMAIL_FINISH_ACTION_7=''
+EMAIL_FINISH_ACTION_8=''
+EMAIL_FINISH_ACTION_9=''
+EMAIL_FINISH_ACTION_10=''
 
 # Alerts to backup error, should include error data.
 EMAIL_ERROR_ACTION=''
@@ -431,6 +456,11 @@ EMAIL_ERROR_ACTION_2=''
 EMAIL_ERROR_ACTION_3=''
 EMAIL_ERROR_ACTION_4=''
 EMAIL_ERROR_ACTION_5=''
+EMAIL_ERROR_ACTION_6=''
+EMAIL_ERROR_ACTION_7=''
+EMAIL_ERROR_ACTION_8=''
+EMAIL_ERROR_ACTION_9=''
+EMAIL_ERROR_ACTION_10=''
 
 ########################################################################
 #### MISCELLANEOUS SCRIPT OPTIONS ######################################
@@ -451,6 +481,10 @@ B_UPDATE_NOTIFIER='false' # if you want rbxi to notify you of newer versions, se
 # 2 - fancy dark on light; 3 - basic light on dark; 4 - fancy light on dark; 5 - smxi style
 # Option: -j [0-5]
 COLOR_SCHEME='1'
+
+## uncomment then set only if you want to override the default console browser rbxi selects
+## to show readme-rbxi.htm with -R option
+# CONSOLE_BROWSER=''
 
 ## Logging Options ##
 # if you do not want to use logging, set this to 'false'
