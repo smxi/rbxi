@@ -104,9 +104,9 @@ EXCLUDE_DATA_10_RS='excludes-data-10-rsync.txt'
 ####  USER SPECIFIC VARIABLES - REQUIRES rbxi-data/rbxi-values file
 ####--------------------------------------------------------------------
 
-# initializing user defined functions/scripted actions just to be safe, 
+# initializing user defined functions/scripted actions/variables just to be safe, 
 # must be prior to script rbxi-values sourcing
-
+CONSOLE_BROWSER=''
 EMAIL_START_ACTION=''
 EMAIL_FINISH_ACTION=''
 EMAIL_ERROR_ACTION=''
