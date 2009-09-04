@@ -401,8 +401,8 @@ POST_UMOUNT_FUNCTION_5=''
 # EMAIL_ERROR_ACTION: $data is the error message from the error handler, including error
 # numbers and error time.
 # 
-# Sample (can be multiline action also): 
-# EMAIL_ERROR_ACTION_1='nail -r "myaddress@something.com" -s "Backup Error on Raven" -S smtp=some.smtp.server info@company.com &lt;&lt;&lt; "$data"'
+# Sample (can be multiline action also).
+# EMAIL_ERROR_ACTION_1='nail -r "myaddress@something.com" -s "Backup Error on Raven" -S smtp=some.smtp.server info@company.com <<< "$data"'
 #
 # Option: -E <1-5>:<1-5>:<1-5> where any number can be skipped: like so: -E 2::2
 # that would trigger EMAIL_START_ACTION_2 and EMAIL_ERROR_ACTION_2 but not
