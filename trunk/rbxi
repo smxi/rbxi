@@ -1,9 +1,9 @@
 #!/bin/bash
 ########################################################################
 ####  Script Name: rbxi
-####  Version: 2.7.2
-####  Date: 4 September 2009
-####  Copyright (C) Harald Hope 2006-9
+####  Version: 2.7.3
+####  Date: 2015-02-20
+####  Copyright (C) Harald Hope 2006-2015
 ####
 ####  This program is free software; you can redistribute it and/or modify it under
 ####  the terms of the GNU General Public License as published by the Free Software
@@ -22,6 +22,12 @@
 ####  rbxi.tar.bz2 package download URL: http://smxi.org/rb [contains all needed files]
 ####  Script Home page: http://techpatterns.com/forums/about831.html
 ########################################################################
+
+########################################################################
+####  CHANGES
+####  2.7.2 4 September 2009 - last stable
+####  2.7.3 2015-02-20 - updated date format, fixed -J restart bug that made rbxi
+####    fail to return proper exit code on error after restart
 
 ########################################################################
 ####  VARIABLES
@@ -1207,7 +1213,9 @@ set_backup_commands()
 			fi
 			# set commands
 			# note: extra options must END with ssh connection string
-			options=" -a $dryRun $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS"
+			# NOTE: -a = -rlptgoD
+			# --acls only if needed
+			options=" --hard-links --xattrs --sparse --numeric-ids --times -a $dryRun $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS"
 
 			HOME_BU_COMMAND="$RSYNC_PATH --exclude-from=$SCRIPT_DATA_DIR$EXCLUDE_HOME $options $HOME_PATH $HOME_BACKUP"
 			ROOT_BU_COMMAND="$RSYNC_PATH --exclude-from=$SCRIPT_DATA_DIR$EXCLUDE_ROOT $options $ROOT_PATH $ROOT_BACKUP"
@@ -1579,7 +1587,7 @@ set_or_print_backup_job()
 			echo "${S}Restarting $SCRIPT_NAME to run backup job$backupJobName (Job No. ${C}$1${S}) now...${N}"
 			echo $LINE
 			sleep 1
-			$SCRIPT_PATH/$SCRIPT_NAME -z $1 $backupJobData
+			exec $SCRIPT_PATH/$SCRIPT_NAME -z $1 $backupJobData
 			exit 0
 		elif [ "$2" == 'print' ];then
 			echo "${M}You are currently about to run backup job number: ${C}$BACKUP_JOB_NU"
