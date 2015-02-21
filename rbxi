@@ -26,8 +26,8 @@
 ########################################################################
 ####  CHANGES
 ####  2.7.2 4 September 2009 - last stable
-####  2.7.3 2015-02-20 - updated date format, fixed -J restart bug that made rbxi
-####    fail to return proper exit code on error after restart
+####  2.7.3 2015-02-20 - updated date formats to: YYYY-MM-DD, fixed -J restart bug 
+####    that made rbxi fail to return proper exit code on error after restart
 
 ########################################################################
 ####  VARIABLES
@@ -2555,7 +2555,7 @@ finish_backup()
 
 update_configs()
 {
-	local backupDate=$( date +"%e %B %Y - %R" )
+	local backupDate=$( date +"%Y-%m-%d - %R" )
 	local cloneJob='' backupJobName=''
 	if [ "$B_IS_CLONE" == 'true' -a -n "$CLONE_SOURCE_DIR" ];then
 		cloneJob=" :: Cloned: $CLONE_SOURCE_DIR"
