@@ -8,6 +8,8 @@
 - /proc/**
 - /sys/**
 - /cdrom*/**
+- /run/**
+- /var/run/**
 
 ### cache ###
 - **/.mozilla/**/Cache/

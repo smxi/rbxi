@@ -5,6 +5,8 @@
 - /proc/*
 - /sys/*
 - /cdrom*/*
+- /run/**
+- /var/run/**
 
 - **/.mozilla/**/Cache/*
 + /var/cache/apt/archives/*/
