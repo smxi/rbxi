@@ -74,9 +74,9 @@ fi
 
 SCRIPT_DATA_DIR="$SCRIPT_PATH$SCRIPT_DATA"
 SCRIPT_VERSION_NUMBER=$( grep -im 1 'version:' $SCRIPT_PATH/$SCRIPT_NAME | awk '{print $3}' )
-SCRIPT_DOWNLOAD='http://rbxi.googlecode.com/svn/trunk/'
-SCRIPT_DOWNLOAD_BRANCH_1='http://rbxi.googlecode.com/svn/branches/one/'
-SCRIPT_DOWNLOAD_BRANCH_2='http://rbxi.googlecode.com/svn/branches/two/'
+SCRIPT_DOWNLOAD='https://github.com/smxi/rbxi/raw/master/'
+SCRIPT_DOWNLOAD_BRANCH_1='https://github.com/smxi/rbxi/raw/one/'
+SCRIPT_DOWNLOAD_BRANCH_2='https://github.com/smxi/rbxi/raw/two/'
 SCRIPT_DOWNLOAD_DEV='http://smxi.org/tests/'
 
 #### EXCLUDE LIST FILE NAMES
@@ -375,7 +375,7 @@ get_options()
 					error_handler 13 "-$opt $OPTARG"
 				fi
 				;;
-			U)	script_self_updater "$SCRIPT_DOWNLOAD" 'svn server'
+			U)	script_self_updater "$SCRIPT_DOWNLOAD" 'version control main'
 				;;
 			v)	print_version_info 'opt'
 				exit 0
@@ -406,9 +406,9 @@ get_options()
 						;;
 					10) script_self_updater "$SCRIPT_DOWNLOAD_DEV" 'dev server'
 						;;
-					11)	script_self_updater "$SCRIPT_DOWNLOAD_BRANCH_1" 'svn: branch one server'
+					11)	script_self_updater "$SCRIPT_DOWNLOAD_BRANCH_1" 'version control: branch one'
 						;;
-					12)	script_self_updater "$SCRIPT_DOWNLOAD_BRANCH_2" 'svn: branch two server'
+					12)	script_self_updater "$SCRIPT_DOWNLOAD_BRANCH_2" 'version control: branch two'
 						;;
 					http*)
 						script_self_updater "$OPTARG" 'alt server'
