@@ -2657,7 +2657,7 @@ print_the_end_time()
 	fi
 	secondText=" ${C}$seconds${S} second$plural"
 
-	echo "${S}The$jobName backup took$hourText$minuteText$secondText to complete.${N}"
+	echo "${S}The${C}$jobName${S} backup took$hourText$minuteText$secondText to complete.${N}"
 	# zero pad the data
 	minutes=$( printf %02d $minutes )
 	seconds=$( printf %02d $seconds )
