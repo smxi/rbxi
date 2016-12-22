@@ -43,6 +43,7 @@
 # Basic script layout markers
 BA='=================================================================='
 LI='------------------------------------------------------------------'
+LI2='- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -'
 
 ### if you do need to change one of these, make sure to change it in the
 ### user values file: rbxi-data/rbxi-values, not here, or you might lose
@@ -2663,6 +2664,7 @@ print_the_end_time()
 	if [ "$b_part" == 'false' ];then
 		BACKUP_DURATION=$hours:$minutes:$seconds
 	else
+		echo $LI2
 		log_function_data 'data' "Duration of $jobName backup: $hours:$minutes:$seconds"
 	fi
 }
