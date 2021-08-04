@@ -2632,6 +2632,8 @@ umount_backup_disk()
 	if [ "$MOUNT_BU_DISK" != '' -a "$B_SKIP_MOUNT" != 'true' ];then
 		log_function_data 'data' "BACKUP_MOUNT_POINT: $BACKUP_MOUNT_POINT\nUmount Data: $UNMOUNT_BU_DISK"
 		echo
+		echo "Running sync to make sure writes to drives are done (can take a while)...${N}"
+ 		sync
 		echo -n "${S}Unmounting your backup partition $BACKUP_MOUNT_POINT now...${N}"
 		eval $UNMOUNT_BU_DISK || retNu=$?
 		if [ "$retNu" -eq 0 ];then
