@@ -2,8 +2,8 @@
 ########################################################################
 ####  Script Name: rbxi
 ####  Version: 2.7.4
-####  Date: 2016-12-20
-####  Copyright (C) Harald Hope 2006-2016
+####  Date: 2021-08-04
+####  Copyright (C) Harald Hope 2006-2021
 ####
 ####  This program is free software; you can redistribute it and/or modify it under
 ####  the terms of the GNU General Public License as published by the Free Software
@@ -25,8 +25,8 @@
 
 ########################################################################
 ####  CHANGES
-####  2.7.4 2016-12-20 - added per component timer output and logging; updated version 
-####    control download paths/text
+####  2.7.4 2021-08-04 - added 'sync' to force writes to disk. Removed branch
+####   updaters which pointed to dead urls. Updated -U to use github urls.
 ####  2.7.3 2015-02-20 - updated date formats to: YYYY-MM-DD, fixed -J restart bug 
 ####    that made rbxi fail to return proper exit code on error after restart
 ####  2.7.2 4 September 2009 - last stable
@@ -43,7 +43,6 @@
 # Basic script layout markers
 BA='=================================================================='
 LI='------------------------------------------------------------------'
-LI2='- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -'
 
 ### if you do need to change one of these, make sure to change it in the
 ### user values file: rbxi-data/rbxi-values, not here, or you might lose
@@ -75,11 +74,9 @@ fi
 # SCRIPT_PATH=''
 
 SCRIPT_DATA_DIR="$SCRIPT_PATH$SCRIPT_DATA"
-SCRIPT_VERSION_NUMBER=$( grep -im 1 'version:' $SCRIPT_PATH/$SCRIPT_NAME | awk '{print $3}' )
-SCRIPT_DOWNLOAD='https://github.com/smxi/rbxi/raw/master/'
-SCRIPT_DOWNLOAD_BRANCH_1='https://github.com/smxi/rbxi/raw/one/'
-SCRIPT_DOWNLOAD_BRANCH_2='https://github.com/smxi/rbxi/raw/two/'
-SCRIPT_DOWNLOAD_DEV='http://smxi.org/tests/'
+SCRIPT_VERSION_NUMBER=$(grep -im 1 'version:' $SCRIPT_PATH/$SCRIPT_NAME | awk '{print $3}')
+SCRIPT_DOWNLOAD='https://raw.githubusercontent.com/smxi/rbxi/master/rbxi/'
+SCRIPT_DOWNLOAD_DEV='https://smxi.org/rb/'
 
 #### EXCLUDE LIST FILE NAMES
 # NOTE: can be a blank file, but most be located in same directory as rbxi
@@ -213,7 +210,7 @@ SCRIPT_OPTIONS="$@"
 #### Options/Parameters
 #### -------------------------------------------------------------------
 
-print_usage()
+show_options()
 {
 	if [ "$1" == 'err' ];then
 		echo 'You entered an invalid option. Please use one of the following only:'
@@ -276,7 +273,7 @@ get_options()
 	while getopts :A:bB:cC:dD:E:hj:J:LlmM:o:P:rRsS:UvV:z:!: opt
 	do
 		case $opt in
-			h)	print_usage
+			h)	show_options
 				;;
 			A)	if [ -n "$( grep -E '^(d|h|r|rh|hr|[1-9]|10)$' <<< $OPTARG )" ];then
 					setFullAdds="$setFullAdds $OPTARG"
@@ -377,7 +374,7 @@ get_options()
 					error_handler 13 "-$opt $OPTARG"
 				fi
 				;;
-			U)	script_self_updater "$SCRIPT_DOWNLOAD" 'version control main'
+			U)	script_self_updater "$SCRIPT_DOWNLOAD" 'svn server'
 				;;
 			v)	print_version_info 'opt'
 				exit 0
@@ -407,10 +404,6 @@ get_options()
 						B_TESTING_2='true'
 						;;
 					10) script_self_updater "$SCRIPT_DOWNLOAD_DEV" 'dev server'
-						;;
-					11)	script_self_updater "$SCRIPT_DOWNLOAD_BRANCH_1" 'version control: branch one'
-						;;
-					12)	script_self_updater "$SCRIPT_DOWNLOAD_BRANCH_2" 'version control: branch two'
 						;;
 					http*)
 						script_self_updater "$OPTARG" 'alt server'
@@ -925,15 +918,16 @@ spinning_wheel_activity_indicator()
 trap_handler()
 {
 	local i=''
-
  	case "$1" in
  		umount)
  			echo
  			echo "${S}You are leaving $SCRIPT_NAME with the backup partition still mounted!"
- 			echo "Waiting a few seconds to let disk writes sync before exiting...${N}"
+ 			echo "Running sync to make sure writes to drives are done (can take a while)...${N}"
+ 			sync
  			# give the disk time sync its writes before umount...
  			# set in rbxi-values if you need to increase or decrease the time for premature
  			# or forced script exit for umount operation to work successfully.
+ 			echo "Waiting a few seconds to let thihgs settle before exiting...${N}"
  			for (( i=0; i < $SLEEP_TIME_UMOUNT; i++ ))
  			do
  				echo -n "${M}...tick${N}"
@@ -2204,7 +2198,6 @@ delete_old_backup()
 
 run_backup_components()
 {
-	local startTime=''
 	# set rdiff-backup/rsync commands. Must be here because delete data might be
 	# set for rsync
 	set_backup_commands
@@ -2216,7 +2209,6 @@ run_backup_components()
 	if [ "$B_CLONE_HOME" == 'true' ] || [ "$HOME_DIR" != '' -a "$B_SKIP_HOME" != 'true' ];then
 		check_backup_source_directory "$HOME_PATH"
 		log_function_data 'data' "Starting Home Backup Command:\n$HOME_BU_COMMAND"
-		startTime=$( date +%s )
 		echo -n "${S}$BACKUP_CLEAR ${C}home${S} directory$ENDING_1${N}"
 		if [ "$B_SPINNING_WHEEL" == 'true' ];then
 			GET_PID=''
@@ -2227,7 +2219,6 @@ run_backup_components()
 			eval $HOME_BU_COMMAND || error_handler 25 "$?"
 			echo
 		fi
-		print_the_end_time 'part' "$startTime" "Home"
 		log_function_data 'data' "Finished Home\n\n"
 		sleep $SLEEP_TIME_BACKUP
 	fi
@@ -2236,7 +2227,6 @@ run_backup_components()
 	if [ "$B_CLONE_ROOT" == 'true' ] || [ "$ROOT_DIR" != '' -a "$B_SKIP_ROOT" != 'true'  ];then
 		check_backup_source_directory "$ROOT_PATH"
 		log_function_data 'data' "Starting Root Backup Command:\n$ROOT_BU_COMMAND"
-		startTime=$( date +%s )
 		echo -n "${S}$BACKUP_CLEAR ${C}root${S} directory ${C}$ROOT_DESC${S}$ENDING_1${N}"
 		if [ "$B_SPINNING_WHEEL" == 'true' ];then
 			GET_PID=''
@@ -2247,7 +2237,6 @@ run_backup_components()
 			eval $ROOT_BU_COMMAND || error_handler 25 "$?"
 			echo
 		fi
-		print_the_end_time 'part' "$startTime" "$ROOT_DESC"
 		log_function_data 'data' "Finished Root\n\n"
 	fi
 
@@ -2256,7 +2245,6 @@ run_backup_components()
 		if [ "$B_CLONE_DATA_1" == 'true' ] || [ "$DATA_1_DIR" != '' -a "$B_SKIP_DATA_1" != 'true' ];then
 			check_backup_source_directory "$DATA_1_PATH"
 			log_function_data 'data' "Starting Data 1 Backup Command:\n$DATA_1_BU_COMMAND"
-			startTime=$( date +%s )
 			echo -n "${S}$BACKUP_CLEAR ${C}$DATA_1_DESC${S} directory$ENDING_1${N}"
 			if [ "$B_SPINNING_WHEEL" == 'true' ];then
 				GET_PID=''
@@ -2267,7 +2255,6 @@ run_backup_components()
 				eval $DATA_1_BU_COMMAND || error_handler 25 "$?"
 				echo
 			fi
-			print_the_end_time 'part' "$startTime" "$DATA_1_DESC"
 			log_function_data 'data' "Finished Data 1\n\n"
 			sleep $SLEEP_TIME_BACKUP
 		fi
@@ -2276,7 +2263,6 @@ run_backup_components()
 		if [ "$B_CLONE_DATA_2" == 'true' ] || [ "$DATA_2_DIR" != '' -a "$B_SKIP_DATA_2" != 'true' ];then
 			check_backup_source_directory "$DATA_2_PATH"
 			log_function_data 'data' "Starting Data 2 Backup Command:\n$DATA_2_BU_COMMAND"
-			startTime=$( date +%s )
 			echo -n "${S}$BACKUP_CLEAR ${C}$DATA_2_DESC${S} directory$ENDING_1${N}"
 			if [ "$B_SPINNING_WHEEL" == 'true' ];then
 				GET_PID=''
@@ -2287,7 +2273,6 @@ run_backup_components()
 				eval $DATA_2_BU_COMMAND || error_handler 25 "$?"
 				echo
 			fi
-			print_the_end_time 'part' "$startTime" "$DATA_2_DESC"
 			log_function_data 'data' "Finished Data 2\n\n"
 			sleep $SLEEP_TIME_BACKUP
 		fi
@@ -2296,7 +2281,6 @@ run_backup_components()
 		if [ "$B_CLONE_DATA_3" == 'true' ] || [ "$DATA_3_DIR" != '' -a "$B_SKIP_DATA_3" != 'true' ];then
 			check_backup_source_directory "$DATA_3_PATH"
 			log_function_data 'data' "Starting Data 3 Backup Command:\n$DATA_3_BU_COMMAND"
-			startTime=$( date +%s )
 			echo -n "${S}$BACKUP_CLEAR ${C}$DATA_3_DESC${S} directory$ENDING_1${N}"
 			if [ "$B_SPINNING_WHEEL" == 'true' ];then
 				GET_PID=''
@@ -2307,7 +2291,6 @@ run_backup_components()
 				eval $DATA_3_BU_COMMAND || error_handler 25 "$?"
 				echo
 			fi
-			print_the_end_time 'part' "$startTime" "$DATA_3_DESC"
 			log_function_data 'data' "Finished Data 3\n\n"
 			sleep $SLEEP_TIME_BACKUP
 		fi
@@ -2316,7 +2299,6 @@ run_backup_components()
 		if [ "$B_CLONE_DATA_4" == 'true' ] || [ "$DATA_4_DIR" != '' -a "$B_SKIP_DATA_4" != 'true' ];then
 			check_backup_source_directory "$DATA_4_PATH"
 			log_function_data 'data' "Starting Data 4 Backup Command:\n$DATA_4_BU_COMMAND"
-			startTime=$( date +%s )
 			echo -n "${S}$BACKUP_CLEAR ${C}$DATA_4_DESC${S} directory$ENDING_1${N}"
 			if [ "$B_SPINNING_WHEEL" == 'true' ];then
 				GET_PID=''
@@ -2327,7 +2309,6 @@ run_backup_components()
 				eval $DATA_4_BU_COMMAND || error_handler 25 "$?"
 				echo
 			fi
-			print_the_end_time 'part' "$startTime" "$DATA_4_DESC"
 			log_function_data 'data' "Finished Data 4\n\n"
 			sleep $SLEEP_TIME_BACKUP
 		fi
@@ -2336,7 +2317,6 @@ run_backup_components()
 		if [ "$B_CLONE_DATA_5" == 'true' ] || [ "$DATA_5_DIR" != '' -a "$B_SKIP_DATA_5" != 'true' ];then
 			check_backup_source_directory "$DATA_5_PATH"
 			log_function_data 'data' "Starting Data 5 Backup Command:\n$DATA_5_BU_COMMAND"
-			startTime=$( date +%s )
 			echo -n "${S}$BACKUP_CLEAR ${C}$DATA_5_DESC${S} directory$ENDING_1${N}"
 			if [ "$B_SPINNING_WHEEL" == 'true' ];then
 				GET_PID=''
@@ -2347,7 +2327,6 @@ run_backup_components()
 				eval $DATA_5_BU_COMMAND || error_handler 25 "$?"
 				echo
 			fi
-			print_the_end_time 'part' "$startTime" "$DATA_5_DESC"
 			log_function_data 'data' "Finished Data 5\n\n"
 			sleep $SLEEP_TIME_BACKUP
 		fi
@@ -2356,7 +2335,6 @@ run_backup_components()
 		if [ "$B_CLONE_DATA_6" == 'true' ] || [ "$DATA_6_DIR" != '' -a "$B_SKIP_DATA_6" != 'true' ];then
 			check_backup_source_directory "$DATA_6_PATH"
 			log_function_data 'data' "Starting Data 6 Backup Command:\n$DATA_6_BU_COMMAND"
-			startTime=$( date +%s )
 			echo -n "${S}$BACKUP_CLEAR ${C}$DATA_6_DESC${S} directory$ENDING_1${N}"
 			if [ "$B_SPINNING_WHEEL" == 'true' ];then
 				GET_PID=''
@@ -2367,7 +2345,6 @@ run_backup_components()
 				eval $DATA_6_BU_COMMAND || error_handler 25 "$?"
 				echo
 			fi
-			print_the_end_time 'part' "$startTime" "$DATA_6_DESC"
 			log_function_data 'data' "Finished Data 6\n\n"
 			sleep $SLEEP_TIME_BACKUP
 		fi
@@ -2376,7 +2353,6 @@ run_backup_components()
 		if [ "$B_CLONE_DATA_7" == 'true' ] || [ "$DATA_7_DIR" != '' -a "$B_SKIP_DATA_7" != 'true' ];then
 			check_backup_source_directory "$DATA_7_PATH"
 			log_function_data 'data' "Starting Data 7 Backup Command:\n$DATA_7_BU_COMMAND"
-			startTime=$( date +%s )
 			echo -n "${S}$BACKUP_CLEAR ${C}$DATA_7_DESC${S} directory$ENDING_1${N}"
 			if [ "$B_SPINNING_WHEEL" == 'true' ];then
 				GET_PID=''
@@ -2387,7 +2363,6 @@ run_backup_components()
 				eval $DATA_7_BU_COMMAND || error_handler 25 "$?"
 				echo
 			fi
-			print_the_end_time 'part' "$startTime" "$DATA_7_DESC"
 			log_function_data 'data' "Finished Data 7\n\n"
 			sleep $SLEEP_TIME_BACKUP
 		fi
@@ -2396,7 +2371,6 @@ run_backup_components()
 		if [ "$B_CLONE_DATA_8" == 'true' ] || [ "$DATA_8_DIR" != '' -a "$B_SKIP_DATA_8" != 'true' ];then
 			check_backup_source_directory "$DATA_8_PATH"
 			log_function_data 'data' "Starting Data 8 Backup Command:\n$DATA_8_BU_COMMAND"
-			startTime=$( date +%s )
 			echo -n "${S}$BACKUP_CLEAR ${C}$DATA_8_DESC${S} directory$ENDING_1${N}"
 			if [ "$B_SPINNING_WHEEL" == 'true' ];then
 				GET_PID=''
@@ -2407,7 +2381,6 @@ run_backup_components()
 				eval $DATA_8_BU_COMMAND || error_handler 25 "$?"
 				echo
 			fi
-			print_the_end_time 'part' "$startTime" "$DATA_8_DESC"
 			log_function_data 'data' "Finished Data 8\n\n"
 			sleep $SLEEP_TIME_BACKUP
 		fi
@@ -2416,7 +2389,6 @@ run_backup_components()
 		if [ "$B_CLONE_DATA_9" == 'true' ] || [ "$DATA_9_DIR" != '' -a "$B_SKIP_DATA_9" != 'true' ];then
 			check_backup_source_directory "$DATA_9_PATH"
 			log_function_data 'data' "Starting Data 9 Backup Command:\n$DATA_9_BU_COMMAND"
-			startTime=$( date +%s )
 			echo -n "${S}$BACKUP_CLEAR ${C}$DATA_9_DESC${S} directory$ENDING_1${N}"
 			if [ "$B_SPINNING_WHEEL" == 'true' ];then
 				GET_PID=''
@@ -2427,7 +2399,6 @@ run_backup_components()
 				eval $DATA_9_BU_COMMAND || error_handler 25 "$?"
 				echo
 			fi
-			print_the_end_time 'part' "$startTime" "$DATA_9_DESC"
 			log_function_data 'data' "Finished Data 9\n\n"
 			sleep $SLEEP_TIME_BACKUP
 		fi
@@ -2436,7 +2407,6 @@ run_backup_components()
 		if [ "$B_CLONE_DATA_10" == 'true' ] || [ "$DATA_10_DIR" != '' -a "$B_SKIP_DATA_10" != 'true' ];then
 			check_backup_source_directory "$DATA_10_PATH"
 			log_function_data 'data' "Starting Data 10 Backup Command:\n$DATA_10_BU_COMMAND"
-			startTime=$( date +%s )
 			echo -n "${S}$BACKUP_CLEAR ${C}$DATA_10_DESC${S} directory$ENDING_1${N}"
 			if [ "$B_SPINNING_WHEEL" == 'true' ];then
 				GET_PID=''
@@ -2447,7 +2417,6 @@ run_backup_components()
 				eval $DATA_10_BU_COMMAND || error_handler 25 "$?"
 				echo
 			fi
-			print_the_end_time 'part' "$startTime" "$DATA_10_DESC"
 			log_function_data 'data' "Finished Data 10\n\n"
 			sleep $SLEEP_TIME_BACKUP
 		fi
@@ -2572,7 +2541,7 @@ run_pre_post_tasks()
 finish_backup()
 {
 	# set the DURATION global here as well prior to updating configs
-	print_the_end_time 'full' "$START_TIME" "$DELETION_TEXT"
+	print_the_end_time
 	update_configs
 	umount_backup_disk
 	run_pre_post_tasks 'post-umount'
@@ -2612,19 +2581,11 @@ update_configs()
 	log_function_data 'data' "Completed Backup Config Data:\n$( cat $SCRIPT_CONFIGS )\n$LI\n"
 }
 
-# $1 - full/part; $2 - start time; $3 - job name
 # do some arithmetic on time
 print_the_end_time()
 {
-	local endTime=$( date +%s ) startTime=$2 b_part='false'
-	local jobName=''
-	if [ "$1" == 'part' ];then
-		b_part='true'
-		jobName=" $3"
-	else
-		jobName=$DELETION_TEXT
-	fi
-	local completedTime=$(( $endTime - $startTime ))
+	local endTime=$( date +%s )
+	local completedTime=$(( $endTime - $START_TIME ))
 	local hours=$(( $completedTime / 3600 ))
 	local remainingMinutes=$(( $completedTime % 3600 ))
 	local minutes=$(( $remainingMinutes / 60 ))
@@ -2657,16 +2618,11 @@ print_the_end_time()
 	fi
 	secondText=" ${C}$seconds${S} second$plural"
 
-	echo "${S}The${C}$jobName${S} backup took$hourText$minuteText$secondText to complete.${N}"
+	echo "${S}The$DELETION_TEXT backup took$hourText$minuteText$secondText to complete.${N}"
 	# zero pad the data
 	minutes=$( printf %02d $minutes )
 	seconds=$( printf %02d $seconds )
-	if [ "$b_part" == 'false' ];then
-		BACKUP_DURATION=$hours:$minutes:$seconds
-	else
-		echo $LI2
-		log_function_data 'data' "Duration of $jobName backup: $hours:$minutes:$seconds"
-	fi
+	BACKUP_DURATION=$hours:$minutes:$seconds
 }
 
 umount_backup_disk()
