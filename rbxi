@@ -316,7 +316,7 @@ get_options()
 				;;
 			j)	if [ -n "$( grep -E '^([0-5])$' <<< $OPTARG )" ];then
 					COLOR_SCHEME=$OPTARG
-					set_SELF_colors
+					set_self_colors
 				else
 					error_handler 13 "-$opt $OPTARG"
 				fi
@@ -361,7 +361,7 @@ get_options()
 				;;
 			r)	B_DRY_RUN='true'
 				;;
-			R)	show_SELF_readme
+			R)	show_self_readme
 				exit
 				;;
 			s)	B_SPINNING_WHEEL='true'
@@ -374,7 +374,7 @@ get_options()
 					error_handler 13 "-$opt $OPTARG"
 				fi
 				;;
-			U)	SELF_self_updater "$SELF_DOWNLOAD" 'git server'
+			U)	self_updater "$SELF_DOWNLOAD" 'git server'
 				;;
 			v)	print_version_info 'opt'
 				exit 0
@@ -383,8 +383,8 @@ get_options()
 				SELF_VALUES="$SELF_VALUES-$OPTARG"
 				if [ -f "$SELF_DATA_DIR$SELF_VALUES" ];then
 					source $SELF_DATA_DIR$SELF_VALUES
-					set_SELF_colors
-					check_SELF_requires
+					set_self_colors
+					check_self_requires
 				else
 					error_handler 22
 				fi
@@ -403,10 +403,10 @@ get_options()
 					3)	B_TESTING_1='true'
 						B_TESTING_2='true'
 						;;
-					10) SELF_self_updater "$SELF_DOWNLOAD_DEV" 'dev server'
+					10) self_updater "$SELF_DOWNLOAD_DEV" 'dev server'
 						;;
 					http*)
-						SELF_self_updater "$OPTARG" 'alt server'
+						self_updater "$OPTARG" 'alt server'
 						;;
 					*)	error_handler 11 "-$opt $OPTARG"
 						;;
@@ -626,7 +626,7 @@ log_function_data()
 # set global color variables
 # options: 0 - no colors; 1 - defaults; 2 light bkgd, fancy; dark background, simple
 # 4 dark background, fancy; 4 smxi
-set_SELF_colors()
+set_self_colors()
 {
 	# set colors # ="[40m" # black background
 	case "$COLOR_SCHEME" in
@@ -831,7 +831,7 @@ print_version_info()
 
 # args: $1 - download url, not including file name; $2 - string to print out
 # note that $1 must end in / to properly construct the url path
-SELF_self_updater()
+self_updater()
 {
 	local wget_error=0
 	local ua='-U s-tools/rbxi.updater'
@@ -863,7 +863,7 @@ SELF_self_updater()
 	fi
 }
 
-show_SELF_readme()
+show_self_readme()
 {
 	local browser='' browser_path=''
 	
@@ -948,7 +948,7 @@ trap_handler()
 #### -------------------------------------------------------------------
 
 # this will load/test anything that is required
-check_SELF_requires()
+check_self_requires()
 {
 	# this test handles three cases:
 	# 1: constructing a path with possibly user hard-coded value for SELF_PATH fails
@@ -986,7 +986,7 @@ check_startup_stuff()
 	fi
 }
 
-check_SELF_path()
+check_self_path()
 {
 	local ExDir=$( dirname $0 )
 
@@ -995,7 +995,7 @@ check_SELF_path()
 	fi
 }
 
-check_SELF_changes()
+check_self_changes()
 {
 	local oldBuMount='BACKUP_DIRECTORY'
 	local oldBuMountSub='BACKUP_SUB_DIR'
@@ -2657,8 +2657,8 @@ print_complete_message()
 ###################################################################
 #####   EXECUTE SCRIPT COMPONENTS
 ###################################################################
-set_SELF_colors
-check_SELF_requires
+set_self_colors
+check_self_requires
 get_options "$@"
 run_emailer_tasks 'start' "Start Options: $SELF_OPTIONS"
 
@@ -2666,10 +2666,10 @@ run_emailer_tasks 'start' "Start Options: $SELF_OPTIONS"
 check_startup_stuff
 log_function_data 'start' "$SELF_OPTIONS"
 # this sets the correct startup path so that exclude lists load correctly
-check_SELF_path
+check_self_path
 # any updates that need to be run will be run here, should only be required
 # at rare intervals.
-check_SELF_changes
+check_self_changes
 
 # set rsync/rdiff-backup variables
 set_primary_backup_data
