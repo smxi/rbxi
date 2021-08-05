@@ -53,30 +53,30 @@ LI='------------------------------------------------------------------'
 # update this manually every time you update the script:
 LSOF='lsof'
 LOGFILE_DIR='/var/log/'
-SCRIPT_CONFIGS='/etc/rbxi.conf'
-SCRIPT_NAME='rbxi'
-SCRIPT_DATA='/rbxi-data/'
-SCRIPT_README='readme-rbxi.htm'
-SCRIPT_VALUES='rbxi-values'
+SELF_CONFIGS='/etc/rbxi.conf'
+SELF_NAME='rbxi'
+SELF_DATA='/rbxi-data/'
+SELF_README='readme-rbxi.htm'
+SELF_VALUES='rbxi-values'
 # http://forums.macosxhints.com/archive/index.php/t-73839.html
 # note, no other method works reliably to get the true script path, not dirname $0.
 if type $LSOF &>/dev/null;then
-	SCRIPT_PATH=$( dirname $( $LSOF -p $$ | grep 'REG' | grep -Eo "/.*$(basename $0)$" ) )
+	SELF_PATH=$( dirname $( $LSOF -p $$ | grep 'REG' | grep -Eo "/.*$(basename $0)$" ) )
 # checking if the dirname method works
-elif [ -d "$( dirname $0 )$SCRIPT_DATA" ];then
-	SCRIPT_PATH=$( dirname $0 )
+elif [ -d "$( dirname $0 )$SELF_DATA" ];then
+	SELF_PATH=$( dirname $0 )
 fi
 
 # in worst cases, you can manually set the script directory path here, uncomment and make the path
 # explicit. Must not end with /, and must be the full path of the rbxi directory rbxi came with.
 # you'll have to update this manually every time you update the script:
-# example:  SCRIPT_PATH='/home/fred/scripts/rbxi'
-# SCRIPT_PATH=''
+# example:  SELF_PATH='/home/fred/scripts/rbxi'
+# SELF_PATH=''
 
-SCRIPT_DATA_DIR="$SCRIPT_PATH$SCRIPT_DATA"
-SCRIPT_VERSION_NUMBER=$(grep -im 1 'version:' $SCRIPT_PATH/$SCRIPT_NAME | awk '{print $3}')
-SCRIPT_DOWNLOAD='https://raw.githubusercontent.com/smxi/rbxi/master/rbxi/'
-SCRIPT_DOWNLOAD_DEV='https://smxi.org/rb/'
+SELF_DATA_DIR="$SELF_PATH$SELF_DATA"
+SELF_VERSION_NUMBER=$(grep -im 1 'version:' $SELF_PATH/$SELF_NAME | awk '{print $3}')
+SELF_DOWNLOAD='https://raw.githubusercontent.com/smxi/rbxi/master/'
+SELF_DOWNLOAD_DEV='https://smxi.org/rb/'
 
 #### EXCLUDE LIST FILE NAMES
 # NOTE: can be a blank file, but most be located in same directory as rbxi
@@ -125,8 +125,8 @@ LOGFILE_SIZE=100
 
 ## add in user variable values, sticky value file
 # missing test will occur a bit later
-if [ -f "$SCRIPT_DATA_DIR$SCRIPT_VALUES" ];then
-	source $SCRIPT_DATA_DIR$SCRIPT_VALUES
+if [ -f "$SELF_DATA_DIR$SELF_VALUES" ];then
+	source $SELF_DATA_DIR$SELF_VALUES
 fi
 
 ### See the file rbxi-data/rbxi-values for variable lists and how to
@@ -200,7 +200,7 @@ DELETION_TEXT=''
 # spinning wheel pid value
 GET_PID=''
 RSYNC_DELETE=''
-SCRIPT_OPTIONS="$@"
+SELF_OPTIONS="$@"
 
 ###################################################################
 #####  Functions
@@ -231,7 +231,7 @@ show_options()
 	echo '   2 - fancy dark on light; 3 - basic light on dark; 4 - fancy light on dark; 5 - smxi style'
 	echo '-J Start preset backup job (1-10). Cannot be used with any other option.'
 	echo '-l Use logging. Will override user rbxi-values setting.'
-	echo "-L Create symbolic link in /usr/local/bin to $SCRIPT_NAME"
+	echo "-L Create symbolic link in /usr/local/bin to $SELF_NAME"
 	echo '-m Skip the mounting option.'
 	echo '-M use alternate mount/umount set (1-10)'
 	echo '-o Override default backup application.'
@@ -243,7 +243,7 @@ show_options()
 	echo '-s Show spinning wheel indicator.'
 	echo '-S Skip backup component (d|h|hr|1-10)'
 	echo '   d - skip all DATA; h - skip HOME; r - skip ROOT; skip DATA 1-10'
-	echo '-U Update script manually from svn server.'
+	echo '-U Update script manually from git server.'
 	echo '-v Show script version and last used information.'
 	echo '-V Use alternate rbxi-values file. Syntax: rbxi-values-<whatever you want>'
 	echo '   File must be located in rbxi-data, and must have the syntax of: rbxi-values-<something>'
@@ -316,7 +316,7 @@ get_options()
 				;;
 			j)	if [ -n "$( grep -E '^([0-5])$' <<< $OPTARG )" ];then
 					COLOR_SCHEME=$OPTARG
-					set_script_colors
+					set_SELF_colors
 				else
 					error_handler 13 "-$opt $OPTARG"
 				fi
@@ -361,7 +361,7 @@ get_options()
 				;;
 			r)	B_DRY_RUN='true'
 				;;
-			R)	show_script_readme
+			R)	show_SELF_readme
 				exit
 				;;
 			s)	B_SPINNING_WHEEL='true'
@@ -374,17 +374,17 @@ get_options()
 					error_handler 13 "-$opt $OPTARG"
 				fi
 				;;
-			U)	script_self_updater "$SCRIPT_DOWNLOAD" 'svn server'
+			U)	SELF_self_updater "$SELF_DOWNLOAD" 'git server'
 				;;
 			v)	print_version_info 'opt'
 				exit 0
 				;;
 			V)	# construct new user values file name, then test it, load it
-				SCRIPT_VALUES="$SCRIPT_VALUES-$OPTARG"
-				if [ -f "$SCRIPT_DATA_DIR$SCRIPT_VALUES" ];then
-					source $SCRIPT_DATA_DIR$SCRIPT_VALUES
-					set_script_colors
-					check_script_requires
+				SELF_VALUES="$SELF_VALUES-$OPTARG"
+				if [ -f "$SELF_DATA_DIR$SELF_VALUES" ];then
+					source $SELF_DATA_DIR$SELF_VALUES
+					set_SELF_colors
+					check_SELF_requires
 				else
 					error_handler 22
 				fi
@@ -403,10 +403,10 @@ get_options()
 					3)	B_TESTING_1='true'
 						B_TESTING_2='true'
 						;;
-					10) script_self_updater "$SCRIPT_DOWNLOAD_DEV" 'dev server'
+					10) SELF_self_updater "$SELF_DOWNLOAD_DEV" 'dev server'
 						;;
 					http*)
-						script_self_updater "$OPTARG" 'alt server'
+						SELF_self_updater "$OPTARG" 'alt server'
 						;;
 					*)	error_handler 11 "-$opt $OPTARG"
 						;;
@@ -480,14 +480,14 @@ error_handler()
 			;;
 		6)	error_message="Your backup partition/directory ${C}$BACKUP_MOUNT_POINT${W} is not present.\nPlease make sure to create it or mount it up before you proceed."
 			;;
-		7)	error_message="One of the options you entered in your script parameters: ${C}$2${W}\nIs not supported, or requires a further argument.\nFor a list of supported options, check the help menu: ${C}$SCRIPT_NAME -h"
+		7)	error_message="One of the options you entered in your script parameters: ${C}$2${W}\nIs not supported, or requires a further argument.\nFor a list of supported options, check the help menu: ${C}$SELF_NAME -h"
 			;;
-		8)	error_message="the self-updater failed, wget exited with error: ${C}$2${W}.\nYou probably need to be root.\nHint, to make for easy updates without being root, do: chown <user name> ${C}$SCRIPT_PATH/$SCRIPT_NAME"
+		8)	error_message="the self-updater failed, wget exited with error: ${C}$2${W}.\nYou probably need to be root.\nHint, to make for easy updates without being root, do: chown <user name> ${C}$SELF_PATH/$SELF_NAME"
 			;;
 		9)	error_message="unset"
 			;;
 		10)
-			error_message="the alt download url you provided: ${C}$2${W}\nappears to be wrong, download aborted. Please note, the url\nneeds to end in ${C}/${W}, without ${C}$SCRIPT_NAME${W}, like: ${C}http://yoursite.com/downloads/"
+			error_message="the alt download url you provided: ${C}$2${W}\nappears to be wrong, download aborted. Please note, the url\nneeds to end in ${C}/${W}, without ${C}$SELF_NAME${W}, like: ${C}http://yoursite.com/downloads/"
 			;;
 		11)
 			error_message="unsupported testing option argument: ${C}-! $2"
@@ -505,7 +505,7 @@ error_handler()
 			error_message="You cannot use both ${C}-c${W} and ${C}-d${W}, only one or the other. Either you are clearing, or deleting."
 			;;
 		16)
-			error_message="${C}B_VARIABLES_SET='false'${W} in the file ${C}rbxi-data/$SCRIPT_VALUES${W} must be set to ${C}'true' before you can run $SCRIPT_NAME\nYou must configure that file first, then when you're done, you can the script."
+			error_message="${C}B_VARIABLES_SET='false'${W} in the file ${C}rbxi-data/$SELF_VALUES${W} must be set to ${C}'true' before you can run $SELF_NAME\nYou must configure that file first, then when you're done, you can the script."
 			;;
 		17)
 			error_message="The backup job you selected (${C}$2${W}) is empty. Please make sure you entered the right number."
@@ -523,16 +523,16 @@ error_handler()
 			error_message="You are using an unsupported color scheme: ${C}$2"
 			;;
 		22)
-			error_message="Could not load user values file: ${C}$SCRIPT_DATA_DIR$SCRIPT_VALUES${W}\nPlease double check that the file exists and is in: ${C}$SCRIPT_DATA_DIR${W}\nExiting now."
+			error_message="Could not load user values file: ${C}$SELF_DATA_DIR$SELF_VALUES${W}\nPlease double check that the file exists and is in: ${C}$SELF_DATA_DIR${W}\nExiting now."
 			;;
 		23)
-			error_message="Unable to locate the script data directory: ${C}$SCRIPT_PATH$SCRIPT_DATA\n${C}rbxi${W} requires the program ${C}$2${W} to create its paths if you start using a symbolic link.\nYou must install this application before you can run ${C}$SCRIPT_NAME${W} with a sybolic link.\nUnable to continue."
+			error_message="Unable to locate the script data directory: ${C}$SELF_PATH$SELF_DATA\n${C}rbxi${W} requires the program ${C}$2${W} to create its paths if you start using a symbolic link.\nYou must install this application before you can run ${C}$SELF_NAME${W} with a sybolic link.\nUnable to continue."
 			;;
 		24)
 			error_message="Your backup destination directory: ${C}$2${W}\ndoes not seem to exist. Please check your settings and make sure the directory\nyou are using actually exists."
 			;;
 		25)
-			error_message="Your backup application ${C}$BACKUP_APP${W} exited with error: ${C}$2${W}\nPlease check the source of the error and try again. Exiting $SCRIPT_NAME now."
+			error_message="Your backup application ${C}$BACKUP_APP${W} exited with error: ${C}$2${W}\nPlease check the source of the error and try again. Exiting $SELF_NAME now."
 			;;
 		26)
 			error_message="The variable ${C}BACKUP_MOUNT_POINT${W} is empty. Backup directory mount cannnot continue."
@@ -556,10 +556,10 @@ error_handler()
 			error_message="No console browser detected in your system. Requires one of these: links2 elinks w3m links lynx"
 			;;
 		50)
-			error_message="User initiated script termination. Exiting $SCRIPT_NAME now."
+			error_message="User initiated script termination. Exiting $SELF_NAME now."
 			;;
 		100)
-			error_message="$SCRIPT_NAME does not yet support the backup app you requested: ${C}$2${W}\nThis support should be coming sometime soon.\nCurrently supported backup applications are: rdiff-backup."
+			error_message="$SELF_NAME does not yet support the backup app you requested: ${C}$2${W}\nThis support should be coming sometime soon.\nCurrently supported backup applications are: rdiff-backup."
 			umount_backup_disk
 			;;
 		*)	error_message="Unknown error number: ${C}$1"
@@ -578,7 +578,7 @@ log_function_data()
 	if [ "$B_LOGGING" == 'true' ];then
 		local data=$( echo -e "$2" | sed 's/\x1b\[[0-9]\{1,2\}\(;[0-9]\{1,2\}\)\{0,2\}m//g' )
 		local actionTime=$( date +"%R:%S" )
-		local logFile=${LOGFILE_DIR}${SCRIPT_NAME}.log
+		local logFile=${LOGFILE_DIR}${SELF_NAME}.log
 
 		# check user error first
 		if [ ! -d $LOGFILE_DIR ];then
@@ -590,7 +590,7 @@ log_function_data()
 			# this shouldn't have been necessary, but if on same line as -f test, gives error
 			# if no file exists.
 			if [ "$( du -s $logFile | awk '{print $1}' )" -gt $LOGFILE_SIZE ];then
-				mv -f $logFile ${LOGFILE_DIR}${SCRIPT_NAME}.1.log
+				mv -f $logFile ${LOGFILE_DIR}${SELF_NAME}.1.log
 			fi
 		fi
 		# then make sure the file is ready to go
@@ -600,12 +600,12 @@ log_function_data()
 		case $1 in
 			start)
 				echo $BA >> $logFile
-				echo "Starting $SCRIPT_NAME at: $( date +"%Y %B %e - %R:%S" )" >> $logFile
+				echo "Starting $SELF_NAME at: $( date +"%Y %B %e - %R:%S" )" >> $logFile
 				echo "Script start options: $2" >> $logFile
 				echo $LI >> $logFile
-				if [ -f $SCRIPT_CONFIGS -a -n "$( cat $SCRIPT_CONFIGS )" ];then
+				if [ -f $SELF_CONFIGS -a -n "$( cat $SELF_CONFIGS )" ];then
 					echo "Previous Script Config Data:" >> $logFile
-					echo "$( cat $SCRIPT_CONFIGS )" >> $logFile
+					echo "$( cat $SELF_CONFIGS )" >> $logFile
 				else
 					echo "Previous Script Config Data File Is Null." >> $logFile
 				fi
@@ -626,7 +626,7 @@ log_function_data()
 # set global color variables
 # options: 0 - no colors; 1 - defaults; 2 light bkgd, fancy; dark background, simple
 # 4 dark background, fancy; 4 smxi
-set_script_colors()
+set_SELF_colors()
 {
 	# set colors # ="[40m" # black background
 	case "$COLOR_SCHEME" in
@@ -714,20 +714,20 @@ set_script_colors()
 
 create_symbolic_link()
 {
-	local ulbLink="/usr/local/bin/$SCRIPT_NAME"
-	local scriptInPath=$( which $SCRIPT_NAME | grep -v "./$SCRIPT_NAME" )
+	local ulbLink="/usr/local/bin/$SELF_NAME"
+	local scriptInPath=$( which $SELF_NAME | grep -v "./$SELF_NAME" )
 
 	if [ ! -L $ulbLink -a ! -f $ulbLink -a -z "$scriptInPath" ];then
 		check_is_root
 		# only do the linking if the path is real
 		if type $LSOF &>/dev/null;then
 			echo "${S}Creating link now...${N}"
-			ln -s $SCRIPT_PATH/$SCRIPT_NAME $ulbLink
+			ln -s $SELF_PATH/$SELF_NAME $ulbLink
 		else
-			echo "${C}$SCRIPT_PATH ${W}is not properly set, cannot automatically create symbolic link.${N}"
+			echo "${C}$SELF_PATH ${W}is not properly set, cannot automatically create symbolic link.${N}"
 		fi
 	else
-		echo "${M}$SCRIPT_NAME is already in your system path, or a link to it already exists.${N}"
+		echo "${M}$SELF_NAME is already in your system path, or a link to it already exists.${N}"
 	fi
 }
 
@@ -753,15 +753,15 @@ print_history_data()
 		S=''
 	fi
 
-	if [ -f $SCRIPT_CONFIGS ];then
-		lastBackupDirectory=$( grep 'last-backup-directory=' $SCRIPT_CONFIGS | cut -d '=' -f 2 )
-		lastBackupDate=$( grep 'last-backup-date=' $SCRIPT_CONFIGS | cut -d '=' -f 2 )
-		lastBackupDuration=$( grep 'last-backup-duration=' $SCRIPT_CONFIGS | cut -d '=' -f 2 )
-		lastBackupApp=$( grep 'last-backup-app=' $SCRIPT_CONFIGS | cut -d '=' -f 2 )
-		lastBackupJobNu=$( grep 'last-backup-job=' $SCRIPT_CONFIGS | cut -d '=' -f 2 )
+	if [ -f $SELF_CONFIGS ];then
+		lastBackupDirectory=$( grep 'last-backup-directory=' $SELF_CONFIGS | cut -d '=' -f 2 )
+		lastBackupDate=$( grep 'last-backup-date=' $SELF_CONFIGS | cut -d '=' -f 2 )
+		lastBackupDuration=$( grep 'last-backup-duration=' $SELF_CONFIGS | cut -d '=' -f 2 )
+		lastBackupApp=$( grep 'last-backup-app=' $SELF_CONFIGS | cut -d '=' -f 2 )
+		lastBackupJobNu=$( grep 'last-backup-job=' $SELF_CONFIGS | cut -d '=' -f 2 )
 		# add line breaks because output is too long for single line
-		rdbuHistoryHolder="$( grep 'rdbu-backup-history=' $SCRIPT_CONFIGS | cut -d '=' -f 2 )"
-		rsyncHistoryHolder="$( grep 'rsync-backup-history=' $SCRIPT_CONFIGS | cut -d '=' -f 2 )"
+		rdbuHistoryHolder="$( grep 'rdbu-backup-history=' $SELF_CONFIGS | cut -d '=' -f 2 )"
+		rsyncHistoryHolder="$( grep 'rsync-backup-history=' $SELF_CONFIGS | cut -d '=' -f 2 )"
 		rdbuHistory="$( cut -d '~' -f 1 <<< $rdbuHistoryHolder )"
 		rsyncHistory="$( cut -d '~' -f 1 <<< $rsyncHistoryHolder )"
 
@@ -804,56 +804,56 @@ print_history_data()
 ## print out version information for -v
 print_version_info()
 {
-	local last_modified=$( grep -im 1 'date:' $SCRIPT_PATH/$SCRIPT_NAME | awk '{print $3,$4,$5}' )
+	local last_modified=$( grep -im 1 'date:' $SELF_PATH/$SELF_NAME | awk '{print $3,$4,$5}' )
 	local versionRemote='' versionRemoteDate='' versionRemoteNumber='' remoteNotify=''
 
 	if [ "$B_UPDATE_NOTIFIER" == 'true' ];then
 		versionRemote=$( check_remote_version )
 		versionRemoteDate=$( cut -d ':' -f 2 <<< $versionRemote )
 		versionRemoteNumber=$( cut -d ':' -f 1 <<< $versionRemote )
-		if [ "$versionRemoteNumber" != "$SCRIPT_VERSION_NUMBER" ];then
+		if [ "$versionRemoteNumber" != "$SELF_VERSION_NUMBER" ];then
 			remoteNotify='echo " ${M}(Newer version available: ${C}$versionRemoteNumber${M} Release Date: ${C}$versionRemoteDate${M})${N}"'
 		fi
 	fi
 
 	if [ "$1" == 'opt' ];then
 		echo $LINE
-		echo "$SCRIPT_NAME - the universal, portable, system backup script."
-		echo "Version: $SCRIPT_VERSION_NUMBER"
+		echo "$SELF_NAME - the universal, portable, system backup script."
+		echo "Version: $SELF_VERSION_NUMBER"
 		echo "Script Last Modified: $last_modified"
-		echo "Script Location: $SCRIPT_PATH${N}"
+		echo "Script Location: $SELF_PATH${N}"
 		print_history_data
 	elif [ "$1" == 'main' ];then
-		echo " ${C}$SCRIPT_NAME${S} ${M}:: Version: ${C}$SCRIPT_VERSION_NUMBER${S} ${M}:: Released: ${C}$last_modified${N}"
+		echo " ${C}$SELF_NAME${S} ${M}:: Version: ${C}$SELF_VERSION_NUMBER${S} ${M}:: Released: ${C}$last_modified${N}"
 		eval "$remoteNotify"
 	fi
 }
 
 # args: $1 - download url, not including file name; $2 - string to print out
 # note that $1 must end in / to properly construct the url path
-script_self_updater()
+SELF_self_updater()
 {
 	local wget_error=0
 	local ua='-U s-tools/rbxi.updater'
-
-	echo "Starting $SCRIPT_NAME self updater."
-	echo "Currently running $SCRIPT_NAME version number: $SCRIPT_VERSION_NUMBER"
-	echo "Updating $SCRIPT_NAME in $SCRIPT_PATH using $2 as download source..."
+	echo "Starting $SELF_NAME self updater."
+	echo "Currently running $SELF_NAME version number: $SELF_VERSION_NUMBER"
+	echo "Updating $SELF_NAME in $SELF_PATH using $2 as download source..."
 	# first test if path is good, need to make sure it's good because we're -O overwriting file
-	wget -q --spider $1$SCRIPT_NAME || wget_error=$?
+	# remove -q for testing
+	wget --spider $1$SELF_NAME || wget_error=$?
 	# then do the actual download
-	if [[ $wget_error -eq 0 ]];then
-		wget $ua -q -O $SCRIPT_PATH/$SCRIPT_NAME $1$SCRIPT_NAME || wget_error=$?
+	if [[ $wget_error -eq 0 ]];then 
+		wget $ua -O $SELF_PATH/$SELF_NAME $1$SELF_NAME || wget_error=$?
 		if [[ $wget_error -eq 0 ]];then
-			SCRIPT_VERSION_NUMBER=$( grep -im 1 'version:' $SCRIPT_PATH/$SCRIPT_NAME | awk '{print $3}' )
-			echo "Successfully updated to $2 version: $SCRIPT_VERSION_NUMBER"
-			echo "To run the new version, just start $SCRIPT_NAME again."
+			SELF_VERSION_NUMBER=$( grep -im 1 'version:' $SELF_PATH/$SELF_NAME | awk '{print $3}' )
+			echo "Successfully updated to $2 version: $SELF_VERSION_NUMBER"
+			echo "To run the new version, just start $SELF_NAME again."
 			exit 0
 		fi
 	fi
 	# now run the error handlers on any wget failure
 	if [[ $wget_error -gt 0 ]];then
-		if [[ $2 == 'svn server' ]];then
+		if [[ $2 == 'git server' ]];then
 			error_handler 8 "$wget_error"
 		elif [[ $2 == 'alt server' ]];then
 			error_handler 10 "$1"
@@ -863,7 +863,7 @@ script_self_updater()
 	fi
 }
 
-show_script_readme()
+show_SELF_readme()
 {
 	local browser='' browser_path=''
 	
@@ -875,7 +875,7 @@ show_script_readme()
 		fi
 	done
 	if [ -n "$browser_path" ];then
-		$browser_path $SCRIPT_PATH$SCRIPT_DATA$SCRIPT_README
+		$browser_path $SELF_PATH$SELF_DATA$SELF_README
 	else
 		error_handler 32
 	fi
@@ -921,7 +921,7 @@ trap_handler()
  	case "$1" in
  		umount)
  			echo
- 			echo "${S}You are leaving $SCRIPT_NAME with the backup partition still mounted!"
+ 			echo "${S}You are leaving $SELF_NAME with the backup partition still mounted!"
  			echo "Running sync to make sure writes to drives are done (can take a while)...${N}"
  			sync
  			# give the disk time sync its writes before umount...
@@ -948,17 +948,17 @@ trap_handler()
 #### -------------------------------------------------------------------
 
 # this will load/test anything that is required
-check_script_requires()
+check_SELF_requires()
 {
 	# this test handles three cases:
-	# 1: constructing a path with possibly user hard-coded value for SCRIPT_PATH fails
+	# 1: constructing a path with possibly user hard-coded value for SELF_PATH fails
 	# 2: constructing the path with dirname and rbxi-data fails to detect a directory
 	# 3: lsof does not exit in system
-	if [ ! -d "$SCRIPT_PATH$SCRIPT_DATA" ] && [ ! -d "$( dirname $0 )$SCRIPT_DATA" ] && ! type $LSOF &>/dev/null;then
+	if [ ! -d "$SELF_PATH$SELF_DATA" ] && [ ! -d "$( dirname $0 )$SELF_DATA" ] && ! type $LSOF &>/dev/null;then
 		error_handler 23 'lsof'
 	fi
 	## add in user variable values, sticky value file
-	if [ ! -f "$SCRIPT_DATA_DIR$SCRIPT_VALUES" ];then
+	if [ ! -f "$SELF_DATA_DIR$SELF_VALUES" ];then
 		error_handler 22
 	fi
 }
@@ -986,7 +986,7 @@ check_startup_stuff()
 	fi
 }
 
-check_script_path()
+check_SELF_path()
 {
 	local ExDir=$( dirname $0 )
 
@@ -995,21 +995,21 @@ check_script_path()
 	fi
 }
 
-check_script_changes()
+check_SELF_changes()
 {
 	local oldBuMount='BACKUP_DIRECTORY'
 	local oldBuMountSub='BACKUP_SUB_DIR'
-	local updateBuMount=$( egrep "($oldBuMount|$oldBuMountSub)" $SCRIPT_DATA_DIR$SCRIPT_VALUES $SCRIPT_DATA_DIR$SCRIPT_README )
+	local updateBuMount=$( egrep "($oldBuMount|$oldBuMountSub)" $SELF_DATA_DIR$SELF_VALUES $SELF_DATA_DIR$SELF_README )
 
 	if [ -n "$updateBuMount" ];then
-		echo "${S}Updating your $SCRIPT_VALUES $SCRIPT_README files to use new variable names:"
+		echo "${S}Updating your $SELF_VALUES $SELF_README files to use new variable names:"
 		echo "BACKUP_MOUNT_POINT replaces BACKUP_DIRECTORY"
 		echo "BACKUP_MOUNT_POINT_DIRECTORY replaces BACKUP_SUB_DIR"
-		echo "Please restart $SCRIPT_NAME after this is completed.${N}"
-		sed -i 's/BACKUP_DIRECTORY/BACKUP_MOUNT_POINT/g' $SCRIPT_DATA_DIR$SCRIPT_VALUES $SCRIPT_DATA_DIR$SCRIPT_README
-		sed -i 's/BACKUP_SUB_DIR/BACKUP_MOUNT_POINT_DIRECTORY/g' $SCRIPT_DATA_DIR$SCRIPT_VALUES $SCRIPT_DATA_DIR$SCRIPT_README
-		sed -i 's/2\.5\.[0-1]/2.5.2/g' $SCRIPT_DATA_DIR$SCRIPT_VALUES $SCRIPT_DATA_DIR$SCRIPT_README
-		echo "${S}Updated and exiting. Please restart $SCRIPT_NAME, sorry for the inconvenience.${N}"
+		echo "Please restart $SELF_NAME after this is completed.${N}"
+		sed -i 's/BACKUP_DIRECTORY/BACKUP_MOUNT_POINT/g' $SELF_DATA_DIR$SELF_VALUES $SELF_DATA_DIR$SELF_README
+		sed -i 's/BACKUP_SUB_DIR/BACKUP_MOUNT_POINT_DIRECTORY/g' $SELF_DATA_DIR$SELF_VALUES $SELF_DATA_DIR$SELF_README
+		sed -i 's/2\.5\.[0-1]/2.5.2/g' $SELF_DATA_DIR$SELF_VALUES $SELF_DATA_DIR$SELF_README
+		echo "${S}Updated and exiting. Please restart $SELF_NAME, sorry for the inconvenience.${N}"
 		exit 0
 	fi
 }
@@ -1090,23 +1090,23 @@ check_remote_version()
 
 create_etc_configs()
 {
-	if [ ! -f $SCRIPT_CONFIGS ];then
-		touch $SCRIPT_CONFIGS
-		echo 'last-backup-directory=Unset' >> $SCRIPT_CONFIGS
-		echo 'last-backup-date=Unset' >> $SCRIPT_CONFIGS
-		echo 'last-backup-duration=Unset' >> $SCRIPT_CONFIGS
+	if [ ! -f $SELF_CONFIGS ];then
+		touch $SELF_CONFIGS
+		echo 'last-backup-directory=Unset' >> $SELF_CONFIGS
+		echo 'last-backup-date=Unset' >> $SELF_CONFIGS
+		echo 'last-backup-duration=Unset' >> $SELF_CONFIGS
 	fi
-	if [ -z "$( grep 'rdbu-backup-history=' $SCRIPT_CONFIGS )" ];then
-		echo 'rdbu-backup-history=Unset' >> $SCRIPT_CONFIGS
+	if [ -z "$( grep 'rdbu-backup-history=' $SELF_CONFIGS )" ];then
+		echo 'rdbu-backup-history=Unset' >> $SELF_CONFIGS
 	fi
-	if [ -z "$( grep 'rsync-backup-history=' $SCRIPT_CONFIGS )" ];then
-		echo 'rsync-backup-history=Unset' >> $SCRIPT_CONFIGS
+	if [ -z "$( grep 'rsync-backup-history=' $SELF_CONFIGS )" ];then
+		echo 'rsync-backup-history=Unset' >> $SELF_CONFIGS
 	fi
-	if [ -z "$( grep 'last-backup-app=' $SCRIPT_CONFIGS )" ];then
-		echo 'last-backup-app=Unset' >> $SCRIPT_CONFIGS
+	if [ -z "$( grep 'last-backup-app=' $SELF_CONFIGS )" ];then
+		echo 'last-backup-app=Unset' >> $SELF_CONFIGS
 	fi
-	if [ -z "$( grep 'last-backup-job=' $SCRIPT_CONFIGS )" ];then
-		echo 'last-backup-job=Unset' >> $SCRIPT_CONFIGS
+	if [ -z "$( grep 'last-backup-job=' $SELF_CONFIGS )" ];then
+		echo 'last-backup-job=Unset' >> $SELF_CONFIGS
 	fi
 }
 
@@ -1214,18 +1214,18 @@ set_backup_commands()
 			# --acls only if needed
 			options=" --hard-links --xattrs --sparse --numeric-ids --times -a $dryRun $RSYNC_DELETE $RSYNC_EXTRA_OPTIONS"
 
-			HOME_BU_COMMAND="$RSYNC_PATH --exclude-from=$SCRIPT_DATA_DIR$EXCLUDE_HOME $options $HOME_PATH $HOME_BACKUP"
-			ROOT_BU_COMMAND="$RSYNC_PATH --exclude-from=$SCRIPT_DATA_DIR$EXCLUDE_ROOT $options $ROOT_PATH $ROOT_BACKUP"
-			DATA_1_BU_COMMAND="$RSYNC_PATH --exclude-from=$SCRIPT_DATA_DIR$EXCLUDE_DATA_1 $options $DATA_1_PATH $DATA_1_BACKUP"
-			DATA_2_BU_COMMAND="$RSYNC_PATH --exclude-from=$SCRIPT_DATA_DIR$EXCLUDE_DATA_2 $options $DATA_2_PATH $DATA_2_BACKUP"
-			DATA_3_BU_COMMAND="$RSYNC_PATH --exclude-from=$SCRIPT_DATA_DIR$EXCLUDE_DATA_3 $options $DATA_3_PATH $DATA_3_BACKUP"
-			DATA_4_BU_COMMAND="$RSYNC_PATH --exclude-from=$SCRIPT_DATA_DIR$EXCLUDE_DATA_4 $options $DATA_4_PATH $DATA_4_BACKUP"
-			DATA_5_BU_COMMAND="$RSYNC_PATH --exclude-from=$SCRIPT_DATA_DIR$EXCLUDE_DATA_5 $options $DATA_5_PATH $DATA_5_BACKUP"
-			DATA_6_BU_COMMAND="$RSYNC_PATH --exclude-from=$SCRIPT_DATA_DIR$EXCLUDE_DATA_6 $options $DATA_6_PATH $DATA_6_BACKUP"
-			DATA_7_BU_COMMAND="$RSYNC_PATH --exclude-from=$SCRIPT_DATA_DIR$EXCLUDE_DATA_7 $options $DATA_7_PATH $DATA_7_BACKUP"
-			DATA_8_BU_COMMAND="$RSYNC_PATH --exclude-from=$SCRIPT_DATA_DIR$EXCLUDE_DATA_8 $options $DATA_8_PATH $DATA_8_BACKUP"
-			DATA_9_BU_COMMAND="$RSYNC_PATH --exclude-from=$SCRIPT_DATA_DIR$EXCLUDE_DATA_9 $options $DATA_9_PATH $DATA_9_BACKUP"
-			DATA_10_BU_COMMAND="$RSYNC_PATH --exclude-from=$SCRIPT_DATA_DIR$EXCLUDE_DATA_10 $options $DATA_10_PATH $DATA_10_BACKUP"
+			HOME_BU_COMMAND="$RSYNC_PATH --exclude-from=$SELF_DATA_DIR$EXCLUDE_HOME $options $HOME_PATH $HOME_BACKUP"
+			ROOT_BU_COMMAND="$RSYNC_PATH --exclude-from=$SELF_DATA_DIR$EXCLUDE_ROOT $options $ROOT_PATH $ROOT_BACKUP"
+			DATA_1_BU_COMMAND="$RSYNC_PATH --exclude-from=$SELF_DATA_DIR$EXCLUDE_DATA_1 $options $DATA_1_PATH $DATA_1_BACKUP"
+			DATA_2_BU_COMMAND="$RSYNC_PATH --exclude-from=$SELF_DATA_DIR$EXCLUDE_DATA_2 $options $DATA_2_PATH $DATA_2_BACKUP"
+			DATA_3_BU_COMMAND="$RSYNC_PATH --exclude-from=$SELF_DATA_DIR$EXCLUDE_DATA_3 $options $DATA_3_PATH $DATA_3_BACKUP"
+			DATA_4_BU_COMMAND="$RSYNC_PATH --exclude-from=$SELF_DATA_DIR$EXCLUDE_DATA_4 $options $DATA_4_PATH $DATA_4_BACKUP"
+			DATA_5_BU_COMMAND="$RSYNC_PATH --exclude-from=$SELF_DATA_DIR$EXCLUDE_DATA_5 $options $DATA_5_PATH $DATA_5_BACKUP"
+			DATA_6_BU_COMMAND="$RSYNC_PATH --exclude-from=$SELF_DATA_DIR$EXCLUDE_DATA_6 $options $DATA_6_PATH $DATA_6_BACKUP"
+			DATA_7_BU_COMMAND="$RSYNC_PATH --exclude-from=$SELF_DATA_DIR$EXCLUDE_DATA_7 $options $DATA_7_PATH $DATA_7_BACKUP"
+			DATA_8_BU_COMMAND="$RSYNC_PATH --exclude-from=$SELF_DATA_DIR$EXCLUDE_DATA_8 $options $DATA_8_PATH $DATA_8_BACKUP"
+			DATA_9_BU_COMMAND="$RSYNC_PATH --exclude-from=$SELF_DATA_DIR$EXCLUDE_DATA_9 $options $DATA_9_PATH $DATA_9_BACKUP"
+			DATA_10_BU_COMMAND="$RSYNC_PATH --exclude-from=$SELF_DATA_DIR$EXCLUDE_DATA_10 $options $DATA_10_PATH $DATA_10_BACKUP"
 
 			# set text
 			BACKUP_CLEAR='Backing up'
@@ -1240,18 +1240,18 @@ set_backup_commands()
 				# set commands
 				options=" --exclude-sockets $RDIFF_EXTRA_OPTIONS "
 
-				HOME_BU_COMMAND="$RDIFF_PATH $options --exclude-globbing-filelist $SCRIPT_DATA_DIR$EXCLUDE_HOME $HOME_PATH $HOME_BACKUP"
-				ROOT_BU_COMMAND="$RDIFF_PATH $options --exclude-globbing-filelist $SCRIPT_DATA_DIR$EXCLUDE_ROOT $ROOT_PATH $ROOT_BACKUP"
-				DATA_1_BU_COMMAND="$RDIFF_PATH $options --exclude-globbing-filelist $SCRIPT_DATA_DIR$EXCLUDE_DATA_1 $DATA_1_PATH $DATA_1_BACKUP"
-				DATA_2_BU_COMMAND="$RDIFF_PATH $options --exclude-globbing-filelist $SCRIPT_DATA_DIR$EXCLUDE_DATA_2 $DATA_2_PATH $DATA_2_BACKUP"
-				DATA_3_BU_COMMAND="$RDIFF_PATH $options --exclude-globbing-filelist $SCRIPT_DATA_DIR$EXCLUDE_DATA_3 $DATA_3_PATH $DATA_3_BACKUP"
-				DATA_4_BU_COMMAND="$RDIFF_PATH $options --exclude-globbing-filelist $SCRIPT_DATA_DIR$EXCLUDE_DATA_4 $DATA_4_PATH $DATA_4_BACKUP"
-				DATA_5_BU_COMMAND="$RDIFF_PATH $options --exclude-globbing-filelist $SCRIPT_DATA_DIR$EXCLUDE_DATA_5 $DATA_5_PATH $DATA_5_BACKUP"
-				DATA_6_BU_COMMAND="$RDIFF_PATH $options --exclude-globbing-filelist $SCRIPT_DATA_DIR$EXCLUDE_DATA_6 $DATA_6_PATH $DATA_6_BACKUP"
-				DATA_7_BU_COMMAND="$RDIFF_PATH $options --exclude-globbing-filelist $SCRIPT_DATA_DIR$EXCLUDE_DATA_7 $DATA_7_PATH $DATA_7_BACKUP"
-				DATA_8_BU_COMMAND="$RDIFF_PATH $options --exclude-globbing-filelist $SCRIPT_DATA_DIR$EXCLUDE_DATA_8 $DATA_8_PATH $DATA_8_BACKUP"
-				DATA_9_BU_COMMAND="$RDIFF_PATH $options --exclude-globbing-filelist $SCRIPT_DATA_DIR$EXCLUDE_DATA_9 $DATA_9_PATH $DATA_9_BACKUP"
-				DATA_10_BU_COMMAND="$RDIFF_PATH $options --exclude-globbing-filelist $SCRIPT_DATA_DIR$EXCLUDE_DATA_10 $DATA_10_PATH $DATA_10_BACKUP"
+				HOME_BU_COMMAND="$RDIFF_PATH $options --exclude-globbing-filelist $SELF_DATA_DIR$EXCLUDE_HOME $HOME_PATH $HOME_BACKUP"
+				ROOT_BU_COMMAND="$RDIFF_PATH $options --exclude-globbing-filelist $SELF_DATA_DIR$EXCLUDE_ROOT $ROOT_PATH $ROOT_BACKUP"
+				DATA_1_BU_COMMAND="$RDIFF_PATH $options --exclude-globbing-filelist $SELF_DATA_DIR$EXCLUDE_DATA_1 $DATA_1_PATH $DATA_1_BACKUP"
+				DATA_2_BU_COMMAND="$RDIFF_PATH $options --exclude-globbing-filelist $SELF_DATA_DIR$EXCLUDE_DATA_2 $DATA_2_PATH $DATA_2_BACKUP"
+				DATA_3_BU_COMMAND="$RDIFF_PATH $options --exclude-globbing-filelist $SELF_DATA_DIR$EXCLUDE_DATA_3 $DATA_3_PATH $DATA_3_BACKUP"
+				DATA_4_BU_COMMAND="$RDIFF_PATH $options --exclude-globbing-filelist $SELF_DATA_DIR$EXCLUDE_DATA_4 $DATA_4_PATH $DATA_4_BACKUP"
+				DATA_5_BU_COMMAND="$RDIFF_PATH $options --exclude-globbing-filelist $SELF_DATA_DIR$EXCLUDE_DATA_5 $DATA_5_PATH $DATA_5_BACKUP"
+				DATA_6_BU_COMMAND="$RDIFF_PATH $options --exclude-globbing-filelist $SELF_DATA_DIR$EXCLUDE_DATA_6 $DATA_6_PATH $DATA_6_BACKUP"
+				DATA_7_BU_COMMAND="$RDIFF_PATH $options --exclude-globbing-filelist $SELF_DATA_DIR$EXCLUDE_DATA_7 $DATA_7_PATH $DATA_7_BACKUP"
+				DATA_8_BU_COMMAND="$RDIFF_PATH $options --exclude-globbing-filelist $SELF_DATA_DIR$EXCLUDE_DATA_8 $DATA_8_PATH $DATA_8_BACKUP"
+				DATA_9_BU_COMMAND="$RDIFF_PATH $options --exclude-globbing-filelist $SELF_DATA_DIR$EXCLUDE_DATA_9 $DATA_9_PATH $DATA_9_BACKUP"
+				DATA_10_BU_COMMAND="$RDIFF_PATH $options --exclude-globbing-filelist $SELF_DATA_DIR$EXCLUDE_DATA_10 $DATA_10_PATH $DATA_10_BACKUP"
 
 				# set text
 				BACKUP_CLEAR='Backing up'
@@ -1581,10 +1581,10 @@ set_or_print_backup_job()
 	if [ -n "$backupJob" -a "$backupJob" != ':' ];then
 		if [ "$2" == 'set' ];then
 			echo "${S}Your job presets are: ${C}$backupJobData"
-			echo "${S}Restarting $SCRIPT_NAME to run backup job$backupJobName (Job No. ${C}$1${S}) now...${N}"
+			echo "${S}Restarting $SELF_NAME to run backup job$backupJobName (Job No. ${C}$1${S}) now...${N}"
 			echo $LINE
 			sleep 1
-			exec $SCRIPT_PATH/$SCRIPT_NAME -z $1 $backupJobData
+			exec $SELF_PATH/$SELF_NAME -z $1 $backupJobData
 			exit 0
 		elif [ "$2" == 'print' ];then
 			echo "${M}You are currently about to run backup job number: ${C}$BACKUP_JOB_NU"
@@ -2547,7 +2547,7 @@ finish_backup()
 	run_pre_post_tasks 'post-umount'
 	print_complete_message
 	log_function_data 'data' "Backup Job Completed.\n\n"
-	run_emailer_tasks 'finish' "Completed. Start Options: $SCRIPT_OPTIONS"
+	run_emailer_tasks 'finish' "Completed. Start Options: $SELF_OPTIONS"
 }
 
 update_configs()
@@ -2564,21 +2564,21 @@ update_configs()
 
 	echo $LINE
 	echo "${S}Updating backup records now...${N}"
-	sed -i "s%last-backup-directory=.*%last-backup-directory=$BACKUP_LOCATION%" $SCRIPT_CONFIGS
-	sed -i "s/last-backup-date=.*/last-backup-date=$backupDate/" $SCRIPT_CONFIGS
-	sed -i "s/last-backup-duration=.*/last-backup-duration=$BACKUP_DURATION/" $SCRIPT_CONFIGS
-	sed -i "s/last-backup-app=.*/last-backup-app=$BACKUP_APP/" $SCRIPT_CONFIGS
-	sed -i "s/last-backup-job=.*/last-backup-job=$BACKUP_JOB_NU/" $SCRIPT_CONFIGS
+	sed -i "s%last-backup-directory=.*%last-backup-directory=$BACKUP_LOCATION%" $SELF_CONFIGS
+	sed -i "s/last-backup-date=.*/last-backup-date=$backupDate/" $SELF_CONFIGS
+	sed -i "s/last-backup-duration=.*/last-backup-duration=$BACKUP_DURATION/" $SELF_CONFIGS
+	sed -i "s/last-backup-app=.*/last-backup-app=$BACKUP_APP/" $SELF_CONFIGS
+	sed -i "s/last-backup-job=.*/last-backup-job=$BACKUP_JOB_NU/" $SELF_CONFIGS
 
 	case "$BACKUP_APP" in
 		rdiff-backup)
-			sed -i "s%rdbu-backup-history=.*%rdbu-backup-history=$backupString%" $SCRIPT_CONFIGS
+			sed -i "s%rdbu-backup-history=.*%rdbu-backup-history=$backupString%" $SELF_CONFIGS
 			;;
 		rsync)
-			sed -i "s%rsync-backup-history=.*%rsync-backup-history=$backupString%" $SCRIPT_CONFIGS
+			sed -i "s%rsync-backup-history=.*%rsync-backup-history=$backupString%" $SELF_CONFIGS
 			;;
 	esac
-	log_function_data 'data' "Completed Backup Config Data:\n$( cat $SCRIPT_CONFIGS )\n$LI\n"
+	log_function_data 'data' "Completed Backup Config Data:\n$( cat $SELF_CONFIGS )\n$LI\n"
 }
 
 # do some arithmetic on time
@@ -2657,19 +2657,19 @@ print_complete_message()
 ###################################################################
 #####   EXECUTE SCRIPT COMPONENTS
 ###################################################################
-set_script_colors
-check_script_requires
+set_SELF_colors
+check_SELF_requires
 get_options "$@"
-run_emailer_tasks 'start' "Start Options: $SCRIPT_OPTIONS"
+run_emailer_tasks 'start' "Start Options: $SELF_OPTIONS"
 
 # Make sure user is logged in as root first and that backup location is present
 check_startup_stuff
-log_function_data 'start' "$SCRIPT_OPTIONS"
+log_function_data 'start' "$SELF_OPTIONS"
 # this sets the correct startup path so that exclude lists load correctly
-check_script_path
+check_SELF_path
 # any updates that need to be run will be run here, should only be required
 # at rare intervals.
-check_script_changes
+check_SELF_changes
 
 # set rsync/rdiff-backup variables
 set_primary_backup_data
