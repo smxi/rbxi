@@ -25,7 +25,7 @@
 
 ########################################################################
 ####  CHANGES
-####  2.7.5 2023-09-16 - changed to codeberg.org urls for updates
+####  2.7.5 2023-09-16 - changed to codeberg.org urls for -U updates
 ####  2.7.4 2021-08-04 - added 'sync' to force writes to disk. Removed branch
 ####   updaters which pointed to dead urls. Updated -U to use github urls.
 ####  2.7.3 2015-02-20 - updated date formats to: YYYY-MM-DD, fixed -J restart bug 
